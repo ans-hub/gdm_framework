@@ -1,0 +1,6 @@
+s  name            earth
+s  diffuse_map     sphere_earth.bmp
+v4 ambient         0.4 0.4 0.4 1.0
+v4 diffuse         1.0 1.0 1.0 1.0
+v4 specular        1.0 1.0 1.0 1.0
+f  specular_power  1

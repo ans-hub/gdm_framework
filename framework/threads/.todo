@@ -1,0 +1,9 @@
+v future-promise (RunAsync)
+v future-promise events instead of CV in worker func
+v add profiling to test functions
+x design : made all queries through mgr for weaking dependicies of implementation and using interface
+v mgr and threads - events queue for workers (command buffer?)
+v cmd arguments
+v stop all threads on destruction
+v profile it all - integrate microprofile
+x more abstract job graph

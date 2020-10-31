@@ -1,0 +1,6 @@
+s  name            box
+s  diffuse_map     boxes/cube.bmp
+v4 ambient         0.4 0.4 0.4 1.0
+v4 diffuse         1.0 1.0 1.0 1.0
+v4 specular        1.0 0.2 0.2 1.0
+f  specular_power  128

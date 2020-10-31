@@ -1,0 +1,76 @@
+// COMPONENTS
+//
+// v only very complex legacy components may have behaviour
+// v may have setter/getter behaviours for components
+// v each component contains its own unique index. This index is used to get
+//   result entity signature
+// v components stored in static arrays. Currently it is sparsed data, in next time we
+//   need to use more smart approach to get same components together
+// v also I avoid passing base components (like float, etc.) as arguments to systems
+//   as it do mess and undefinition what float to use, therefore I use wrappers
+//   like struct Acceleration { Vec3f data } instead of Vec3f.
+
+// ENTITIES
+//
+// v entities combination - Create, Recreate, Destroy, or Components composition
+// v templated CreateEntity() may be a problem at runtime
+// v creating entity is quite fast as it use caching of signatures
+// v Events: OnCreateEntity, OnRecreateEntity, OnDestroyEntity
+
+// SYSTEMS
+//
+// v each system has signature, behaviour function and array of entities with gaps
+//   (currently it is simple array but in next time I change it to sparse integer set
+//   O(1) insert/delete and O(N) iterating instead of O(max_entities))
+
+// CRITICAL BUGs
+// 11.05.2020
+//  1) I made broadcast events and oncreate, but I was concerned that test I have
+//  is really messed. So I've remaked tests, and stopped on 2-nd test because I've found
+//  critical bug related to subcomponents. Component that contains component A with nested
+//  component B, will work on system with component B, but storage will be taken directly
+//  from storage B, not from A.b. Therefore, when we have processed all components, and
+//  then will try to access A.b, we will find that A.b not changet, although system will
+//  proceed. That is because system get storage pointer directly to B, not to A. Need to rethink
+//  2) Also need to complete tests
+//  3) Get rid of ecs_Require while OnEntityCreate
+
+// TODO
+//
+// v queue of free entity indicies - to fill gaps while delete entities
+// v current scheme supposes only simple component additions. Need recursive components iterating while create/destroy entity
+//   may be some sort of tuple contains all possible components for each component:
+//   e.g. we have BattleCat with MoveComp, we need MoveComp to be called from systems with either BattleCat or MoveComp
+// v delete entity
+// v avoid adding includes to headers (now ecs comp reg need full definition of class, not fwd declared)
+// v add singleton components
+// v tests
+// v add ecs system conditions (aka requirments)
+// v add stages (added dt and eid entities instead of it)
+// v add order of system execution (by placing ecs_register_system in appropriate order)
+// v add render
+// v make ecs_require based on System->canRun()
+// v events - broadcast
+// v create entity with arguments to constructor
+// v remake initialization of components
+// v initialization of singleton components within ecs_register_singleton macro
+// v bug - can't register component in compilation unit other than main - it causes repeat calling of macro when included again
+// x add components at runtime. (may be always)
+// x remove components
+// x recreate entity
+// x events - on create, on delete, on recreate (system component - ecs::Event<System>)
+// x add assert when comp numbers overhead
+// x add different asserts
+// x events - for particular esig
+// x add, delete, create entity, add, remove components - make deffered
+// x make counter in this way: http://b.atch.se/posts/non-constant-constant-expressions/#solution
+//   or use 2 significant bits as grouping registers, therefore we have 62 * 4 sigs
+//   comparing in more complex but still fast
+// x design question - models with different meshes - it is different components or not?
+// x asserts:
+//    x assert - not registered system
+//    x assert - not registered component
+//    x assert - not registered singleton component
+// x parallelize (systems and data)
+//    x data - take indicies fo all necessary components and split it to batches
+//    x systems - add systems to unlinked graph and make dfs

@@ -1,0 +1,9 @@
+s  name            stone
+s  diffuse_map     stone_diffuse.tga
+s  normal_map      stone_normal.tga
+s  specular_map    stone_specular.tga
+s  disp_map        stone_disp.tga 
+v4 ambient         1.0 1.0 1.0 1.0
+v4 diffuse         1.0 1.0 1.0 1.0
+v4 specular        0.0 0.0 0.0 0.0
+f  specular_power  64
