@@ -29,6 +29,19 @@ T& gdm::DataFactory<T>::Get(Handle handle)
 }
 
 template <class T>
+std::vector<T*> gdm::DataFactory<T>::Get(const std::vector<Handle>& handles)
+{
+  std::vector<T*> result;
+  for (auto handle : handles)
+  {
+    ASSERTF(Has(handle), "Trying to get absent resource");
+    T& resource = resources_[handle];
+    result.push_back(&resource);
+  }
+  return result;
+}
+
+template <class T>
 bool gdm::DataFactory<T>::Has(Handle handle)
 {
   auto found = resources_.find(handle);

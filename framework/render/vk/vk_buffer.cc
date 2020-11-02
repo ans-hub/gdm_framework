@@ -24,6 +24,7 @@ gdm::vk::Buffer::Buffer(Device* device, uint size, gfx::BufferUsage usage, gfx::
   , buffer_memory_{VK_NULL_HANDLE}
   , mapped_region_{nullptr}
 {
+  // todo: if uniform ,then assert on alignong
   buffer_info_.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
   buffer_info_.size = size;
   buffer_info_.usage = buffer_usage_;
@@ -53,6 +54,15 @@ void gdm::vk::Buffer::Map()
   ASSERTF(bits::HasFlag(memory_type_, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), "Copy is not allowed");
 
   VkResult res = vkMapMemory(*device_, buffer_memory_, 0, buffer_info_.size, 0, &mapped_region_);
+  ASSERTF(res == VK_SUCCESS, "vkMapMemory failed %d", res);
+}
+ 
+void gdm::vk::Buffer::Map(uint offset, uint size)
+{
+  ASSERTF(mapped_region_ == nullptr, "Buffer already mapped");
+  ASSERTF(bits::HasFlag(memory_type_, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), "Copy is not allowed");
+
+  VkResult res = vkMapMemory(*device_, buffer_memory_,static_cast<VkDeviceSize>(offset), static_cast<VkDeviceSize>(size), 0, &mapped_region_);
   ASSERTF(res == VK_SUCCESS, "vkMapMemory failed %d", res);
 }
 

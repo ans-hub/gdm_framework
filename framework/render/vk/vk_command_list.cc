@@ -7,6 +7,8 @@
 #include "vk_command_list.h"
 
 #include <render/vk/vk_image.h>
+#include <render/vk/vk_pipeline.h>
+#include <render/vk/vk_descriptor_set.h>
 
 #include <system/assert_utils.h>
 #include <system/bits_utils.h>
@@ -72,6 +74,18 @@ void gdm::vk::CommandList::CopyBufferToBuffer(Buffer& src, const Buffer& dst, ui
   vkCmdCopyBuffer(command_buffer_, src, dst, 1, &copy_region);
 }
 
+void gdm::vk::CommandList::CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint src_offset, uint dst_offset, uint size)
+{
+  ASSERTF(!explicitly_finalized_, "Command list finalized");
+
+  VkBufferCopy copy_region = {};
+  copy_region.srcOffset = src_offset;
+  copy_region.dstOffset = dst_offset;
+  copy_region.size = size;
+
+  vkCmdCopyBuffer(command_buffer_, src, dst, 1, &copy_region);
+}
+
 void gdm::vk::CommandList::CopyBufferToImage(const Buffer& src, Image& dst, uint size)
 {
   ASSERTF(!explicitly_finalized_, "Command list finalized");
@@ -82,6 +96,27 @@ void gdm::vk::CommandList::CopyBufferToImage(const Buffer& src, Image& dst, uint
   copy_image.imageExtent.height = dst.GetHeight();
   copy_image.imageExtent.depth = 1;
   copy_image.imageSubresource.layerCount = 1;
+
+  if (helpers::HasStencil(dst.GetFormat<VkFormat>()))
+    copy_image.imageSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  else
+    copy_image.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+  vkCmdCopyBufferToImage(command_buffer_, src, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_image);
+}
+
+void gdm::vk::CommandList::CopyBufferToImage(const Buffer& src, Image& dst, uint src_offset, uint dst_offset, uint size)
+{
+  ASSERTF(dst_offset == 0, "Dst offset for  buffers not implemented");
+  ASSERTF(!explicitly_finalized_, "Command list finalized");
+  ASSERTF(bits::HasFlag(dst.GetUsage(), VK_IMAGE_USAGE_TRANSFER_DST_BIT), "Incorrec dst image");
+
+  VkBufferImageCopy copy_image = {};
+  copy_image.imageExtent.width = dst.GetWidth();
+  copy_image.imageExtent.height = dst.GetHeight();
+  copy_image.imageExtent.depth = 1;
+  copy_image.imageSubresource.layerCount = 1;
+  copy_image.bufferOffset = src_offset;
 
   if (helpers::HasStencil(dst.GetFormat<VkFormat>()))
     copy_image.imageSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
@@ -128,9 +163,17 @@ void gdm::vk::CommandList::BindIndexBuffer(VkBuffer idx_buffer)
   vkCmdBindIndexBuffer(command_buffer_, idx_buffer, 0, VK_INDEX_TYPE_UINT32);
 }
 
-void gdm::vk::CommandList::BindDescriptorSetGraphics(VkDescriptorSet descriptor_set, VkPipelineLayout layout)
+void gdm::vk::CommandList::BindDescriptorSetGraphics(const vk::DescriptorSets& descriptor_sets, Pipeline& pipeline, const std::vector<uint>& offsets)
 {
-  vkCmdBindDescriptorSets(command_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, layout, 0, 1, &descriptor_set, 0, NULL);
+  std::vector<VkDescriptorSet> descriptor_set_data;
+  for (auto& set : descriptor_sets)
+    descriptor_set_data.push_back(set.get());
+  
+  uint descriptor_set_cnt = static_cast<uint>(descriptor_sets.size());
+  uint offset_cnt = static_cast<uint>(offsets.size());
+
+  VkPipelineBindPoint bind_point = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  vkCmdBindDescriptorSets(command_buffer_, bind_point, pipeline, 0, descriptor_set_cnt, descriptor_set_data.data(), offset_cnt, offsets.data());
 }
 
 void gdm::vk::CommandList::DrawIndexed(const std::vector<Vec3u>& data)

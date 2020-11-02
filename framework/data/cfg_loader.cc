@@ -40,14 +40,14 @@ gdm::Config::Config(const char* cfg_fname)
       stream >> strings_[name];
     else if (type == "v3")
     {
-      std::array<float,3> v {};
-      while (stream >> v[0] >> v[1] >> v[2]) { }
+      Vec3f v {};
+      while (stream >> v.x >> v.y >> v.z) { }
       vectors3f_[name] = v;
     }
     else if (type == "v4")
     {
-      std::array<float,4> v {};
-      while (stream >> v[0] >> v[1] >> v[2] >> v[3]) { }
+      Vec4f v {};
+      while (stream >> v.x >> v.y >> v.z >> v.w) { }
       vectors4f_[name] = v;
     }
     else if (type == "af")

@@ -21,9 +21,12 @@ struct Buffer
   auto GetSize() const -> uint { return static_cast<uint>(buffer_info_.size); }
   bool IsMapped() const { return mapped_region_ != nullptr; }
   void Map();
+  void Map(uint offset, uint size);
   void Unmap();
   template<class T>
   void CopyDataToGpu(const T* data, size_t count);
+  template<class T>
+  void CopyDataToGpu(const T* data, uint offset, size_t count);
 
   Buffer(const Buffer& other) = delete;
   Buffer& operator=(const Buffer& other) = delete;

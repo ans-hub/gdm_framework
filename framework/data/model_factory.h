@@ -13,6 +13,7 @@
 #include "math/vector2.h"
 #include "math/vector3.h"
 #include "math/vector4.h"
+#include "math/matrix.h"
 
 #include "abstract_image.h"
 #include "data_factory.h"
@@ -27,6 +28,7 @@ struct AbstractModel
 {
   std::vector<MaterialHandle> materials_;
   std::vector<MeshHandle> meshes_;
+  Mat4f tm_;
 
 }; // struct AbstractModel
 

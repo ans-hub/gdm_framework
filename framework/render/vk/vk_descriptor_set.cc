@@ -33,6 +33,7 @@
 
 #include "system/array_utils.h"
 #include "system/assert_utils.h"
+#include "system/bits_utils.h"
 #include "render/vk/vk_buffer.h"
 #include "render/vk/vk_host_allocator.h"
 
@@ -51,8 +52,6 @@ gdm::vk::DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout lay
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const Sampler& sampler, const ImageView& view)
 {
-  ASSERTF(type == gfx::EResourceType::COMBINED_SAMPLER, "Incorrect resource type for update");
-  
   arr_utils::EnsureIndex(image_infos_, num);
   image_infos_[num].sampler = sampler;
   image_infos_[num].imageView = view;
@@ -69,14 +68,12 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
   image_desc_set.pBufferInfo = nullptr;
   image_desc_set.pTexelBufferView = nullptr;
 
-  arr_utils::EnsureIndex(write_descriptors_, num);
-  write_descriptors_[num] = image_desc_set;
+  write_descriptors_.push_back({});
+  write_descriptors_.back() = image_desc_set;
 }
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const ImageView& view)
 {
-  ASSERTF(type == gfx::EResourceType::SAMPLED_IMAGE, "Incorrect resource type for update");
-  
   arr_utils::EnsureIndex(image_infos_, num);
   image_infos_[num].sampler = 0;
   image_infos_[num].imageView = view;
@@ -93,14 +90,12 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
   image_desc_set.pBufferInfo = nullptr;
   image_desc_set.pTexelBufferView = nullptr;
 
-  arr_utils::EnsureIndex(write_descriptors_, num);
-  write_descriptors_[num] = image_desc_set;
+  write_descriptors_.push_back({});
+  write_descriptors_.back() = image_desc_set;
 }
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const Sampler& sampler)
 {
-  ASSERTF(type == gfx::EResourceType::SAMPLER, "Incorrect resource type for update");
-  
   arr_utils::EnsureIndex(image_infos_, num);
   image_infos_[num].sampler = sampler;
 
@@ -115,18 +110,20 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
   image_desc_set.pBufferInfo = nullptr;
   image_desc_set.pTexelBufferView = nullptr;
 
-  arr_utils::EnsureIndex(write_descriptors_, num);
-  write_descriptors_[num] = image_desc_set;
+  write_descriptors_.push_back({});
+  write_descriptors_.back() = image_desc_set;
 }
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const Buffer& buffer)
 {
-  ASSERTF(type == gfx::EResourceType::UNIFORM_BUFFER, "Incorrect resource type for update");
-
   arr_utils::EnsureIndex(buffer_infos_, num);
   buffer_infos_[num].buffer = buffer;
   buffer_infos_[num].offset = 0;
-  buffer_infos_[num].range = static_cast<VkDeviceSize>(buffer.GetSize());
+
+  if (type == gfx::EResourceType::UNIFORM_DYNAMIC)
+    buffer_infos_[num].range = VK_WHOLE_SIZE;
+  else
+    buffer_infos_[num].range = static_cast<VkDeviceSize>(buffer.GetSize());
 
   VkWriteDescriptorSet buffer_desc_set = {};
   buffer_desc_set.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -139,14 +136,19 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
   buffer_desc_set.pBufferInfo = &buffer_infos_[num];
   buffer_desc_set.pTexelBufferView = nullptr;
 
-  arr_utils::EnsureIndex(write_descriptors_, num);
-  write_descriptors_[num] = buffer_desc_set;
+  write_descriptors_.push_back({});
+  write_descriptors_.back() = buffer_desc_set;
 }
 
 void gdm::vk::DescriptorSet::Finalize()
 {
   ASSERTF(!explicitly_finalized_, "Trying to finalize already finalized set");
+ 
   vkUpdateDescriptorSets(device_, static_cast<uint32_t>(write_descriptors_.size()), write_descriptors_.data(), 0, nullptr);
+
+  image_infos_.clear();
+  buffer_infos_.clear();
+  write_descriptors_.clear();  
   explicitly_finalized_ = true;
 }
 
@@ -179,6 +181,7 @@ gdm::vk::DescriptorSetLayout::DescriptorSetLayout(VkDevice device)
   : device_{device}
   , explicitly_finalized_{false}
   , bindings_{}
+  , bindings_flags_{}
   , descriptor_set_layout_{VK_NULL_HANDLE}
 { }
 
@@ -187,29 +190,47 @@ gdm::vk::DescriptorSetLayout::~DescriptorSetLayout()
   vkDestroyDescriptorSetLayout(device_, descriptor_set_layout_, HostAllocator::GetPtr());
 }
 
-void gdm::vk::DescriptorSetLayout::AddBinding(uint num, gfx::EResourceType type, gfx::EShaderStage stage)
+uint gdm::vk::DescriptorSetLayout::AddBinding(uint num, gfx::EResourceType type, gfx::EShaderStage stage, gfx::BindingFlags flags /*=0*/)
 {
-  arr_utils::EnsureIndex(bindings_, num);
-  
-  ASSERTF(bindings_[num].descriptorCount == 0, "Adding to existing binding");
+  bindings_.push_back({});
+  bindings_flags_.push_back({});  
+
   ASSERTF(!explicitly_finalized_, "Adding to finalized layout");
   
-  VkDescriptorSetLayoutBinding binding = {};
-  bindings_[num].binding = num;
-  bindings_[num].descriptorType = static_cast<VkDescriptorType>(type);
-  bindings_[num].descriptorCount = 1;
-  bindings_[num].stageFlags = static_cast<VkShaderStageFlags>(stage);
-  bindings_[num].pImmutableSamplers = NULL;
+  auto& binding = bindings_.back();
+  binding.binding = num;
+  binding.descriptorType = static_cast<VkDescriptorType>(type);
+  binding.descriptorCount = 1;
+  binding.stageFlags = static_cast<VkShaderStageFlags>(stage);
+  binding.pImmutableSamplers = NULL;
+
+  auto& binding_flags = bindings_flags_.back();
+  binding_flags = static_cast<VkDescriptorBindingFlagBits>(flags);
+
+  return static_cast<uint>(bindings_.size() - 1);
 }
 
 void gdm::vk::DescriptorSetLayout::Finalize()
 {
   ASSERTF(!explicitly_finalized_, "Trying to finalize already finalized layout");
 
+  VkDescriptorSetLayoutBindingFlagsCreateInfo set_layout_binding_create_info = {};
+  set_layout_binding_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+  set_layout_binding_create_info.bindingCount = static_cast<uint>(bindings_.size());
+  set_layout_binding_create_info.pBindingFlags = bindings_flags_.data();
+
   VkDescriptorSetLayoutCreateInfo set_layout_create_info = {};
   set_layout_create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  set_layout_create_info.pNext = &set_layout_binding_create_info;
   set_layout_create_info.bindingCount = static_cast<uint>(bindings_.size());
   set_layout_create_info.pBindings = bindings_.data();
+
+  bool non_updateable_after_bind = true;
+  for (auto& flags : bindings_flags_)
+    non_updateable_after_bind &= (!bits::HasFlag(flags,gfx::EBindingFlags::UPDATE_AFTER_BIND));
+  
+  if (!non_updateable_after_bind)
+    set_layout_create_info.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
 
   VkResult res = vkCreateDescriptorSetLayout(device_, &set_layout_create_info, HostAllocator::GetPtr(), &descriptor_set_layout_);
   ASSERTF(res == VK_SUCCESS, "vkCreateDescriptorSetLayout failed %d", res);

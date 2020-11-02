@@ -32,7 +32,7 @@ struct DebugContext
   void AddLine(const Vec3f& v0, const Vec3f& v1, const Vec4f& color = Vec4f(0,0,0,1));
   auto GetVertices() const -> const std::vector<float>& { return vertices_; }
   auto GetVertexBuffer() -> ID3D11Buffer* { return vertex_buffer_; } 
-  auto GetVerticesCount() const -> unsigned int { return vertices_count_; }
+  auto GetVerticesSize() const -> unsigned int { return vertices_count_; }
   void Clear(unsigned int types = 0);
 
 private:

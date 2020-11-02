@@ -326,7 +326,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
       d3d.PrepareRenderTargets(gfx::DONT_CLEAR_RTV | gfx::DONT_CLEAR_DSV);
       d3d.BeforeRenderPass(gfx::NULL_IBUFF); // todo: make device flags under separated namespace
       d3d.SetRenderPrimitivesType(gfx::LINE_LIST);
-      d3d.SetVertexBuffer(debug_ctx.GetVertexBuffer(), debug_ctx.GetVerticesCount());
+      d3d.SetVertexBuffer(debug_ctx.GetVertexBuffer(), debug_ctx.GetVerticesSize());
       d3d.CopyVerticesToGpu(debug_ctx.GetVertices());
       d3d.RenderPass();
       d3d.AfterRenderPass();

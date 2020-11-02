@@ -20,7 +20,7 @@ gdm::vk::FrameBuffer::FrameBuffer(VkDevice device, uint width, uint height, cons
 
 auto gdm::vk::FrameBuffer::CreateFrameBuffer(const RenderPass& render_pass, const ImageViews& views) -> VkFramebuffer
 {
-  ASSERTF(views.size() == render_pass.GetAttachmentsCount(), "Inconsistent attachments count");
+  ASSERTF(views.size() == render_pass.GetPassAttachmentsCount(), "Inconsistent attachments count");
 
   VkFramebufferCreateInfo fb_create_info = {};
   fb_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

@@ -23,6 +23,7 @@ struct Device
   Device(const Device& other) = delete;
   Device& operator=(const Device& other) = delete;
 
+  auto GetPtr() const -> VkDevice { return device_; }
   auto GetPhysicalDevice() const -> const PhysicalDeviceId& { return phys_device_; }
   auto GetQueue(gfx::QueueType type) -> VkQueue;
 

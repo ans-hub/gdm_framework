@@ -40,13 +40,13 @@ inline std::string gdm::Config::Get<std::string>(const std::string& name) const
 }
 
 template<>
-inline std::array<float,3> gdm::Config::Get<std::array<float,3>>(const std::string& name) const
+inline gdm::Vec3f gdm::Config::Get<gdm::Vec3f>(const std::string& name) const
 {
   return vectors3f_.at(name);
 }
 
 template<>
-inline std::array<float,4> gdm::Config::Get<std::array<float,4>>(const std::string& name) const
+inline gdm::Vec4f gdm::Config::Get<gdm::Vec4f>(const std::string& name) const
 {
   return vectors4f_.at(name);
 }
@@ -84,11 +84,11 @@ inline std::vector<float> gdm::Config::GetAllVals<float>(const std::string& name
 }
 
 template<>
-inline std::vector<std::array<float,3>> gdm::Config::GetAllVals<std::array<float,3>>(const std::string& name) const
+inline std::vector<gdm::Vec3f> gdm::Config::GetAllVals<gdm::Vec3f>(const std::string& name) const
 {
-  std::vector<std::array<float,3>> result {};
+  std::vector<Vec3f> result {};
   std::for_each(vectors3f_.begin(), vectors3f_.end(),
-  [&name, &result](const std::pair<std::string, std::array<float,3>>& pair)
+  [&name, &result](const std::pair<std::string, Vec3f>& pair)
   {
     if (pair.first.find(name) == 0)
       result.push_back(pair.second);
@@ -97,11 +97,11 @@ inline std::vector<std::array<float,3>> gdm::Config::GetAllVals<std::array<float
 }
 
 template<>
-inline std::vector<std::array<float,4>> gdm::Config::GetAllVals<std::array<float,4>>(const std::string& name) const
+inline std::vector<gdm::Vec4f> gdm::Config::GetAllVals<gdm::Vec4f>(const std::string& name) const
 {
-  std::vector<std::array<float,4>> result {};
+  std::vector<Vec4f> result {};
   std::for_each(vectors4f_.begin(), vectors4f_.end(),
-  [&name, &result](const std::pair<std::string, std::array<float,4>>& pair)
+  [&name, &result](const std::pair<std::string, Vec4f>& pair)
   {
     if (pair.first.find(name) == 0)
       result.push_back(pair.second);
@@ -123,11 +123,11 @@ inline std::vector<std::string> gdm::Config::GetAllKeys<std::string>(const std::
 }
 
 template<>
-inline std::vector<std::string> gdm::Config::GetAllKeys<std::array<float,3>>(const std::string& name) const
+inline std::vector<std::string> gdm::Config::GetAllKeys<gdm::Vec3f>(const std::string& name) const
 {
   std::vector<std::string> result {};
   std::for_each(vectors3f_.begin(), vectors3f_.end(),
-  [&name, &result](const std::pair<std::string, std::array<float,3>>& pair)
+  [&name, &result](const std::pair<std::string, gdm::Vec3f>& pair)
   {
     if (pair.first.find(name) == 0)
       result.push_back(pair.first);
@@ -136,11 +136,11 @@ inline std::vector<std::string> gdm::Config::GetAllKeys<std::array<float,3>>(con
 }
 
 template<>
-inline std::vector<std::string> gdm::Config::GetAllKeys<std::array<float,4>>(const std::string& name) const
+inline std::vector<std::string> gdm::Config::GetAllKeys<gdm::Vec4f>(const std::string& name) const
 {
   std::vector<std::string> result {};
   std::for_each(vectors4f_.begin(), vectors4f_.end(),
-  [&name, &result](const std::pair<std::string, std::array<float,4>>& pair)
+  [&name, &result](const std::pair<std::string, gdm::Vec4f>& pair)
   {
     if (pair.first.find(name) == 0)
       result.push_back(pair.first);
@@ -173,13 +173,13 @@ inline bool gdm::Config::Has<std::string>(const std::string& name) const
 }
 
 template<>
-inline bool gdm::Config::Has<std::array<float,3>>(const std::string& name) const
+inline bool gdm::Config::Has<gdm::Vec3f>(const std::string& name) const
 {
   return vectors3f_.count(name);
 }
 
 template<>
-inline bool gdm::Config::Has<std::array<float,4>>(const std::string& name) const
+inline bool gdm::Config::Has<gdm::Vec4f>(const std::string& name) const
 {
   return vectors4f_.count(name);
 }

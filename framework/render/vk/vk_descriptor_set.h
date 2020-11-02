@@ -49,7 +49,7 @@ struct DescriptorSetLayout
   DescriptorSetLayout(VkDevice device);
   ~DescriptorSetLayout();
 
-  void AddBinding(uint num, gfx::EResourceType type, gfx::EShaderStage shader);
+  uint AddBinding(uint num, gfx::EResourceType type, gfx::EShaderStage shader, gfx::BindingFlags flags = 0);
   void Finalize();
   auto GetBindings() const -> std::vector<VkDescriptorSetLayoutBinding> { return bindings_; }
 
@@ -59,10 +59,12 @@ private:
   VkDevice device_;
   bool explicitly_finalized_;
   std::vector<VkDescriptorSetLayoutBinding> bindings_;
+  std::vector<VkDescriptorBindingFlags> bindings_flags_;
   VkDescriptorSetLayout descriptor_set_layout_;
 
 }; // struct DescriptorSetLayout
 
+using DescriptorSets = std::vector<std::reference_wrapper<DescriptorSet>>;
 using DescriptorSetLayouts = std::vector<VkDescriptorSetLayout>;
 
 } // namespace gdm::vk

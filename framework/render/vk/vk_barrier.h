@@ -17,6 +17,7 @@ struct Device;
 struct Image;
 struct Buffer;
 struct CommandList;
+struct RenderPass;
 
 struct ImageBarrier
 {
@@ -34,12 +35,13 @@ private:
   VkPipelineStageFlagBits dst_stage_mask_;
 
   friend struct CommandList;
+  friend struct RenderPass;
 
 }; // struct ImageBarrier
 
 struct BufferBarrier
 {
-  BufferBarrier(Device* device, VkBuffer buffer, gfx::EAccessFlags old_access, gfx::EAccessFlags new_access);
+  BufferBarrier(Device* device, VkBuffer buffer, gfx::EAccess old_access, gfx::EAccess new_access);
   operator VkBufferMemoryBarrier() const { return buffer_barrier_; }
 
 private:
@@ -48,6 +50,7 @@ private:
   VkPipelineStageFlagBits dst_stage_mask_;
 
   friend struct CommandList;
+  friend struct RenderPass;
 
 }; // struct BufferBarrier
 

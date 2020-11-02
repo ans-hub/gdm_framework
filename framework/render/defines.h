@@ -38,6 +38,8 @@ namespace gdm {
 
 namespace gdm::gfx {
 
+  using Offsets = std::vector<uint>;
+
   enum EQueueType : uint
   {
     GRAPHICS,

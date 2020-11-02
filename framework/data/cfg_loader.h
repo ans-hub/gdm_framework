@@ -21,6 +21,9 @@
 #include <memory>
 #include <stdexcept>
 
+#include "math/vector3.h"
+#include "math/vector4.h"
+
 namespace gdm {
 
 struct Config
@@ -40,7 +43,7 @@ public:
   
   template<class T>
   auto GetAllKeys(const std::string& name) const -> std::vector<std::string>;
-
+  
   template<class T>
   auto GetAllVals(const std::string& name) const -> std::vector<T>;
 
@@ -53,8 +56,8 @@ private:
   std::map<std::string, bool> bools_ = {};
   std::map<std::string, std::string> strings_ = {};
   std::map<std::string, std::vector<float>>  vectorsf_ = {};
-  std::map<std::string, std::array<float,3>> vectors3f_ = {};
-  std::map<std::string, std::array<float,4>> vectors4f_ = {};
+  std::map<std::string, Vec3f> vectors3f_ = {};
+  std::map<std::string, Vec4f> vectors4f_ = {};
 
 }; // struct Config
 

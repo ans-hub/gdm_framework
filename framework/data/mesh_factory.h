@@ -22,6 +22,23 @@ using MeshHandle = Handle;
 
 struct AbstractMesh
 {
+  using VertexType = float;
+  using IndexType = unsigned int;
+  using FaceType = Vec3u;
+
+  constexpr static int v_vxs_in_face = 3;
+
+public:
+  template<class T>
+  void SetVertexBuffer(T* buffer) { vertex_buffer_ = static_cast<void*>(buffer); }
+  template<class T>
+  void SetIndexBuffer(T* buffer) { index_buffer_ = static_cast<void*>(buffer); }
+  template<class T>
+  auto GetVertexBuffer() const -> T* { return static_cast<T*>(vertex_buffer_); }
+  template<class T>
+  auto GetIndexBuffer() const -> T* { return static_cast<T*>(index_buffer_); }
+
+// private:
   std::vector<Vec3u> faces_;
   std::vector<Vec3f> coords_;
   std::vector<Vec3f> normals_;
@@ -31,6 +48,8 @@ struct AbstractMesh
   std::vector<float> interleaving_vxs_buffer_ ;
   std::size_t interleaving_vxs_buffer_sz_;
   MaterialHandle material_;
+  void* vertex_buffer_;
+  void* index_buffer_;
 
 public:
   static const bool normalize_poses_ = false;

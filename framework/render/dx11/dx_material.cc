@@ -62,12 +62,10 @@ gdm::DxMaterial::DxMaterial(ModelLoader& model, ID3D11Device* device, std::size_
   img = helpers::MakeImage(img_path.string().c_str());
   specular_map_ = std::move(DxTexture(device, *img, _private::TextureDescImpl{}));
 
-  using Vec4 = std::array<float,4>;
-
-  props_.emissive_ = Vec4f(&model.GetMaterial<Vec4>("emissive", mat_num)[0]);
-  props_.ambient_ = Vec4f(&model.GetMaterial<Vec4>("ambient", mat_num)[0]);
-  props_.diffuse_ = Vec4f(&model.GetMaterial<Vec4>("diffuse", mat_num)[0]);
-  props_.specular_ = Vec4f(&model.GetMaterial<Vec4>("specular", mat_num)[0]);
+  props_.emissive_ = Vec4f(&model.GetMaterial<Vec4f>("emissive", mat_num)[0]);
+  props_.ambient_ = Vec4f(&model.GetMaterial<Vec4f>("ambient", mat_num)[0]);
+  props_.diffuse_ = Vec4f(&model.GetMaterial<Vec4f>("diffuse", mat_num)[0]);
+  props_.specular_ = Vec4f(&model.GetMaterial<Vec4f>("specular", mat_num)[0]);
   props_.specular_power_ = model.GetMaterial<float>("specular_power", mat_num);
 }
 

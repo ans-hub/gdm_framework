@@ -42,7 +42,7 @@ struct DxMesh
   ID3D11ShaderResourceView* GetNormalMap() { return material_->normal_map_.GetShaderResourceView(); }
   ID3D11ShaderResourceView* GetSpecularMap() { return material_->specular_map_.GetShaderResourceView(); }
   std::size_t GetIndiciesCount() const { return faces_.size(); }
-  std::size_t GetVerticesCount() const { return coords_.size(); }
+  std::size_t GetVerticesSize() const { return coords_.size(); }
   void* GetMaterialProps() { return (void*)&(material_->props_); }
 
 private:

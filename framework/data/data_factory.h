@@ -22,6 +22,7 @@ struct DataFactory
 {
   static auto GetHandle(const char* fpath) -> Handle;
   static auto Get(Handle handle) -> T&;
+  static auto Get(const std::vector<Handle>& handles) -> std::vector<T*>;
   static bool Has(Handle handle);
   static bool Has(const char* fpath);
   static void SetPath(const char* path) { resources_path_ = path; }

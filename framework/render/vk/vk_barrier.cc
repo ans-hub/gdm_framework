@@ -62,7 +62,7 @@ gdm::vk::ImageBarrier::ImageBarrier(Device* device, const Image& image, gfx::EIm
 
 // --public BufferBarrier
 
-gdm::vk::BufferBarrier::BufferBarrier(Device* device, VkBuffer buffer, gfx::EAccessFlags old_access, gfx::EAccessFlags new_access)
+gdm::vk::BufferBarrier::BufferBarrier(Device* device, VkBuffer buffer, gfx::EAccess old_access, gfx::EAccess new_access)
   : buffer_barrier_{}
   , src_stage_mask_{}
   , dst_stage_mask_{}

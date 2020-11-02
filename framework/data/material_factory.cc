@@ -21,8 +21,6 @@
 
 gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_num, const ModelLoader& loader)
 {
-  using AVec4 = std::array<float,4>;
-
   ASSERTF(!Has(mat_name), "Trying to create already created material");
 
   AbstractMaterial* mat = GMNew AbstractMaterial{};
@@ -44,10 +42,10 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
       *tex_handle = TextureFactory::Load(img_fname.c_str());
   }
 
-  mat->props_.emissive_ = Vec4f(&loader.GetMaterial<AVec4>("emissive", mat_num)[0]);
-  mat->props_.ambient_ = Vec4f(&loader.GetMaterial<AVec4>("ambient", mat_num)[0]);
-  mat->props_.diffuse_ = Vec4f(&loader.GetMaterial<AVec4>("diffuse", mat_num)[0]);
-  mat->props_.specular_ = Vec4f(&loader.GetMaterial<AVec4>("specular", mat_num)[0]);
+  mat->props_.emissive_ = Vec4f(&loader.GetMaterial<Vec4f>("emissive", mat_num)[0]);
+  mat->props_.ambient_ = Vec4f(&loader.GetMaterial<Vec4f>("ambient", mat_num)[0]);
+  mat->props_.diffuse_ = Vec4f(&loader.GetMaterial<Vec4f>("diffuse", mat_num)[0]);
+  mat->props_.specular_ = Vec4f(&loader.GetMaterial<Vec4f>("specular", mat_num)[0]);
   mat->props_.specular_power_ = loader.GetMaterial<float>("specular_power", mat_num); 
 
   MaterialHandle handle = helpers::GenerateHandle(mat_name);

@@ -15,8 +15,11 @@
 #include "vk_image.h"
 #include "vk_buffer.h"
 #include "vk_barrier.h"
+#include "vk_descriptor_set.h"
 
 namespace gdm::vk {
+
+struct Pipeline;
 
 struct CommandList
 {
@@ -26,14 +29,16 @@ struct CommandList
   void Finalize();
   void PushBarrier(const ImageBarrier& image_barrier);
   void PushBarrier(const BufferBarrier& buffer_barrier);
+  void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint src_offset, uint dst_offset, uint size);
   void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint size);
   void CopyBufferToImage(const Buffer& src, Image& dst, uint size);
+  void CopyBufferToImage(const Buffer& src, Image& dst, uint src_offset, uint dst_offset, uint size);
   void BeginRenderPass(VkRenderPass pass, VkFramebuffer framebuffer, uint width, uint height);
   void EndRenderPass();
   void BindPipelineGraphics(VkPipeline pipeline);
   void BindVertexBuffer(VkBuffer vx_buffer);
   void BindIndexBuffer(VkBuffer idx_buffer);
-  void BindDescriptorSetGraphics(VkDescriptorSet descriptor_set, VkPipelineLayout layout);
+  void BindDescriptorSetGraphics(const vk::DescriptorSets& descriptor_sets, Pipeline& pipeline, const std::vector<uint>& offsets);
   void DrawIndexed(const std::vector<Vec3u>& data);
 
   bool IsFinalized() const { return explicitly_finalized_; }

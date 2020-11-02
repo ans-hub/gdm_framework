@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    scene.cc
+// File:    deferred.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -22,6 +22,8 @@
 #include "render/shader.h"
 #include "render/camera_eul.h"
 
+#include "memory/defines.h"
+
 #include "window/main_window.h"
 #include "window/main_input.h"
 
@@ -37,7 +39,7 @@
 #include "desc/std_input_layout.h"
 #include "desc/std_sampler_desc.h"
 
-#include "helpers.h"
+#include "scene.h"
 
 using namespace gdm;
 
@@ -45,7 +47,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 {
   uint width = 800;
   uint height = 600;
-  MainWindow win (width, height, "Vk scene", MainWindow::CENTERED);
+  MainWindow win (width, height, "Vk Deferred", MainWindow::CENTERED);
   MainInput input (win.GetHandle(), hInstance);
   Renderer gfx(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);  
   ViewportDesc viewport{0, static_cast<float>(height), static_cast<float>(width), -static_cast<float>(height), 0, 1};
@@ -71,8 +73,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   uint input_idx = -1;
   render_pass.AddPassDesccription(color_idx, gfx.GetSurfaceFormat(), gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
   render_pass.AddPassDesccription(depth_idx, depth_image.GetFormat<gfx::EFormatType>(), gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-  uint subpass_idx = 0;
-  render_pass.CreateSubpass(subpass_idx, gfx::EQueueType::GRAPHICS);
+  uint subpass_idx = render_pass.CreateSubpass(gfx::EQueueType::GRAPHICS);
   render_pass.AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
   render_pass.AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
   render_pass.Finalize();
@@ -88,56 +89,19 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   shaders.Create(GDM_HASH("FlatVx"), "shaders/flat_vert.hlsl", gfx::EShaderType::VX);
   shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
 
+  Config cfg("../../_configs/simple.cfg");
   ModelFactory::SetPath("../../_models_new/models/");
   MaterialFactory::SetPath("../../_models_new/materials/");
   TextureFactory::SetPath("../../_models_new/textures/");
   ImageFactory::SetPath("../../_models_new/textures/");
 
-  ModelHandle cube_handle = ModelFactory::Load("cube_test.ply");
-  AbstractModel* cube_model = ModelFactory::Get(cube_handle);
-  AbstractMesh* cube_mesh = MeshFactory::Get(cube_model->meshes_.back());
-  AbstractMaterial* cube_mat = MaterialFactory::Get(cube_model->materials_.back());
-  AbstractTexture* cube_tex = TextureFactory::Get(cube_mat->diff_);
-  AbstractImage* cube_pix = ImageFactory::Get(cube_tex->image_);
-
-  // copy directly on gpu (depending on the hardware's architecture it may not be possible)
-  const std::vector<float>& vx_data = cube_mesh->interleaving_vxs_buffer_;
-  uint vx_buffer_size = static_cast<uint>(sizeof(float) * vx_data.size());
-  auto vx_buffer = api::Buffer(&device, vx_buffer_size, gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  vx_buffer.Map();
-  vx_buffer.CopyDataToGpu(vx_data.data(), vx_data.size());
-  vx_buffer.Unmap();
-
-  // correct and fast way to copy data using staging buffers
-  const std::vector<Vec3u>& indices_data = cube_mesh->faces_;
-  uint indices_data_size = static_cast<uint>(sizeof(unsigned int) * 3 * indices_data.size());
-  auto staging_buffer = api::Buffer(&device, indices_data_size, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  staging_buffer.Map();
-  staging_buffer.CopyDataToGpu(indices_data.data(), indices_data.size());
-  staging_buffer.Unmap();
-  auto idx_buffer = api::Buffer(&device, indices_data_size, gfx::INDEX | gfx::TRANSFER_DST, gfx::DEVICE_LOCAL);
-  setup_list.CopyBufferToBuffer(staging_buffer, idx_buffer, indices_data_size);
-
-  // copy data using buffers instead of images as images is in optimal layout and copying possible only for linear layouts
-  const auto& img_data = cube_pix->GetRaw();
-  uint img_data_size = static_cast<uint>(img_data.size());
-  auto staging_buffer2 = api::Buffer(&device, img_data_size, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  staging_buffer2.Map();
-  staging_buffer2.CopyDataToGpu(img_data.data(), img_data.size());
-  staging_buffer2.Unmap();
-  gfx::ImageUsage cube_img_usage = gfx::TRANSFER_DST_IMG | gfx::SAMPLED;
-  gfx::FormatType cube_img_format = gfx::UNORM4;
-  uint cube_img_w = static_cast<uint>(cube_pix->GetWidth());
-  uint cube_img_h = static_cast<uint>(cube_pix->GetHeight());
-  auto cube_img = api::Image2D(&device, cube_img_w, cube_img_h, cube_img_usage, cube_img_format);
-  auto cube_img_view = api::helpers::CreateImageView(device, cube_img, cube_img.GetFormat());
-  auto barrier_undef_to_transfer = api::ImageBarrier(&device, cube_img, gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::TRANSFER_DST_OPTIMAL);
-  auto barrier_transfer_to_shader = api::ImageBarrier(&device, cube_img, gfx::EImageLayout::TRANSFER_DST_OPTIMAL, gfx::EImageLayout::SHADER_READ_OPTIMAL);
-  setup_list.PushBarrier(barrier_undef_to_transfer);
-  setup_list.CopyBufferToImage(staging_buffer2, cube_img, static_cast<uint>(img_data.size()));
-  setup_list.PushBarrier(barrier_transfer_to_shader);
-
-  api::Sampler cube_sampler(device, StdSamplerState{});
+  Scene scene(gfx.GetDevice());
+  std::vector<ModelHandle> models = scene.LoadAbstractModels(cfg);
+  api::Buffer vstg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  api::Buffer istg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  api::Buffer tstg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
+  scene.CopyTexturesToGpu(models, tstg, setup_list);
 
   std::vector<api::Buffer*> pocb_uniform;
   std::vector<api::Buffer*> pocb_staging;
@@ -148,11 +112,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   std::vector<api::BufferBarrier*> pfcb_to_write_barriers;
   std::vector<api::BufferBarrier*> pfcb_to_read_barriers;
 
+  constexpr uint v_max_objects = 32;
+
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
-    auto* pocb_buf = GMNew api::Buffer(&device, sizeof(FlatVs_POCB), gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+    auto* pocb_buf = GMNew api::Buffer(&device, sizeof(FlatVs_POCB) * v_max_objects, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
     pocb_uniform.push_back(pocb_buf);
-    auto* pocb_staging_buf = GMNew api::Buffer(&device, sizeof(FlatVs_POCB), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE); // and COHERENT too?
+    auto* pocb_staging_buf = GMNew api::Buffer(&device, sizeof(FlatVs_POCB) * v_max_objects, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE); // and COHERENT too?
     pocb_staging.push_back(pocb_staging_buf);
     auto* pocb_to_read_barrier = GMNew api::BufferBarrier(&device, *pocb_buf, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
     pocb_to_read_barriers.push_back(pocb_to_read_barrier);
@@ -179,25 +145,33 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   submit_fence.WaitSignalFromGpu();
   submit_fence.Reset();
 
+  api::Sampler sampler(device, StdSamplerState{});
+
   auto* descriptor_layout = GMNew api::DescriptorSetLayout(device);
   descriptor_layout->AddBinding(0, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
+  descriptor_layout->AddBinding(1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
   descriptor_layout->AddBinding(2, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
-  descriptor_layout->AddBinding(3, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
+  descriptor_layout->AddBinding(5, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
   descriptor_layout->Finalize();
 
   std::vector<api::DescriptorSet*> cube_descriptor_sets;
 
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
+    auto model_h = *scene.GetModels().begin();
+    auto model = ModelFactory::Get(model_h);
+    auto mat = MaterialFactory::Get(model->materials_[0]);
+    auto tex = TextureFactory::Get(mat->diff_);
+
     auto* descriptor_set = GMNew api::DescriptorSet(device, *descriptor_layout, gfx.GetDescriptorPool());
     descriptor_set->UpdateContent(0, gfx::EResourceType::UNIFORM_BUFFER, *pfcb_uniform[i]);
-    descriptor_set->UpdateContent(1, gfx::EResourceType::UNIFORM_BUFFER, *pocb_uniform[i]);
-    descriptor_set->UpdateContent(2, gfx::EResourceType::SAMPLED_IMAGE, cube_img_view);
-    descriptor_set->UpdateContent(3, gfx::EResourceType::SAMPLER, cube_sampler);
+    descriptor_set->UpdateContent(1, gfx::EResourceType::UNIFORM_DYNAMIC, *pocb_uniform[i]);
+    descriptor_set->UpdateContent(2, gfx::EResourceType::SAMPLED_IMAGE, *tex->GetImageView<api::ImageView>());
+    descriptor_set->UpdateContent(5, gfx::EResourceType::SAMPLER, sampler);
     descriptor_set->Finalize();
     cube_descriptor_sets.push_back(descriptor_set);
   }
+
 
   DataStorage<api::Pipeline> pipelines {};
   pipelines.Create(GDM_HASH("PipelineName"), gfx.GetDevice());
@@ -256,17 +230,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     win.ProcessInput(input);
     
     uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
-  
     api::CommandList cmd = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
+    cmd.PushBarrier(*present_to_write_barrier[curr_frame]);
 
-    scene::UpdateCamera(camera, input, dt);
+    scene.UpdateCamera(camera, input, dt);
     Mat4f view = camera.GetViewMx();
     Mat4f proj = camera.GetProjectionMx();
     pfcb.u_view_proj_ = proj * view;
-    pocb.u_model_.SetCol(3, Vec3f(0.f, 1.f, 5.f));
-    pocb.u_color_ = Vec4f(1.f, 1.f, 0.f, 1.f);
-
-    cmd.PushBarrier(*present_to_write_barrier[curr_frame]);
 
     cmd.PushBarrier(*pfcb_to_write_barriers[curr_frame]);
     pfcb_staging[curr_frame]->Map();
@@ -275,21 +245,47 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     cmd.CopyBufferToBuffer(*pfcb_staging[curr_frame], *pfcb_uniform[curr_frame], sizeof(FlatVs_PFCB));
     cmd.PushBarrier(*pfcb_to_read_barriers[curr_frame]);
 
+    std::vector<FlatVs_POCB> pocbs;
+    for (auto model_handle : scene.GetModels())
+    {
+      AbstractModel* model = ModelFactory::Get(model_handle);
+      FlatVs_POCB pocb_curr = {};
+      pocb_curr.u_model_ = model->tm_;
+      pocbs.push_back(pocb_curr);
+    }
+
     cmd.PushBarrier(*pocb_to_write_barriers[curr_frame]);
-    pocb_staging[curr_frame]->CopyDataToGpu(&pocb, 1);
-    cmd.CopyBufferToBuffer(*pocb_staging[curr_frame], *pocb_uniform[curr_frame], sizeof(FlatVs_POCB));
+    pocb_staging[curr_frame]->CopyDataToGpu(pocbs.data(), pocbs.size());
+    uint pocb_size = static_cast<uint>(sizeof(FlatVs_POCB) * pocbs.size());
+    cmd.CopyBufferToBuffer(*pocb_staging[curr_frame], *pocb_uniform[curr_frame], pocb_size);
     cmd.PushBarrier(*pocb_to_read_barriers[curr_frame]);
-    
+
     auto& fb = framebuffers.Get(GDM_HASH_N("MainFB", curr_frame));
+    cmd.BindPipelineGraphics(pipeline); // scene.GetPipeline(GDM_HASH("dsa"));
+
     cmd.BeginRenderPass(render_pass, fb, width, height);
-    cmd.BindPipelineGraphics(pipeline);
-    cmd.BindVertexBuffer(vx_buffer);
-    cmd.BindIndexBuffer(idx_buffer);
-    cmd.BindDescriptorSetGraphics(*cube_descriptor_sets[curr_frame], pipeline);
-    cmd.DrawIndexed(indices_data);
+
+    uint model_number = 0;
+    for (auto model_handle : scene.GetModels())
+    {
+      AbstractModel* model = ModelFactory::Get(model_handle);
+      uint offset = model_number * sizeof(FlatVs_POCB);
+      cmd.BindDescriptorSetGraphics(api::DescriptorSets{*cube_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});
+      for (auto mesh_handle : model->meshes_)
+      {
+        AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+        AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
+        AbstractTexture* texture = TextureFactory::Get(material->diff_);
+
+        cmd.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
+        cmd.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
+        cmd.DrawIndexed(mesh->faces_);
+      }
+      ++model_number;
+    }
+    
     cmd.EndRenderPass();
     cmd.PushBarrier(*present_to_read_barrier[curr_frame]);
-
     cmd.Finalize();
 
     api::Fence submit_fence(device);

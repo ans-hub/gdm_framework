@@ -15,19 +15,22 @@ namespace gdm {
 
 struct AbstractImage
 {
+  using DataType = unsigned char;
+  using StorageType = std::vector<DataType>;
+
   AbstractImage() = default;
   AbstractImage(int width, int height, int depth, float r, float g, float b, float a = 1.f);
 
   virtual auto GetWidth() const -> int;
   virtual auto GetHeight() const -> int;
   virtual auto GetDepth() const -> int;
-  virtual auto GetRaw() const -> const std::vector<unsigned char>&;
+  virtual auto GetRaw() const -> const StorageType&;
 
 protected:
   int width_;
   int height_;
   int depth_;
-  std::vector<unsigned char> data_;
+  StorageType data_;
 
 }; // struct AbstractImage
 

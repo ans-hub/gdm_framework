@@ -31,6 +31,8 @@ struct AbstractMaterial
   
   }; // struct Props
   
+  auto GetTextures() const -> std::vector<TextureHandle> { return {spec_, norm_, diff_}; }
+
   TextureHandle spec_;
   TextureHandle norm_;
   TextureHandle diff_;

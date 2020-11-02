@@ -21,18 +21,27 @@ using TextureHandle = Handle;
 
 struct AbstractTexture
 {
-  ImageHandle image_; 
-  void* impl_;
+  template<class T>
+  void SetImageBuffer(T* buffer) { image_buffer_impl_ = static_cast<void*>(buffer); }
+  template<class T>
+  void SetImageView(T* view) { image_view_impl_ = static_cast<void*>(view); }
+  template<class T>
+  auto GetImageBuffer() const -> T* { return static_cast<T*>(image_buffer_impl_); }
+  template<class T>
+  auto GetImageView() const -> T* { return static_cast<T*>(image_view_impl_); }
 
   AbstractTexture(ImageHandle handle)
     : image_{handle}
-    , impl_{nullptr}
   { }
   ~AbstractTexture()
   {
     // delete(texture_impl_); // uncomment when include all
   }
   
+  ImageHandle image_; 
+  void* image_buffer_impl_;
+  void* image_view_impl_;
+
 }; // struct AbstractTexture
 
 struct TextureFactory : public DataFactory<AbstractTexture*>

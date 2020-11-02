@@ -14,6 +14,11 @@
 using std::size_t;
 using std::uintptr_t;
 using std::intptr_t;
+using uint = unsigned int;
+
+#define KB(x) x * 1024
+#define MB(x) x * 1024 * 1024
+#define GB(x) x * 1024 * 1024 * 1024
 
 #define GMNew new
 #define GMDelete(ptr) delete(ptr)

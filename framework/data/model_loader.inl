@@ -14,28 +14,26 @@
 // --private
 
 template<>
-inline std::array<float,4> gdm::ModelLoader::GetMaterial(const char* resource_name, std::size_t mat_num) const
+inline gdm::Vec4f gdm::ModelLoader::GetMaterial(const char* resource_name, std::size_t mat_num) const
 {
-  using V4 = std::array<float,4>;
-
   std::string res {resource_name};
 
   switch(type_)
   {
     case ELoaderType::PLY :
-      return material_ply_.Has<V4>(res) ? material_ply_.Get<V4>(res) : V4{0,0,0,0};
+      return material_ply_.Has<Vec4f>(res) ? material_ply_.Get<Vec4f>(res) : Vec4f(0.f);
     case ELoaderType::OBJ :
     {
       assert(mat_num < loader_obj_->LoadedMaterials.size());
       const obj::Material& material = loader_obj_->LoadedMaterials[mat_num];
       if (res == "emissive")
-        return V4{material.Ke.X, material.Ke.Y, material.Ke.Z, 0.f};  // needs to be zero for shader notify
+        return Vec4f{material.Ke.X, material.Ke.Y, material.Ke.Z, 0.f};  // needs to be zero for shader notify
       if (res == "ambient")
-        return V4{material.Ka.X, material.Ka.Y, material.Ka.Z, 1.f};
+        return Vec4f{material.Ka.X, material.Ka.Y, material.Ka.Z, 1.f};
       if (res == "diffuse")
-        return V4{material.Kd.X, material.Kd.Y, material.Kd.Z, 1.f};
+        return Vec4f{material.Kd.X, material.Kd.Y, material.Kd.Z, 1.f};
       if (res == "specular")
-        return V4{material.Ks.X, material.Ks.Y, material.Ks.Z, 1.f};
+        return Vec4f{material.Ks.X, material.Ks.Y, material.Ks.Z, 1.f};
     }
   }
   return {};
