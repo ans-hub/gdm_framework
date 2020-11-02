@@ -24,6 +24,19 @@
 
 #pragma warning(disable:4996)
 
+namespace gdm {
+
+#if !defined(NDEBUG)
+struct AssertionError : public std::runtime_error
+{
+  AssertionError(const char* msg);
+};
+
+void AssertImpl(bool condition, const char* expr, const char* file, const char* func, int line);
+#endif
+
+} // namespace gdm
+
 #ifdef _WIN32
 
 # if !defined(NDEBUG)
@@ -37,8 +50,8 @@
 #   define LOGFM(fmt, ...) { char s[CA_SZ]; sprintf(s, CTXT("LOG: %s:%d %s(): ") CTXT(fmt), __FILENAME__, __LINE__, __func__, ##__VA_ARGS__); OutputDebugStringA(s); }
 #   define LOGFF(fmt, ...) { char s[CA_SZ]; sprintf(s, CTXT("LOG: %s:%d %s(): ") CTXT(fmt), __FILE__, __LINE__, __func__, ##__VA_ARGS__); OutputDebugStringA(s); }
 #   define ENSUREF(A, M, ...) { if (!(A)) { char s[CA_SZ]; sprintf(s, CTXT(M), ##__VA_ARGS__); MessageBoxA(nullptr, s, CTXT("Ensure"), MB_OK); } }
-#   define ASSERTF(A, M, ...) if (!(A)) { char s[CA_SZ]; memset(s, 0, CA_SZ); sprintf(s, CTXT("%s\nMessage: ") CTXT(M), CTXT(#A), ##__VA_ARGS__); MessageBoxA(nullptr, s, CTXT("Assertf"), MB_OK); throw std::runtime_error(s); }
-#   define ASSERT(A) { if (!(A)) throw std::runtime_error(#A); }
+#   define ASSERTF(A, M, ...) if (!(A)) { char s[CA_SZ]; memset(s, 0, CA_SZ); sprintf(s, CTXT("%s\nMessage: ") CTXT(M), CTXT(#A), ##__VA_ARGS__); MessageBoxA(nullptr, s, CTXT("Assertf"), MB_OK); throw AssertionError(s); }
+#   define ASSERT(A) { if (!(A)) throw AssertionError(#A); }
 #   define SASSERT(A) { static_assert(A); }
 #   define VEREFY(A) { if (!(A)) { char s[CA_SZ]; sprintf(s, #A); MessageBoxA(nullptr, s, CTXT("Verify",) MB_OK); std::abort(); } }
 #   define VEREFYF(A, M, ...) { if (!(A)) { char s[CA_SZ]; sprintf(s, CTXT(M), ##__VA_ARGS__); MessageBoxA(nullptr, s, CTXT("Verify"), MB_OK); std::abort(); } }
@@ -75,5 +88,7 @@
 #   define VEREFYF(A, M, ...) { if (!(A)) { char s[CA_SZ]; sprintf(s, CTXT(M), ##__VA_ARGS__); print(s); std::abort(); } }
 
 #endif
+
+#include "assert_utils.inl"
 
 #endif  // AH_GDM_MACRO_H
