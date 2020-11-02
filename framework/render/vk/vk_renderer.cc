@@ -126,12 +126,14 @@ auto gdm::vk::Renderer::CreateSetupCommandList(Hash name, gfx::CommandListFlags 
 auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool
 {
   if (descriptor_pool_ == VK_NULL_HANDLE)
-    descriptor_pool_ = CreateDescriptorPool(16, {
-      {gfx::EResourceType::COMBINED_SAMPLER, 6},
-      {gfx::EResourceType::SAMPLER, 6},
-      {gfx::EResourceType::SAMPLED_IMAGE, 6},
-      {gfx::EResourceType::UNIFORM_DYNAMIC, 6}
-    });
+    descriptor_pool_ = CreateDescriptorPool(16,
+      {
+        {gfx::EResourceType::COMBINED_SAMPLER, 6},
+        {gfx::EResourceType::SAMPLER, 6},
+        {gfx::EResourceType::SAMPLED_IMAGE, 6},
+        {gfx::EResourceType::UNIFORM_DYNAMIC, 6}
+      }
+    );
   return descriptor_pool_;
 }
 
@@ -368,6 +370,7 @@ auto gdm::vk::Renderer::CreateDescriptorPool(int max_sets, const std::vector<std
   pool_create_info.maxSets = max_sets;
   pool_create_info.poolSizeCount = static_cast<uint>(pools.size());
   pool_create_info.pPoolSizes = pools.data();
+  pool_create_info.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
     
   VkDescriptorPool descriptor_pool;
   VkResult res = vkCreateDescriptorPool(*device_, &pool_create_info, NULL, &descriptor_pool);

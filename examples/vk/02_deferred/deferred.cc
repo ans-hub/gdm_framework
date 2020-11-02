@@ -102,7 +102,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   api::Buffer tstg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
   scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
   scene.CopyTexturesToGpu(models, tstg, setup_list);
-
   std::vector<api::Buffer*> pocb_uniform;
   std::vector<api::Buffer*> pocb_staging;
   std::vector<api::BufferBarrier*> pocb_to_write_barriers;
@@ -154,7 +153,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   descriptor_layout->AddBinding(5, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
   descriptor_layout->Finalize();
 
-  std::vector<api::DescriptorSet*> cube_descriptor_sets;
+  std::vector<api::DescriptorSet*> frame_descriptor_sets;
 
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
@@ -169,9 +168,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     descriptor_set->UpdateContent(2, gfx::EResourceType::SAMPLED_IMAGE, *tex->GetImageView<api::ImageView>());
     descriptor_set->UpdateContent(5, gfx::EResourceType::SAMPLER, sampler);
     descriptor_set->Finalize();
-    cube_descriptor_sets.push_back(descriptor_set);
+    frame_descriptor_sets.push_back(descriptor_set);
   }
-
 
   DataStorage<api::Pipeline> pipelines {};
   pipelines.Create(GDM_HASH("PipelineName"), gfx.GetDevice());
@@ -269,8 +267,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     for (auto model_handle : scene.GetModels())
     {
       AbstractModel* model = ModelFactory::Get(model_handle);
+      
       uint offset = model_number * sizeof(FlatVs_POCB);
-      cmd.BindDescriptorSetGraphics(api::DescriptorSets{*cube_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});
+      cmd.BindDescriptorSetGraphics(api::DescriptorSets{*frame_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});
+      
       for (auto mesh_handle : model->meshes_)
       {
         AbstractMesh* mesh = MeshFactory::Get(mesh_handle);

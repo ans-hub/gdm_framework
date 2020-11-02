@@ -64,7 +64,13 @@ auto gdm::vk::Device::CreateLogicalDevice(VkPhysicalDevice phys_device, int queu
 
   VkPhysicalDeviceFeatures device_features = {};
   device_features.shaderClipDistance = VK_TRUE;
+  VkPhysicalDeviceVulkan12Features device_features12 = {};
+  device_features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  device_features12.timelineSemaphore = true;
+  device_features12.descriptorBindingSampledImageUpdateAfterBind = true;
+
   device_info.pEnabledFeatures = &device_features;
+  device_info.pNext = &device_features12;
   
   VkDevice device;
   VkResult res = vkCreateDevice(phys_device, &device_info, &allocator_, &device);

@@ -61,6 +61,7 @@ private:
   std::vector<VkDescriptorSetLayoutBinding> bindings_;
   std::vector<VkDescriptorBindingFlags> bindings_flags_;
   VkDescriptorSetLayout descriptor_set_layout_;
+  bool is_updateable_after_bind_;
 
 }; // struct DescriptorSetLayout
 

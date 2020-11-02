@@ -142,7 +142,7 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
 
 void gdm::vk::DescriptorSet::Finalize()
 {
-  ASSERTF(!explicitly_finalized_, "Trying to finalize already finalized set");
+  // ASSERTF(!explicitly_finalized_, "Trying to finalize already finalized set");
  
   vkUpdateDescriptorSets(device_, static_cast<uint32_t>(write_descriptors_.size()), write_descriptors_.data(), 0, nullptr);
 
@@ -227,7 +227,7 @@ void gdm::vk::DescriptorSetLayout::Finalize()
 
   bool non_updateable_after_bind = true;
   for (auto& flags : bindings_flags_)
-    non_updateable_after_bind &= (!bits::HasFlag(flags,gfx::EBindingFlags::UPDATE_AFTER_BIND));
+    non_updateable_after_bind &= (!bits::HasFlag(flags, gfx::EBindingFlags::UPDATE_AFTER_BIND));
   
   if (!non_updateable_after_bind)
     set_layout_create_info.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT;
