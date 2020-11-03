@@ -123,7 +123,7 @@ auto gdm::vk::Renderer::CreateSetupCommandList(Hash name, gfx::CommandListFlags 
   return CommandList(*device_, setup_command_buffers_[name], flags);
 }
 
-auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool
+auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customize
 {
   if (descriptor_pool_ == VK_NULL_HANDLE)
     descriptor_pool_ = CreateDescriptorPool(16,
@@ -414,7 +414,7 @@ auto gdm::vk::Renderer::FillInstanceLayersInfo() -> std::vector<const char*>
     instance_layers.push_back("VK_LAYER_KHRONOS_validation");
   }
 
-  ASSERT(helpers::ValidateInstanceLayersInfo(instance_layers));
+  ASSERT(helpers::FindUnsupportedLayers(instance_layers).empty());
   return instance_layers;
 }
 
@@ -423,12 +423,14 @@ auto gdm::vk::Renderer::FillInstanceExtensionsInfo() -> std::vector<const char*>
   std::vector<const char*> instance_extensions;
 
   instance_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
+  instance_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);  // for dynamic_indexing
+
   if constexpr (gfx::v_DebugBuild)
     instance_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
   if constexpr (gfx::v_Windows)
     instance_extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 
-  ASSERT(helpers::ValidateInstanceExtensionsInfo(instance_extensions));
+  ASSERT(helpers::FindUnsupportedInstanceExtensions(instance_extensions).empty());
 
   return instance_extensions;
 }
@@ -464,7 +466,7 @@ auto gdm::vk::helpers::EnumerateInstanceExtensionsProps() -> std::vector<VkExten
   return props;
 }
 
-bool gdm::vk::helpers::ValidateInstanceLayersInfo(const std::vector<const char*>& layers_info)
+auto gdm::vk::helpers::FindUnsupportedLayers(const std::vector<const char*>& layers_info) -> std::vector<size_t>
 {
   uint32_t layers_count = 0;
   vkEnumerateInstanceLayerProperties(&layers_count, NULL);
@@ -474,18 +476,20 @@ bool gdm::vk::helpers::ValidateInstanceLayersInfo(const std::vector<const char*>
   VkResult res = vkEnumerateInstanceLayerProperties(&layers_count, layers_available.data());
   ASSERTF(res == VK_SUCCESS, "vkEnumerateInstanceLayerProperties error %d", res);
 
+  std::vector<size_t> unsupported;
+
   for (size_t i = 0; i < layers_info.size(); ++i)
   {
     bool found = false;
     for (size_t k = 0; k < layers_available.size() && !found; ++k)
       found = strcmp(layers_info[i], layers_available[k].layerName) == 0;
     if (!found)
-      return false;
+      unsupported.push_back(i);
   }
-  return true;
+  return unsupported;
 }
 
-bool gdm::vk::helpers::ValidateInstanceExtensionsInfo(const std::vector<const char*>& extensions_info)
+auto gdm::vk::helpers::FindUnsupportedInstanceExtensions(const std::vector<const char*>& extensions_info) -> std::vector<size_t>
 {
   uint32_t extensions_count = 0;
   vkEnumerateInstanceExtensionProperties(NULL, &extensions_count, NULL);
@@ -495,13 +499,15 @@ bool gdm::vk::helpers::ValidateInstanceExtensionsInfo(const std::vector<const ch
   VkResult res = vkEnumerateInstanceExtensionProperties(NULL, &extensions_count, extensions_available.data());
   ASSERTF(res == VK_SUCCESS, "vkEnumerateInstanceExtensionProperties error %d", res);
 
+  std::vector<size_t> unsupported;
+
   for (size_t i = 0; i < extensions_info.size(); ++i)
   {
     bool found = false;
     for (size_t k = 0; k < extensions_available.size() && !found; ++k)
       found = strcmp(extensions_info[i], extensions_available[k].extensionName) == 0;
     if (!found)
-      return false;
+      unsupported.push_back(i);
   }
-  return true;
+  return unsupported;
 }

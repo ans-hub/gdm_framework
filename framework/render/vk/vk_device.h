@@ -47,7 +47,7 @@ private:
 
 namespace helpers {
 
-  auto EnumerateDeviceExtensionsProps(const Device& device) -> std::vector<VkExtensionProperties>;
+  auto ValidateDeviceExtensionsProps(const Device& device, const std::vector<const char*>& extensions_info) -> std::vector<size_t>;
 
 } // namespace helpers
 

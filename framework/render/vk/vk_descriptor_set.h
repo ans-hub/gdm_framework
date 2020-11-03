@@ -32,12 +32,14 @@ struct DescriptorSet
 private:
   auto Allocate() -> VkDescriptorSet;
 
+  constexpr static uint v_max_bindings = 16;
+
 private:
   VkDevice device_;
   bool explicitly_finalized_;
   VkDescriptorPool pool_;
-  std::vector<VkDescriptorImageInfo> image_infos_;
-  std::vector<VkDescriptorBufferInfo> buffer_infos_;
+  std::array<VkDescriptorImageInfo, v_max_bindings> image_infos_;
+  std::array<VkDescriptorBufferInfo, v_max_bindings> buffer_infos_;
   std::vector<VkWriteDescriptorSet> write_descriptors_; 
   VkDescriptorSetLayout descriptor_set_layout_;
   VkDescriptorSet descriptor_set_;

@@ -41,7 +41,13 @@ auto gdm::vk::Device::GetQueue(gfx::QueueType type) -> VkQueue
 auto gdm::vk::Device::FillDeviceExtensionsInfo() const -> std::vector<const char*>
 {
   std::vector<const char*> device_extensions;
+  
   device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+  device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+  device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+ 
+  ASSERT(helpers::ValidateDeviceExtensionsProps(*this, device_extensions).empty());
+
   return device_extensions;
 }
 
@@ -64,14 +70,22 @@ auto gdm::vk::Device::CreateLogicalDevice(VkPhysicalDevice phys_device, int queu
 
   VkPhysicalDeviceFeatures device_features = {};
   device_features.shaderClipDistance = VK_TRUE;
+  
   VkPhysicalDeviceVulkan12Features device_features12 = {};
   device_features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
   device_features12.timelineSemaphore = true;
   device_features12.descriptorBindingSampledImageUpdateAfterBind = true;
+  
+  VkPhysicalDeviceDescriptorIndexingFeatures device_features_indexing = {};
+  device_features_indexing.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+  device_features_indexing.shaderSampledImageArrayNonUniformIndexing = true;
+  device_features_indexing.runtimeDescriptorArray = true;
+  device_features_indexing.descriptorBindingVariableDescriptorCount = true;
 
   device_info.pEnabledFeatures = &device_features;
   device_info.pNext = &device_features12;
-  
+  device_features12.pNext = &device_features_indexing;
+
   VkDevice device;
   VkResult res = vkCreateDevice(phys_device, &device_info, &allocator_, &device);
   ASSERTF(res == VK_SUCCESS, "vkCreateDevice error %d\n", res);
@@ -88,15 +102,25 @@ auto gdm::vk::Device::CreateQueue(int queue_family_idx) -> VkQueue
 
 // --helpers
 
-auto gdm::vk::helpers::EnumerateDeviceExtensionsProps(const Device& device) -> std::vector<VkExtensionProperties>
+auto gdm::vk::helpers::ValidateDeviceExtensionsProps(const Device& device, const std::vector<const char*>& extensions_info) -> std::vector<size_t>
 {
-  uint num = 0;
-  VkResult res = vkEnumerateDeviceExtensionProperties(device, nullptr, &num, nullptr);
-  ASSERTF(res == VK_SUCCESS, "vkEnumerateDeviceExtensionProperties error %d\n", res);
-  
-  std::vector<VkExtensionProperties> props(num);
-  res = vkEnumerateDeviceExtensionProperties(device, nullptr, &num, &props[0]);
-  ASSERTF(res == VK_SUCCESS, "vkEnumerateDeviceExtensionProperties error %d\n", res);
+  uint32_t extensions_count = 0;
+  vkEnumerateDeviceExtensionProperties(device, NULL, &extensions_count, NULL);
+  ASSERTF(extensions_count != 0, "Failed to find any device extensions");
 
-  return props;
+  std::vector<VkExtensionProperties> extensions_available(extensions_count);
+  VkResult res = vkEnumerateDeviceExtensionProperties(device, NULL, &extensions_count, extensions_available.data());
+  ASSERTF(res == VK_SUCCESS, "vkEnumerateInstanceExtensionProperties error %d", res);
+
+  std::vector<size_t> unsupported;
+
+  for (size_t i = 0; i < extensions_info.size(); ++i)
+  {
+    bool found = false;
+    for (size_t k = 0; k < extensions_available.size() && !found; ++k)
+      found = strcmp(extensions_info[i], extensions_available[k].extensionName) == 0;
+    if (!found)
+      unsupported.push_back(i);
+  }
+  return unsupported;
 }

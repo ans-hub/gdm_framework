@@ -43,8 +43,8 @@ gdm::vk::DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout lay
   : device_{device}
   , explicitly_finalized_{false}
   , pool_{pool}
-  , image_infos_(16)
-  , buffer_infos_(16)
+  , image_infos_()
+  , buffer_infos_()
   , write_descriptors_{}
   , descriptor_set_layout_{layout}
   , descriptor_set_{Allocate()}
@@ -52,7 +52,6 @@ gdm::vk::DescriptorSet::DescriptorSet(VkDevice device, VkDescriptorSetLayout lay
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const Sampler& sampler, const ImageView& view)
 {
-  arr_utils::EnsureIndex(image_infos_, num);
   image_infos_[num].sampler = sampler;
   image_infos_[num].imageView = view;
   image_infos_[num].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -74,7 +73,6 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const ImageView& view)
 {
-  arr_utils::EnsureIndex(image_infos_, num);
   image_infos_[num].sampler = 0;
   image_infos_[num].imageView = view;
   image_infos_[num].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -96,7 +94,6 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const Sampler& sampler)
 {
-  arr_utils::EnsureIndex(image_infos_, num);
   image_infos_[num].sampler = sampler;
 
   VkWriteDescriptorSet image_desc_set = {};
@@ -116,7 +113,6 @@ void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, co
 
 void gdm::vk::DescriptorSet::UpdateContent(uint num, gfx::EResourceType type, const Buffer& buffer)
 {
-  arr_utils::EnsureIndex(buffer_infos_, num);
   buffer_infos_[num].buffer = buffer;
   buffer_infos_[num].offset = 0;
 
@@ -146,8 +142,6 @@ void gdm::vk::DescriptorSet::Finalize()
  
   vkUpdateDescriptorSets(device_, static_cast<uint32_t>(write_descriptors_.size()), write_descriptors_.data(), 0, nullptr);
 
-  image_infos_.clear();
-  buffer_infos_.clear();
   write_descriptors_.clear();  
   explicitly_finalized_ = true;
 }

@@ -86,9 +86,9 @@ private:
 namespace helpers {
 
   auto EnumerateInstanceExtensionsProps() -> std::vector<VkExtensionProperties>;
-  bool ValidateInstanceLayersInfo(const std::vector<const char*>& layers_info);
-  bool ValidateInstanceExtensionsInfo(const std::vector<const char*>& extensions_info);
-  
+  auto FindUnsupportedLayers(const std::vector<const char*>& layers_info) -> std::vector<size_t>;
+  auto FindUnsupportedInstanceExtensions(const std::vector<const char*>& extensions_info) -> std::vector<size_t>;
+
 } // namespace helpers
 
 } // namespace gdm::vk
