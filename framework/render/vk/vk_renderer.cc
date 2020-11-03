@@ -130,7 +130,7 @@ auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customi
       {
         {gfx::EResourceType::COMBINED_SAMPLER, 6},
         {gfx::EResourceType::SAMPLER, 6},
-        {gfx::EResourceType::SAMPLED_IMAGE, 6},
+        {gfx::EResourceType::SAMPLED_IMAGE, 32},
         {gfx::EResourceType::UNIFORM_DYNAMIC, 6}
       }
     );

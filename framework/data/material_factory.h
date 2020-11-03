@@ -21,7 +21,7 @@ using MaterialHandle = Handle;
 
 struct AbstractMaterial
 {
-  __declspec(align(16)) struct Props
+  __declspec(align(64)) struct Props
   {
     Vec4f emissive_ = Vec4f(0.f);
     Vec4f ambient_ = Vec4f(0.1f);
@@ -33,13 +33,12 @@ struct AbstractMaterial
   
   auto GetTextures() const -> std::vector<TextureHandle> { return {spec_, norm_, diff_}; }
 
+  uint index_;
   TextureHandle spec_;
   TextureHandle norm_;
   TextureHandle diff_;
   MaterialHandle properties_;
   Props props_;
-
-  void* impl_;
 };
 
 struct MaterialFactory : public DataFactory<AbstractMaterial*>

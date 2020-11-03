@@ -32,6 +32,7 @@
 
 #include "system/fps_counter.h"
 #include "system/hash_utils.h"
+#include "system/array_utils.h"
 #include "system/timer.h"
 
 #include "shaders/flat_vert.h"
@@ -102,6 +103,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   api::Buffer tstg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
   scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
   scene.CopyTexturesToGpu(models, tstg, setup_list);
+  
   std::vector<api::Buffer*> pocb_uniform;
   std::vector<api::Buffer*> pocb_staging;
   std::vector<api::BufferBarrier*> pocb_to_write_barriers;
@@ -146,27 +148,35 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
   api::Sampler sampler(device, StdSamplerState{});
 
+  api::ImageViews material_diffuse_image_views;
+  for (auto model_handle : scene.GetModels())
+  {
+    auto model = ModelFactory::Get(model_handle);
+    for (auto mesh_handle : model->meshes_)
+    {
+      auto mesh = MeshFactory::Get(mesh_handle);
+      auto material = MaterialFactory::Get(mesh->material_);
+      auto diffuse_texture = TextureFactory::Get(material->diff_);
+      arr_utils::EnsureIndex(material_diffuse_image_views, material->index_);
+      material_diffuse_image_views[material->index_] = *diffuse_texture->GetImageView<api::ImageView>();
+    }
+  }
+
   auto* descriptor_layout = GMNew api::DescriptorSetLayout(device);
-  descriptor_layout->AddBinding(0, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(2, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
-  descriptor_layout->AddBinding(5, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
+  descriptor_layout->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
+  descriptor_layout->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
+  descriptor_layout->AddBinding(2, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
+  descriptor_layout->AddBinding(3, static_cast<uint>(material_diffuse_image_views.size()), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
   descriptor_layout->Finalize();
 
   std::vector<api::DescriptorSet*> frame_descriptor_sets;
-
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
-    auto model_h = *scene.GetModels().begin();
-    auto model = ModelFactory::Get(model_h);
-    auto mat = MaterialFactory::Get(model->materials_[0]);
-    auto tex = TextureFactory::Get(mat->diff_);
-
     auto* descriptor_set = GMNew api::DescriptorSet(device, *descriptor_layout, gfx.GetDescriptorPool());
-    descriptor_set->UpdateContent(0, gfx::EResourceType::UNIFORM_BUFFER, *pfcb_uniform[i]);
-    descriptor_set->UpdateContent(1, gfx::EResourceType::UNIFORM_DYNAMIC, *pocb_uniform[i]);
-    descriptor_set->UpdateContent(2, gfx::EResourceType::SAMPLED_IMAGE, *tex->GetImageView<api::ImageView>());
-    descriptor_set->UpdateContent(5, gfx::EResourceType::SAMPLER, sampler);
+    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *pfcb_uniform[i]);
+    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *pocb_uniform[i]);
+    descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(2, sampler);
+    descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, material_diffuse_image_views);
     descriptor_set->Finalize();
     frame_descriptor_sets.push_back(descriptor_set);
   }

@@ -114,7 +114,7 @@ void gdm::Scene::CopyTexturesToGpu(const std::vector<ModelHandle>& handles, api:
 {
   using Offset = std::array<uint, 3>;
 
-  Offset curr_offset = {0,0,0};
+  uint curr_offset = 0;
   std::vector<std::vector<Offset>> offsets = {};
   tstg.Map();
 
@@ -145,9 +145,9 @@ void gdm::Scene::CopyTexturesToGpu(const std::vector<ModelHandle>& handles, api:
       
       for (std::size_t i = 0; i < raw.size(); ++i)
       {
-        mesh_offsets[i] = curr_offset[i];
-        tstg.CopyDataToGpu(raw[i].data(), curr_offset[i], raw[i].size());
-        curr_offset[i] += static_cast<uint>(raw[i].size());
+        mesh_offsets[i] = curr_offset;
+        tstg.CopyDataToGpu(raw[i].data(), curr_offset, raw[i].size());
+        curr_offset += static_cast<uint>(raw[i].size());
         gfx::ImageUsage img_usage = gfx::TRANSFER_DST_IMG | gfx::SAMPLED;
         gfx::FormatType img_format = gfx::UNORM4;
         uint img_w = static_cast<uint>(images[i]->GetWidth());

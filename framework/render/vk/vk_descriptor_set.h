@@ -17,29 +17,30 @@
 
 namespace gdm::vk {
 
+struct DescriptorSetLayout;
+
 struct DescriptorSet
 {
-  DescriptorSet(VkDevice device, VkDescriptorSetLayout layout, VkDescriptorPool pool);
+  DescriptorSet(VkDevice device, const DescriptorSetLayout& layout, VkDescriptorPool pool);
 
-  void UpdateContent(uint num, gfx::EResourceType type, const Sampler& sampler, const ImageView& view);
-  void UpdateContent(uint num, gfx::EResourceType type, const ImageView& view);
-  void UpdateContent(uint num, gfx::EResourceType type, const Sampler& sampler);
-  void UpdateContent(uint num, gfx::EResourceType type, const Buffer& uniform);
+  template<gfx::EResourceType Type, class...Args>
+  void UpdateContent(uint num, const Args&...args);
   void Finalize();
 
+public:
   operator VkDescriptorSet() const;
+  constexpr static uint v_max_bindings = 16;
+  constexpr static uint v_max_variable_descriptor = 16;
 
 private:
-  auto Allocate() -> VkDescriptorSet;
-
-  constexpr static uint v_max_bindings = 16;
+  auto Allocate(const DescriptorSetLayout& layout) -> VkDescriptorSet;
 
 private:
   VkDevice device_;
   bool explicitly_finalized_;
   VkDescriptorPool pool_;
-  std::array<VkDescriptorImageInfo, v_max_bindings> image_infos_;
-  std::array<VkDescriptorBufferInfo, v_max_bindings> buffer_infos_;
+  std::array<std::vector<VkDescriptorImageInfo>, v_max_bindings> image_infos_;
+  std::array<std::vector<VkDescriptorBufferInfo>, v_max_bindings> buffer_infos_;
   std::vector<VkWriteDescriptorSet> write_descriptors_; 
   VkDescriptorSetLayout descriptor_set_layout_;
   VkDescriptorSet descriptor_set_;
@@ -51,10 +52,11 @@ struct DescriptorSetLayout
   DescriptorSetLayout(VkDevice device);
   ~DescriptorSetLayout();
 
-  uint AddBinding(uint num, gfx::EResourceType type, gfx::EShaderStage shader, gfx::BindingFlags flags = 0);
+  uint AddBinding(uint num, uint count, gfx::EResourceType type, gfx::EShaderStage shader, gfx::BindingFlags flags = 0);
   void Finalize();
   auto GetBindings() const -> std::vector<VkDescriptorSetLayoutBinding> { return bindings_; }
-
+  uint GetVariableDescriptorsCount() const;
+  
   operator VkDescriptorSetLayout() const;
 
 private:
@@ -71,5 +73,7 @@ using DescriptorSets = std::vector<std::reference_wrapper<DescriptorSet>>;
 using DescriptorSetLayouts = std::vector<VkDescriptorSetLayout>;
 
 } // namespace gdm::vk
+
+#include "vk_descriptor_set.inl"
 
 #endif // GM_VK_DESC_SET_H

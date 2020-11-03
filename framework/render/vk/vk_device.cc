@@ -61,30 +61,26 @@ auto gdm::vk::Device::CreateLogicalDevice(VkPhysicalDevice phys_device, int queu
   queue_info.queueCount = 1;
   queue_info.pQueuePriorities = &queue_priorities;
     
+  VkPhysicalDeviceVulkan12Features device_features12 = {};
+  device_features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+  device_features12.timelineSemaphore = true;
+  device_features12.descriptorBindingSampledImageUpdateAfterBind = true;
+  device_features12.shaderSampledImageArrayNonUniformIndexing = true;
+  device_features12.runtimeDescriptorArray = true;
+  device_features12.descriptorBindingVariableDescriptorCount = true;
+  device_features12.pNext = NULL;
+  
+  VkPhysicalDeviceFeatures device_features = {};
+  device_features.shaderClipDistance = true;
+
   VkDeviceCreateInfo device_info = {};
   device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   device_info.enabledExtensionCount = static_cast<uint32_t>(device_extensions_.size());
   device_info.ppEnabledExtensionNames = device_extensions_.data();
   device_info.queueCreateInfoCount = 1;
   device_info.pQueueCreateInfos = &queue_info;
-
-  VkPhysicalDeviceFeatures device_features = {};
-  device_features.shaderClipDistance = VK_TRUE;
-  
-  VkPhysicalDeviceVulkan12Features device_features12 = {};
-  device_features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-  device_features12.timelineSemaphore = true;
-  device_features12.descriptorBindingSampledImageUpdateAfterBind = true;
-  
-  VkPhysicalDeviceDescriptorIndexingFeatures device_features_indexing = {};
-  device_features_indexing.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-  device_features_indexing.shaderSampledImageArrayNonUniformIndexing = true;
-  device_features_indexing.runtimeDescriptorArray = true;
-  device_features_indexing.descriptorBindingVariableDescriptorCount = true;
-
   device_info.pEnabledFeatures = &device_features;
   device_info.pNext = &device_features12;
-  device_features12.pNext = &device_features_indexing;
 
   VkDevice device;
   VkResult res = vkCreateDevice(phys_device, &device_info, &allocator_, &device);

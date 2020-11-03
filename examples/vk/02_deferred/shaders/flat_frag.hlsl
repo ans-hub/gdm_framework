@@ -1,7 +1,7 @@
 // Simple test shader with diffuse mapping
 
-[[vk::binding(2)]] Texture2D Texture;
-[[vk::binding(5)]] sampler Sampler;
+[[vk::binding(2)]] sampler Sampler;
+[[vk::binding(3)]] Texture2D<float4> Textures[];
 
 struct Input
 {
@@ -12,8 +12,7 @@ struct Input
 
 float4 main(Input IN) : SV_TARGET
 {
-  float4 res = Texture.Sample(Sampler, IN.texuv);
-  // res.w = 0.5f;
+  float4 res = Textures[NonUniformResourceIndex(1)].Sample(Sampler, IN.texuv);
   return res;
-  // return float4(0.5f, 0.5f, 0.5f, 0.5f);
+  return float4(0.5f, 0.5f, 0.5f, 0.5f);
 }

@@ -13,7 +13,9 @@
 
 inline gdm::AssertionError::AssertionError(const char* msg)
   : std::runtime_error(msg)
-{ }
+{
+  MessageBoxA(nullptr, msg, "Assertf", MB_OK);
+}
 
 inline void gdm::AssertImpl(bool condition, const char* expression, const char* file, const char* func, int line)
 {

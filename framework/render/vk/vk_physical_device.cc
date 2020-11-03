@@ -24,6 +24,7 @@ auto gdm::vk::helpers::EnumeratePhysicalDevices(VkInstance instance, VkSurfaceKH
   {
     VkPhysicalDevice device = devices_db[i].device_;
     vkGetPhysicalDeviceProperties(device, &devices_db[i].device_props_);
+    vkGetPhysicalDeviceProperties2(device, &devices_db[i].device_props2_);
     vkGetPhysicalDeviceMemoryProperties(device, &devices_db[i].device_mem_props_);
 
     uint qnum = 0;

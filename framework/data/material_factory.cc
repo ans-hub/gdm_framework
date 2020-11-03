@@ -23,7 +23,10 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
 {
   ASSERTF(!Has(mat_name), "Trying to create already created material");
 
+  static uint s_index = 0;  
+
   AbstractMaterial* mat = GMNew AbstractMaterial{};
+  mat->index_ = s_index++;
 
   std::unordered_map<const char*, TextureHandle*> map_name_to_handle {
     {"diffuse_map", &(mat->diff_)},
