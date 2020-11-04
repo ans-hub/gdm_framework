@@ -55,3 +55,17 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
   resources_[handle] = mat;
   return handle;
 }
+
+bool gdm::MaterialFactory::ImplementationLoaded(MaterialHandle handle)
+{
+  ASSERTF(Has(handle), "Trying to request properties of already non loaded material");  
+
+  bool loaded = false;
+  AbstractMaterial* material = Get(handle);
+  for (auto handle : material->GetTextureHandles())
+  {
+    if (TextureFactory::Has(handle))
+      loaded |= TextureFactory::Get(handle)->image_buffer_impl_ && TextureFactory::Get(handle)->image_view_impl_;
+  }
+  return loaded;
+}

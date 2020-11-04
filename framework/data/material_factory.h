@@ -31,9 +31,9 @@ struct AbstractMaterial
   
   }; // struct Props
   
-  auto GetTextures() const -> std::vector<TextureHandle> { return {spec_, norm_, diff_}; }
+  auto GetTextureHandles() const -> std::vector<TextureHandle> { return {spec_, norm_, diff_}; }
 
-  uint index_;
+  int index_ = -1;
   TextureHandle spec_;
   TextureHandle norm_;
   TextureHandle diff_;
@@ -45,6 +45,7 @@ struct MaterialFactory : public DataFactory<AbstractMaterial*>
 {
   static auto Create(const char* mat_name, int mat_num, const ModelLoader& loader) -> MaterialHandle;
   static void Release(MaterialHandle handle);
+  static bool ImplementationLoaded(MaterialHandle handle);
 
 public:
   constexpr static const char* v_dummy_name = "dummy_material";

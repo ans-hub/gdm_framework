@@ -22,9 +22,9 @@ using TextureHandle = Handle;
 struct AbstractTexture
 {
   template<class T>
-  void SetImageBuffer(T* buffer) { image_buffer_impl_ = static_cast<void*>(buffer); }
+  void SetApiImageBuffer(T* buffer) { image_buffer_impl_ = static_cast<void*>(buffer); }
   template<class T>
-  void SetImageView(T* view) { image_view_impl_ = static_cast<void*>(view); }
+  void SetApiImageView(T* view) { image_view_impl_ = static_cast<void*>(view); }
   template<class T>
   auto GetImageBuffer() const -> T* { return static_cast<T*>(image_buffer_impl_); }
   template<class T>
@@ -39,8 +39,8 @@ struct AbstractTexture
   }
   
   ImageHandle image_; 
-  void* image_buffer_impl_;
-  void* image_view_impl_;
+  void* image_buffer_impl_ = nullptr;
+  void* image_view_impl_ = nullptr;
 
 }; // struct AbstractTexture
 

@@ -74,3 +74,11 @@ gdm::MeshHandle gdm::MeshFactory::Create(const char* mesh_name, int mesh_num, co
   resources_[handle] = mesh;
   return handle;
 }
+
+bool gdm::MeshFactory::ImplementationLoaded(MeshHandle handle)
+{
+  ASSERTF(Has(handle), "Trying to request properties of already non loaded mesh");  
+
+  AbstractMesh* mesh = Get(handle);
+  return mesh->index_buffer_ && mesh->vertex_buffer_;
+}

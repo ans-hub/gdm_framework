@@ -40,7 +40,7 @@
 #include "desc/std_input_layout.h"
 #include "desc/std_sampler_desc.h"
 
-#include "scene.h"
+#include "scene_manager.h"
 
 using namespace gdm;
 
@@ -57,12 +57,26 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   width = gfx.GetSurfaceWidth();
   height = gfx.GetSurfaceHeight();
 
+  api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::Fence submit_fence (device);
+
+  Config cfg("../../_configs/simple.cfg");
+  ModelFactory::SetPath("../../_models_new/models/");
+  MaterialFactory::SetPath("../../_models_new/materials/");
+  TextureFactory::SetPath("../../_models_new/textures/");
+  ImageFactory::SetPath("../../_models_new/textures/");
+
+  SceneManager scene(gfx.GetDevice());
+  std::vector<ModelHandle> models = scene.LoadAbstractModels(cfg);
+  uint vstg = scene.CreateStagingBuffer(MB(16));
+  uint istg = scene.CreateStagingBuffer(MB(16));
+  uint tstg = scene.CreateStagingBuffer(MB(16));
+  scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
+  scene.CopyTexturesToGpu(models, tstg, setup_list);
+
   auto depth_image = api::Image2D(&device, width, height, gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT, gfx::EFormatType::D16_UNORM);
   auto depth_image_view = api::ImageView(device, depth_image.GetHandle(), depth_image.GetFormat());
   auto barrier = api::ImageBarrier(&device, depth_image.GetHandle(), gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-  api::Fence submit_fence (device);
-  api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
   setup_list.PushBarrier(barrier);
 
   DataStorage<api::RenderPass> render_passes {};
@@ -89,20 +103,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   DataStorage<Shader> shaders {};
   shaders.Create(GDM_HASH("FlatVx"), "shaders/flat_vert.hlsl", gfx::EShaderType::VX);
   shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
-
-  Config cfg("../../_configs/simple.cfg");
-  ModelFactory::SetPath("../../_models_new/models/");
-  MaterialFactory::SetPath("../../_models_new/materials/");
-  TextureFactory::SetPath("../../_models_new/textures/");
-  ImageFactory::SetPath("../../_models_new/textures/");
-
-  Scene scene(gfx.GetDevice());
-  std::vector<ModelHandle> models = scene.LoadAbstractModels(cfg);
-  api::Buffer vstg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  api::Buffer istg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  api::Buffer tstg (&device, MB(16), gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
-  scene.CopyTexturesToGpu(models, tstg, setup_list);
   
   std::vector<api::Buffer*> pocb_uniform;
   std::vector<api::Buffer*> pocb_staging;

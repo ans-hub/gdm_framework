@@ -48,14 +48,11 @@ public:
   std::vector<float> interleaving_vxs_buffer_ ;
   std::size_t interleaving_vxs_buffer_sz_;
   MaterialHandle material_;
-  void* vertex_buffer_;
-  void* index_buffer_;
+  void* vertex_buffer_ = nullptr;
+  void* index_buffer_ = nullptr;
 
 public:
   static const bool normalize_poses_ = false;
-
-public:
-  void* impl_;
 
 }; // struct AbstractMesh
 
@@ -63,6 +60,7 @@ struct MeshFactory : public DataFactory<AbstractMesh*>
 {
   static auto Create(const char* mesh_name, int mesh_num, const ModelLoader& loader) -> MeshHandle;
   static void Release(MeshHandle handle);
+  static bool ImplementationLoaded(MeshHandle handle);
 
 private:
   template<class T>

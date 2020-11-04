@@ -32,7 +32,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 set(SRC deferred.cc
-        scene.cc)
+        scene_manager.cc)
 
 if (WIN32)
   set(CMAKE_CXX_FLAGS
