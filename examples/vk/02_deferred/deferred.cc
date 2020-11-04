@@ -79,31 +79,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   auto barrier = api::ImageBarrier(&device, depth_image.GetHandle(), gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
   setup_list.PushBarrier(barrier);
 
-  DataStorage<api::RenderPass> render_passes {};
-  render_passes.Create(GDM_HASH("MainRenderPass"), device);
-
-  api::RenderPass& render_pass = render_passes.Get(GDM_HASH("MainRenderPass"));
-  uint color_idx = 0;
-  uint depth_idx = 1;
-  uint input_idx = -1;
-  render_pass.AddPassDescription(color_idx, gfx.GetSurfaceFormat(), gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
-  render_pass.AddPassDescription(depth_idx, depth_image.GetFormat<gfx::EFormatType>(), gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-  uint subpass_idx = render_pass.CreateSubpass(gfx::EQueueType::GRAPHICS);
-  render_pass.AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
-  render_pass.AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
-  render_pass.Finalize();
-
-  DataStorage<api::Framebuffer> framebuffers {};
-  for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
-  {
-    api::ImageViews image_views {gfx.GetBackBufferViews()[i], &depth_image_view};
-    framebuffers.Create(GDM_HASH_N("MainFB", i), gfx.GetDevice(), width, height, render_pass, image_views);
-  }
-
-  DataStorage<Shader> shaders {};
-  shaders.Create(GDM_HASH("FlatVx"), "shaders/flat_vert.hlsl", gfx::EShaderType::VX);
-  shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
-  
   std::vector<api::Buffer*> pocb_uniform;
   std::vector<api::Buffer*> pocb_staging;
   std::vector<api::BufferBarrier*> pocb_to_write_barriers;
@@ -141,33 +116,47 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     setup_list.PushBarrier(*pfcb_to_read_barriers[i]);
   }  
 
+  scene.CreateDummyView(setup_list);
+
   setup_list.Finalize();
   gfx.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
   submit_fence.WaitSignalFromGpu();
   submit_fence.Reset();
 
-  api::Sampler sampler(device, StdSamplerState{});
+  DataStorage<api::RenderPass> render_passes {};
+  render_passes.Create(GDM_HASH("MainRenderPass"), device);
 
-  api::ImageViews material_diffuse_image_views;
-  for (auto model_handle : scene.GetModels())
+  api::RenderPass& render_pass = render_passes.Get(GDM_HASH("MainRenderPass"));
+  uint color_idx = 0;
+  uint depth_idx = 1;
+  uint input_idx = -1;
+  render_pass.AddPassDescription(color_idx, gfx.GetSurfaceFormat(), gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+  render_pass.AddPassDescription(depth_idx, depth_image.GetFormat<gfx::EFormatType>(), gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+  uint subpass_idx = render_pass.CreateSubpass(gfx::EQueueType::GRAPHICS);
+  render_pass.AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
+  render_pass.AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
+  render_pass.Finalize();
+
+  DataStorage<api::Framebuffer> framebuffers {};
+  for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
-    auto model = ModelFactory::Get(model_handle);
-    for (auto mesh_handle : model->meshes_)
-    {
-      auto mesh = MeshFactory::Get(mesh_handle);
-      auto material = MaterialFactory::Get(mesh->material_);
-      auto diffuse_texture = TextureFactory::Get(material->diff_);
-      arr_utils::EnsureIndex(material_diffuse_image_views, material->index_);
-      material_diffuse_image_views[material->index_] = diffuse_texture->GetImageView<api::ImageView>();
-    }
+    api::ImageViews image_views {gfx.GetBackBufferViews()[i], &depth_image_view};
+    framebuffers.Create(GDM_HASH_N("MainFB", i), gfx.GetDevice(), width, height, render_pass, image_views);
   }
 
+  DataStorage<Shader> shaders {};
+  shaders.Create(GDM_HASH("FlatVx"), "shaders/flat_vert.hlsl", gfx::EShaderType::VX);
+  shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
+  
   auto* descriptor_layout = GMNew api::DescriptorSetLayout(device);
   descriptor_layout->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
   descriptor_layout->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
   descriptor_layout->AddBinding(2, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  descriptor_layout->AddBinding(3, static_cast<uint>(material_diffuse_image_views.size()), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
+  descriptor_layout->AddBinding(3, static_cast<uint>(SceneManager::v_max_materials), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
   descriptor_layout->Finalize();
+
+  api::Sampler sampler(device, StdSamplerState{});
+  RenderableMaterials renderable_materials = scene.GetRenderableMaterials();
 
   std::vector<api::DescriptorSet*> frame_descriptor_sets;
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
@@ -176,7 +165,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *pfcb_uniform[i]);
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *pocb_uniform[i]);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(2, sampler);
-    descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, material_diffuse_image_views);
+    descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, renderable_materials.diffuse_views_);
     descriptor_set->Finalize();
     frame_descriptor_sets.push_back(descriptor_set);
   }
@@ -254,7 +243,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     cmd.PushBarrier(*pfcb_to_read_barriers[curr_frame]);
 
     std::vector<FlatVs_POCB> pocbs;
-    for (auto model_handle : scene.GetModels())
+    for (auto model_handle : scene.GetRenderableModels())
     {
       AbstractModel* model = ModelFactory::Get(model_handle);
       AbstractMaterial* material = MaterialFactory::Get(model->materials_[0]);
@@ -271,29 +260,25 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     cmd.PushBarrier(*pocb_to_read_barriers[curr_frame]);
 
     auto& fb = framebuffers.Get(GDM_HASH_N("MainFB", curr_frame));
-    cmd.BindPipelineGraphics(pipeline); // scene.GetPipeline(GDM_HASH("dsa"));
+    cmd.BindPipelineGraphics(pipeline);
 
     cmd.BeginRenderPass(render_pass, fb, width, height);
 
     uint model_number = 0;
-    for (auto model_handle : scene.GetModels())
+    for (auto model_handle : scene.GetRenderableModels())
     {
       AbstractModel* model = ModelFactory::Get(model_handle);
       
-      uint offset = model_number * sizeof(FlatVs_POCB);
+      uint offset = sizeof(FlatVs_POCB) * model_number++;
       cmd.BindDescriptorSetGraphics(api::DescriptorSets{*frame_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});
       
       for (auto mesh_handle : model->meshes_)
       {
         AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
-        AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
-        AbstractTexture* texture = TextureFactory::Get(material->diff_);
-
         cmd.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
         cmd.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
         cmd.DrawIndexed(mesh->faces_);
       }
-      ++model_number;
     }
     
     cmd.EndRenderPass();

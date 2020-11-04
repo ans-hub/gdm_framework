@@ -17,6 +17,7 @@ gdm::SceneManager::SceneManager(api::Device& device)
   : device_{ device }
   , models_{}
   , staging_buffers_{}
+  , dummy_view_{}
 { }
 
 auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
@@ -192,6 +193,58 @@ void gdm::SceneManager::CopyTextureFromStagingBuffer(api::CommandList& cmd, Abst
   cmd.PushBarrier(barrier_undef_to_transfer);
   cmd.CopyBufferToImage(stg, *img, curr_offset, 0, static_cast<uint>(img_raw.size()));
   cmd.PushBarrier(barrier_transfer_to_shader);
+}
+
+void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
+{
+  ASSERT(!TextureFactory::Has("dummy_handle"));
+  
+  TextureHandle handle = TextureFactory::Load("dummy_handle");
+  AbstractTexture* dummy_texture = TextureFactory::Get(handle);
+  AbstractImage* dummy_image = ImageFactory::Get(dummy_texture->image_);
+  
+  const gfx::ImageUsage img_usage = gfx::TRANSFER_DST_IMG | gfx::SAMPLED;
+  const gfx::FormatType img_format = gfx::UNORM4;
+  const uint img_w = static_cast<uint>(dummy_image->GetWidth());
+  const uint img_h = static_cast<uint>(dummy_image->GetHeight());
+  
+  auto* api_img = GMNew api::Image2D(&device_, img_w, img_h, img_usage, img_format);
+  auto* api_img_view = GMNew api::ImageView(device_, *api_img, api_img->GetFormat());
+  dummy_texture->SetApiImageBuffer(api_img);
+  dummy_texture->SetApiImageView(api_img_view);
+
+  auto barrier_undef_to_srv = api::ImageBarrier(&device_, *api_img, gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::SHADER_READ_OPTIMAL);
+  cmd.PushBarrier(barrier_undef_to_srv);
+}
+
+auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
+{
+  TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle("dummy_handle");
+  AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
+  api::ImageView* dummy_view = dummy_texture->GetImageView<api::ImageView>();
+
+  RenderableMaterials materials = {};
+  materials.diffuse_views_.resize(v_max_materials, dummy_view);
+  materials.specular_views_.resize(v_max_materials, dummy_view);
+  materials.normal_views_.resize(v_max_materials, dummy_view);
+
+  for (auto model_handle : GetRenderableModels())
+  {
+    auto model = ModelFactory::Get(model_handle);
+    for (auto mesh_handle : model->meshes_)
+    {
+      auto mesh = MeshFactory::Get(mesh_handle);
+      auto material = MaterialFactory::Get(mesh->material_);
+
+      auto diffuse_texture = TextureFactory::Get(material->diff_);
+      materials.diffuse_views_[material->index_] = diffuse_texture->GetImageView<api::ImageView>();
+      auto specular_texture = TextureFactory::Get(material->spec_);
+      materials.specular_views_[material->index_] = specular_texture->GetImageView<api::ImageView>();
+      auto normal_texture = TextureFactory::Get(material->norm_);
+      materials.normal_views_[material->index_] = normal_texture->GetImageView<api::ImageView>();
+    }
+  }
+  return materials;
 }
 
 void gdm::SceneManager::UpdateCamera(CameraEul& cam, MainInput& input, float dt)

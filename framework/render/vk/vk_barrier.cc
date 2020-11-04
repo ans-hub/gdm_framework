@@ -163,6 +163,11 @@ void gdm::vk::ImageBarrier::FillAccessMasks(VkImageLayout old_layout, VkImageLay
       image_barrier_.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
       image_barrier_.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   }
+  else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+  {
+      image_barrier_.srcAccessMask = 0;
+      image_barrier_.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  }
   else if (old_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
   {
       image_barrier_.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
