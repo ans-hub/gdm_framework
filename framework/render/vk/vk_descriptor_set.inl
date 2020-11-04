@@ -13,6 +13,8 @@
 template<>
 inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPLED_IMAGE, gdm::vk::ImageView>(uint num, const ImageView& view)
 {
+  explicitly_finalized_ = false;
+
   image_infos_[num].push_back({});
   image_infos_[num].back().sampler = 0;
   image_infos_[num].back().imageView = view;
@@ -36,6 +38,8 @@ inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPL
 template<>
 inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPLED_IMAGE, gdm::vk::ImageViews>(uint num, const ImageViews& views)
 {
+  explicitly_finalized_ = false;
+
   for (auto view : views)
   {
     image_infos_[num].push_back({});
@@ -62,6 +66,8 @@ inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPL
 template<>
 inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPLER, gdm::vk::Sampler>(uint num, const Sampler& sampler)
 {
+  explicitly_finalized_ = false;
+
   image_infos_[num].push_back({});
   image_infos_[num].back().sampler = sampler;
 
@@ -83,6 +89,8 @@ inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPL
 template<>
 inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::UNIFORM_DYNAMIC, gdm::vk::Buffer>(uint num, const Buffer& buffer)
 {
+  explicitly_finalized_ = false;
+
   buffer_infos_[num].push_back({});
   buffer_infos_[num].back().buffer = buffer;
   buffer_infos_[num].back().offset = 0;
@@ -106,6 +114,8 @@ inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::UNIFO
 template<>
 inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::UNIFORM_BUFFER, gdm::vk::Buffer>(uint num, const Buffer& buffer)
 {
+  explicitly_finalized_ = false;
+
   buffer_infos_[num].push_back({});
   buffer_infos_[num].back().buffer = buffer;
   buffer_infos_[num].back().offset = 0;

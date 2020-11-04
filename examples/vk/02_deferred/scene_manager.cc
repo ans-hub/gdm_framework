@@ -18,6 +18,14 @@ gdm::SceneManager::SceneManager(api::Device& device)
   , models_{}
   , staging_buffers_{}
   , dummy_view_{}
+  , pocb_uniform_{}
+  , pocb_staging_{}
+  , pocb_to_write_barriers_{}
+  , pocb_to_read_barriers_{}
+  , pfcb_uniform_{}
+  , pfcb_staging_{}
+  , pfcb_to_write_barriers_{}
+  , pfcb_to_read_barriers_{}
 { }
 
 auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint

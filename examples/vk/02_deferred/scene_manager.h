@@ -40,6 +40,17 @@ struct SceneManager
   void UpdateCamera(CameraEul& cam, MainInput& input, float dt);
   auto GetRenderableModels() -> const std::set<ModelHandle>& { return models_; }
   auto GetRenderableMaterials() -> RenderableMaterials;
+  auto GetPerFrameUBO(uint frame_num) -> api::Buffer* { return pfcb_uniform_[frame_num]; }
+  auto GetPerObjectUBO(uint frame_num) -> api::Buffer* { return pocb_uniform_[frame_num]; }
+
+  template<class T, uint Count>
+  void CreatePerFrameUBO(api::CommandList& cmd);
+  template<class T, uint Count>
+  void CreatePerObjectUBO(api::CommandList& cmd);
+  template<class T>
+  void UpdatePerFrameUBO(api::CommandList& cmd, uint curr_frame, const T& pfcb);
+  template<class T>
+  void UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame, const std::vector<T>& pocbs);
 
 public:
   constexpr static uint v_max_materials = 16;
@@ -54,6 +65,14 @@ private:
   std::set<ModelHandle> models_;
   std::vector<api::Buffer*> staging_buffers_;
   api::ImageView* dummy_view_;
+  std::vector<api::Buffer*> pocb_uniform_;
+  std::vector<api::Buffer*> pocb_staging_;
+  std::vector<api::BufferBarrier*> pocb_to_write_barriers_;
+  std::vector<api::BufferBarrier*> pocb_to_read_barriers_;
+  std::vector<api::Buffer*> pfcb_uniform_;
+  std::vector<api::Buffer*> pfcb_staging_;
+  std::vector<api::BufferBarrier*> pfcb_to_write_barriers_;
+  std::vector<api::BufferBarrier*> pfcb_to_read_barriers_;
 
 private:
   static constexpr const char* v_model_prefix = "model_";
@@ -70,5 +89,7 @@ struct RenderableMaterials
 };  // struct RenderableMaterials
 
 } // namespace gdm::scene
+
+#include "scene_manager.inl"
 
 #endif // GFX_VK_SCENE_MGR
