@@ -27,7 +27,7 @@ gdm::vk::RenderPass::RenderPass(VkDevice device)
   , explicitly_finalized_{}
 { }
 
-void gdm::vk::RenderPass::AddPassDesccription(uint idx, gfx::EFormatType format, gfx::EImageLayout layout)
+void gdm::vk::RenderPass::AddPassDescription(uint idx, gfx::EFormatType format, gfx::EImageLayout layout)
 {
   ASSERTF(!explicitly_finalized_, "Render pass finalized");
 

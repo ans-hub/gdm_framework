@@ -9,25 +9,32 @@
 
 #include "render/defines.h"
 #include "render/vk/vk_image.h"
+#include "render/vk/vk_image_view.h"
 #include "render/vk/vk_render_pass.h"
 
 namespace gdm::vk {
 
-struct FrameBuffer
+struct Framebuffer
 {
-  FrameBuffer(VkDevice device, uint width, uint height, const RenderPass& render_pass, const ImageViews& view);
+  Framebuffer(VkDevice device, uint width, uint height, const RenderPass& render_pass, ImageViews view);
+  uint GetAttachmentsCount() const { return static_cast<uint>(attachment_views_.size()); }
+  auto GetAttachmentsView() const -> const ImageViews& { return attachment_views_; }
+  auto GetClearValues() const -> const std::vector<VkClearValue>& { return clear_values_; }
   operator VkFramebuffer() const { return framebuffer_; }
 
 private:
+  auto CreateClearValues() -> std::vector<VkClearValue>;
   auto CreateFrameBuffer(const RenderPass& render_pass, const ImageViews& views) -> VkFramebuffer;
 
 private:
   VkDevice device_;
   uint width_;
   uint height_;
+  ImageViews attachment_views_;
+  std::vector<VkClearValue> clear_values_;
   VkFramebuffer framebuffer_;
 
-}; // struct FrameBuffer
+}; // struct Framebuffer
 
 } // namespace gdm::vk
 

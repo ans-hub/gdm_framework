@@ -9,6 +9,7 @@
 
 #if defined (GFX_DX_API)
 #include "dx11/dx_image.h"
+#include "dx11/dx_image_view.h"
 #include "dx11/dx_device.h"
 #include "dx11/dx_sampler.h"
 #include "dx11/dx_image_barrier.h"
@@ -23,6 +24,7 @@
 #include "dx11/dx_descriptor_set.h"
 #elif defined (GFX_VK_API)
 #include "vk/vk_image.h"
+#include "vk/vk_image_view.h"
 #include "vk/vk_device.h"
 #include "vk/vk_sampler.h"
 #include "vk/vk_barrier.h"

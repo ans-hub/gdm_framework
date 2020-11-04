@@ -8,6 +8,7 @@
 {
   matrix u_model_;
   float4 u_color_;
+  uint u_material_index_;
 }
 
 struct Input
@@ -23,6 +24,7 @@ struct Output
   float4 pos : SV_POSITION;
   float2 texuv : TEXUV;
   nointerpolation float4 color : TEXCOORD1;
+  nointerpolation uint material_index : TEXCOORD2;
 };
 
 Output main(Input IN)
@@ -33,5 +35,6 @@ Output main(Input IN)
   OUT.pos = mul(mvp, float4(IN.pos, 1.f));
   OUT.texuv = IN.texuv;
   OUT.color = u_color_;
+  OUT.material_index = u_material_index_;
   return OUT;
 }

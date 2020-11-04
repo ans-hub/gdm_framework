@@ -13,8 +13,6 @@ namespace gdm::vk {
 
 struct Device;
 
-using ImageViews = std::vector<VkImageView>;
-
 struct Image
 {
   Image(Device* device, uint width, uint height, gfx::ImageUsage usage, gfx::FormatType format);
@@ -50,12 +48,10 @@ private:
 
 using Image2D = Image;
 using Image3D = Image;
-using ImageView = VkImageView;  // reinterpret_cast of image
 
 namespace helpers
 {
   bool HasStencil(VkFormat format);
-  auto CreateImageView(VkDevice device, VkImage image, VkFormat format) -> VkImageView;
 
 } // namespace helpers
 

@@ -14,6 +14,7 @@
 #include "render/vk/vk_sampler.h"
 #include "render/vk/vk_buffer.h"
 #include "render/vk/vk_image.h"
+#include "render/vk/vk_image_view.h"
 
 namespace gdm::vk {
 

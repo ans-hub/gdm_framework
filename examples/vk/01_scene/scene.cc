@@ -55,7 +55,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   height = gfx.GetSurfaceHeight();
 
   auto depth_image = api::Image2D(&device, width, height, gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT, gfx::EFormatType::D16_UNORM);
-  auto depth_image_view = api::helpers::CreateImageView(device, depth_image.GetHandle(), depth_image.GetFormat());
+  auto depth_image_view = api::ImageView(device, depth_image.GetHandle(), depth_image.GetFormat());
   auto barrier = api::ImageBarrier(&device, depth_image.GetHandle(), gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
   api::Fence submit_fence (device);
@@ -69,18 +69,18 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   uint color_idx = 0;
   uint depth_idx = 1;
   uint input_idx = -1;
-  render_pass.AddPassDesccription(color_idx, gfx.GetSurfaceFormat(), gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
-  render_pass.AddPassDesccription(depth_idx, depth_image.GetFormat<gfx::EFormatType>(), gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+  render_pass.AddPassDescription(color_idx, gfx.GetSurfaceFormat(), gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+  render_pass.AddPassDescription(depth_idx, depth_image.GetFormat<gfx::EFormatType>(), gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
   uint subpass_idx = 0;
-  render_pass.CreateSubpass(subpass_idx, gfx::EQueueType::GRAPHICS);
+  render_pass.CreateSubpass(gfx::EQueueType::GRAPHICS);
   render_pass.AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
   render_pass.AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
   render_pass.Finalize();
 
-  DataStorage<api::FrameBuffer> framebuffers {};
+  DataStorage<api::Framebuffer> framebuffers {};
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
-    api::ImageViews image_views {gfx.GetBackBufferViews()[i], depth_image_view};
+    api::ImageViews image_views {gfx.GetBackBufferViews()[i], &depth_image_view};
     framebuffers.Create(GDM_HASH_N("MainFB", i), gfx.GetDevice(), width, height, render_pass, image_views);
   }
 
@@ -130,7 +130,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   uint cube_img_w = static_cast<uint>(cube_pix->GetWidth());
   uint cube_img_h = static_cast<uint>(cube_pix->GetHeight());
   auto cube_img = api::Image2D(&device, cube_img_w, cube_img_h, cube_img_usage, cube_img_format);
-  auto cube_img_view = api::helpers::CreateImageView(device, cube_img, cube_img.GetFormat());
+  auto cube_img_view = api::ImageView(device, cube_img, cube_img.GetFormat());
   auto barrier_undef_to_transfer = api::ImageBarrier(&device, cube_img, gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::TRANSFER_DST_OPTIMAL);
   auto barrier_transfer_to_shader = api::ImageBarrier(&device, cube_img, gfx::EImageLayout::TRANSFER_DST_OPTIMAL, gfx::EImageLayout::SHADER_READ_OPTIMAL);
   setup_list.PushBarrier(barrier_undef_to_transfer);
@@ -285,7 +285,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     cmd.BindPipelineGraphics(pipeline);
     cmd.BindVertexBuffer(vx_buffer);
     cmd.BindIndexBuffer(idx_buffer);
-    cmd.BindDescriptorSetGraphics(*cube_descriptor_sets[curr_frame], pipeline);
+    cmd.BindDescriptorSetGraphics({*cube_descriptor_sets[curr_frame]}, pipeline);
     cmd.DrawIndexed(indices_data);
     cmd.EndRenderPass();
     cmd.PushBarrier(*present_to_read_barrier[curr_frame]);

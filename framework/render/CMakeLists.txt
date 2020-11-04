@@ -42,6 +42,7 @@ elseif ("${VK_API}")
       vk/vk_semaphore.cc
       vk/vk_barrier.cc
       vk/vk_image.cc
+      vk/vk_image_view.cc
       vk/vk_render_pass.cc
       vk/vk_framebuffer.cc
       vk/vk_host_allocator.cc

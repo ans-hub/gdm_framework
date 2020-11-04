@@ -6,9 +6,14 @@
 
 #include "vk_command_list.h"
 
+#include <render/colors.h>
+
 #include <render/vk/vk_image.h>
+#include <render/vk/vk_image_view.h>
 #include <render/vk/vk_pipeline.h>
 #include <render/vk/vk_descriptor_set.h>
+#include <render/vk/vk_framebuffer.h>
+#include <render/vk/vk_render_pass.h>
 
 #include <system/assert_utils.h>
 #include <system/bits_utils.h>
@@ -126,18 +131,19 @@ void gdm::vk::CommandList::CopyBufferToImage(const Buffer& src, Image& dst, uint
   vkCmdCopyBufferToImage(command_buffer_, src, dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_image);
 }
 
-void gdm::vk::CommandList::BeginRenderPass(VkRenderPass pass, VkFramebuffer framebuffer, uint width, uint height)
+void gdm::vk::CommandList::BeginRenderPass(const RenderPass& pass, const Framebuffer& framebuffer, uint width, uint height)
 {
   ASSERTF(!explicitly_finalized_, "Command list finalized");
 
-  VkClearValue clearValue[] = { { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0, 0.0 } }; // todo
   VkRenderPassBeginInfo begin_info = {};
   begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   begin_info.renderPass = pass;
   begin_info.framebuffer = framebuffer;
   begin_info.renderArea = { 0, 0, width, height };
-  begin_info.clearValueCount = 2;
-  begin_info.pClearValues = clearValue;
+
+  auto& clear_values = framebuffer.GetClearValues();
+  begin_info.clearValueCount = static_cast<uint>(clear_values.size());
+  begin_info.pClearValues = clear_values.data();
 
   vkCmdBeginRenderPass(command_buffer_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }

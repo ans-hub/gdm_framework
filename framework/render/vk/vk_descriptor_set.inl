@@ -6,6 +6,8 @@
 
 #include "vk_descriptor_set.h"
 
+#include "render/vk/vk_image_view.h"
+
 // --public DescriptorSet
 
 template<>
@@ -34,15 +36,12 @@ inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPL
 template<>
 inline void gdm::vk::DescriptorSet::UpdateContent<gdm::gfx::EResourceType::SAMPLED_IMAGE, gdm::vk::ImageViews>(uint num, const ImageViews& views)
 {
-  // image_infos_[num].resize(DescriptorSet::v_max_variable_descriptor);
-  // int i = 0;
   for (auto view : views)
   {
     image_infos_[num].push_back({});
     image_infos_[num].back().imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     image_infos_[num].back().sampler = 0;
-    image_infos_[num].back().imageView = view;
-    // ++i;
+    image_infos_[num].back().imageView = *view;
   }
 
   VkWriteDescriptorSet image_desc_set = {};

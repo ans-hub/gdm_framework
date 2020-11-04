@@ -38,7 +38,8 @@ struct Vector4
   constexpr Vector4(const Vector4<T>& v, float aw) : x{v.x}, y{v.y}, z{v.z}, w{aw} { }
   constexpr Vector4(T val, T fourth_comp) : x{val}, y{val}, z{val}, w{fourth_comp} { }
   
-  Vector3<T> xyz() { return Vector3<T>(x,y,z); }
+  Vector3<T> xyz() const { return Vector3<T>(x,y,z); }
+  auto raw() const -> decltype(auto) { return data[4]; }
 
   T operator[](int i) const { return (i == 0 ? x : (i == 1 ? y : (i == 2 ? z : (i == 3 ? w : w)))); }
   T& operator[](int i) { return (i == 0 ? x : (i == 1 ? y : (i == 2 ? z : (i == 3 ? w : w)))); }

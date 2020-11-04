@@ -28,6 +28,7 @@ struct alignas(64) FlatVs_POCB
 {
   alignas(16) Mat4f u_model_;
   alignas(16) Vec4f u_color_;
+  alignas(16) unsigned int u_material_index_;
 
 }; // struct FlatVs_POCB
 

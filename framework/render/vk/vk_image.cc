@@ -76,33 +76,3 @@ bool gdm::vk::helpers::HasStencil(VkFormat format)
   has |= format == VK_FORMAT_D16_UNORM_S8_UINT;
   return has;
 }
-
-auto gdm::vk::helpers::CreateImageView(VkDevice device, VkImage image, VkFormat format) -> VkImageView
-{
-  VkImageViewCreateInfo image_view_create_info = {};
-  
-  image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_create_info.image = image;
-  image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_create_info.format = format;
-  image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.subresourceRange.baseMipLevel = 0;
-  image_view_create_info.subresourceRange.levelCount = 1;
-  image_view_create_info.subresourceRange.baseArrayLayer = 0;
-  image_view_create_info.subresourceRange.layerCount = 1;
-
-  if (helpers::HasStencil(format))
-    image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-  else
-    image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-  VkImageView image_view = {};
-
-  VkResult res = vkCreateImageView(device, &image_view_create_info, HostAllocator::GetPtr(), &image_view);
-  ASSERTF(res == VK_SUCCESS, "vkCreateImageView error %d\n", res);
-  
-  return image_view;
-}

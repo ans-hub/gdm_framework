@@ -15,6 +15,7 @@
 #include <render/vk/vk_semaphore.h>
 #include <render/vk/vk_barrier.h>
 #include <render/vk/vk_image.h>
+#include <render/vk/vk_image_view.h>
 #include <render/vk/vk_render_pass.h>
 #include <render/vk/vk_framebuffer.h>
 
@@ -61,8 +62,8 @@ gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
   , device_{ CreateDevice(phys_device_) }
   , submit_fence_(*device_)
   , swapchain_{ CreateSwapChain(phys_device_.info_, v_num_images_) }
-  , present_images_{ CreatePresentImages() }  // todo: rename to backbuffer
-  , present_images_views_{ CreatePresentImagesView() } // todo: too
+  , present_images_{ CreatePresentImages() }
+  , present_images_views_{ CreatePresentImagesView() }
 { 
   InitializePresentImages();
 }
@@ -93,7 +94,7 @@ auto gdm::vk::Renderer::GetDevice() -> Device&
   return *device_;
 }
 
-auto gdm::vk::Renderer::GetBackBufferViews() -> std::vector<VkImageView>
+auto gdm::vk::Renderer::GetBackBufferViews() -> std::vector<ImageView*>
 {
   return present_images_views_;
 }
@@ -308,15 +309,15 @@ void gdm::vk::Renderer::InitializePresentImages()
   }
 }
 
-auto gdm::vk::Renderer::CreatePresentImagesView() -> std::vector<VkImageView>
+auto gdm::vk::Renderer::CreatePresentImagesView() -> std::vector<ImageView*>
 {
-  std::vector<VkImageView> views(present_images_.size());
+  std::vector<ImageView*> views(present_images_.size());
 
   for (size_t i = 0; i < present_images_.size(); ++i)
   {
     VkImage image = present_images_[i];
-    VkFormat format = phys_device_.info_.surface_formats_[0].format;
-    views[i] = helpers::CreateImageView(*device_, image, format);
+    VkFormat format = static_cast<VkFormat>(GetSurfaceFormat());
+    views[i] = GMNew ImageView(*device_, image, format);
   }
   return views;
 }
@@ -438,7 +439,7 @@ auto gdm::vk::Renderer::FillInstanceExtensionsInfo() -> std::vector<const char*>
 void gdm::vk::Renderer::Cleanup()
 {
   for (auto view : present_images_views_)
-    vkDestroyImageView(*device_, view, &allocator_);
+    vkDestroyImageView(*device_, *view, &allocator_);
   for (auto command_buffer : frame_command_buffers_)
     vkResetCommandBuffer(command_buffer, {});
 

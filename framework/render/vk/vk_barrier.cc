@@ -10,6 +10,7 @@
 #include "vk_barrier.h"
 
 #include "render/vk/vk_image.h"
+#include "render/vk/vk_image_view.h"
 #include "system/assert_utils.h"
 #include "system/bits_utils.h"
 

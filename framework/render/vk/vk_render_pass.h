@@ -22,7 +22,7 @@ struct RenderPass
 {
   RenderPass(VkDevice device);
 
-  void AddPassDesccription(uint attachment_idx, gfx::EFormatType format, gfx::EImageLayout layout);
+  void AddPassDescription(uint attachment_idx, gfx::EFormatType format, gfx::EImageLayout layout);
   uint CreateSubpass(gfx::EQueueType type);
   void AddSubpassColorAttachments(uint subpass_idx, const Attachments& attachments_indices);
   void AddSubpassDepthAttachments(uint subpass_idx, Attachment attachment_index);
@@ -32,7 +32,7 @@ struct RenderPass
   auto GetSubpassesCount() const -> uint { return static_cast<uint>(subpass_desc_.size()); }
   auto GetPassAttachmentsCount() const -> size_t { return attachment_desc_.size(); }
   auto GetHandle() const -> VkRenderPass { return render_pass_; }
-  operator VkRenderPass() { return render_pass_; }
+  operator VkRenderPass() const { return render_pass_; }
 
 private:
   struct Subpass;

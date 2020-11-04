@@ -8,11 +8,12 @@ struct Input
   float4 pos : SV_POSITION;
   float2 texuv : TEXUV;
   float4 color : TEXCOORD1;
+  uint material_index : TEXCOORD12;
 };
 
 float4 main(Input IN) : SV_TARGET
 {
-  float4 res = Textures[NonUniformResourceIndex(1)].Sample(Sampler, IN.texuv);
+  float4 res = Textures[NonUniformResourceIndex(IN.material_index)].Sample(Sampler, IN.texuv);
   return res;
   return float4(0.5f, 0.5f, 0.5f, 0.5f);
 }

@@ -20,6 +20,8 @@
 namespace gdm::vk {
 
 struct Pipeline;
+struct Framebuffer;
+struct RenderPass;
 
 struct CommandList
 {
@@ -33,7 +35,7 @@ struct CommandList
   void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint size);
   void CopyBufferToImage(const Buffer& src, Image& dst, uint size);
   void CopyBufferToImage(const Buffer& src, Image& dst, uint src_offset, uint dst_offset, uint size);
-  void BeginRenderPass(VkRenderPass pass, VkFramebuffer framebuffer, uint width, uint height);
+  void BeginRenderPass(const RenderPass& pass, const Framebuffer& framebuffer, uint width, uint height);
   void EndRenderPass();
   void BindPipelineGraphics(VkPipeline pipeline);
   void BindVertexBuffer(VkBuffer vx_buffer);

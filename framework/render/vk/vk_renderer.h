@@ -16,6 +16,7 @@
 #include "vk_physical_device.h"
 #include "vk_command_list.h"
 #include "vk_image.h"
+#include "vk_image_view.h"
 #include "vk_fence.h"
 
 #include "system/hash_utils.h"
@@ -30,9 +31,10 @@ struct Renderer
   auto GetSurfaceWidth() -> uint;
   auto GetSurfaceHeight() -> uint;
   auto GetSurfaceFormat() const -> gfx::EFormatType;
+  auto GetPresentImageFormat() const -> VkFormat;
   auto GetDevice() -> Device&;
   auto GetDescriptorPool() -> VkDescriptorPool;
-  auto GetBackBufferViews() -> std::vector<VkImageView>;
+  auto GetBackBufferViews() -> std::vector<ImageView*>;
   auto GetBackBufferImages() -> std::vector<VkImage>;
   auto GetBackBuffersCount() const -> uint { return v_num_images_; };
   auto CreateFrameCommandList(uint frame_num, gfx::CommandListFlags flags) -> CommandList;
@@ -47,7 +49,7 @@ private:
   auto CreateDevice(PhysicalDeviceId phys_device) -> Device*;
   auto CreateSwapChain(const PhysicalDevice& phys_device, unsigned num_images) -> VkSwapchainKHR;
   auto CreatePresentImages() -> std::vector<VkImage>;
-  auto CreatePresentImagesView() -> std::vector<VkImageView>;
+  auto CreatePresentImagesView() -> std::vector<ImageView*>;
   auto CreateCommandPool(bool reset_on_begin, uint queue_index, VkCommandPoolCreateFlagBits flags) -> VkCommandPool;
   auto CreateCommandBuffers(VkCommandPool pool, uint count) -> std::vector<VkCommandBuffer>;
   auto CreateDescriptorPool(int max_sets, const std::vector<std::pair<gfx::EResourceType, uint>>& pools_description) -> VkDescriptorPool;
@@ -72,7 +74,7 @@ private:
   Fence submit_fence_;
   VkSwapchainKHR swapchain_;
   std::vector<VkImage> present_images_;
-  std::vector<VkImageView> present_images_views_;
+  std::vector<ImageView*> present_images_views_;
 
 private:
   static thread_local VkCommandPool setup_command_pool_;

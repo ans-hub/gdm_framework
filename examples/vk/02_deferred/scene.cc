@@ -114,8 +114,8 @@ void gdm::Scene::CopyTexturesToGpu(const std::vector<ModelHandle>& handles, api:
 {
   using Offset = std::array<uint, 3>;
 
-  uint curr_offset = 0;
   std::vector<std::vector<Offset>> offsets = {};
+  uint curr_offset = 0;
   tstg.Map();
 
   for (auto model_handle : handles)
@@ -138,13 +138,15 @@ void gdm::Scene::CopyTexturesToGpu(const std::vector<ModelHandle>& handles, api:
       std::vector<AbstractImage::StorageType> raw;
       for(std::size_t i = 0; i < tex.size(); ++i)
       {
-        ImageHandle image_handle = (*tex[i])->image_;
+        AbstractTexture* curr_tex = (*tex[i]);
+        ImageHandle image_handle = curr_tex->image_;
         images.push_back(ImageFactory::Get(image_handle));
         raw.push_back(images.back()->GetRaw());
       }
       
       for (std::size_t i = 0; i < raw.size(); ++i)
       {
+        AbstractTexture* curr_tex = (*tex[i]);
         mesh_offsets[i] = curr_offset;
         tstg.CopyDataToGpu(raw[i].data(), curr_offset, raw[i].size());
         curr_offset += static_cast<uint>(raw[i].size());
@@ -153,8 +155,7 @@ void gdm::Scene::CopyTexturesToGpu(const std::vector<ModelHandle>& handles, api:
         uint img_w = static_cast<uint>(images[i]->GetWidth());
         uint img_h = static_cast<uint>(images[i]->GetHeight());
         auto* img = GMNew api::Image2D(&device_, img_w, img_h, img_usage, img_format);
-        auto* img_view = GMNew api::ImageView(api::helpers::CreateImageView(device_, *img, img->GetFormat()));
-        AbstractTexture* curr_tex = (*tex[i]);
+        auto* img_view = GMNew api::ImageView(device_, *img, img->GetFormat());
         curr_tex->SetImageBuffer(img);
         curr_tex->SetImageView(img_view);
       }
