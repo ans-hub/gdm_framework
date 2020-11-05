@@ -127,14 +127,18 @@ auto gdm::vk::Renderer::CreateSetupCommandList(Hash name, gfx::CommandListFlags 
 auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customize
 {
   if (descriptor_pool_ == VK_NULL_HANDLE)
+  {
+    uint max_sampled_images = phys_device_.info_.device_props_.limits.maxPerStageDescriptorSampledImages; 
+    uint max_dynamic_uniforms = phys_device_.info_.device_props_.limits.maxPerStageDescriptorUniformBuffers; 
+    
     descriptor_pool_ = CreateDescriptorPool(16,
       {
-        {gfx::EResourceType::COMBINED_SAMPLER, 6},
-        {gfx::EResourceType::SAMPLER, 6},
-        {gfx::EResourceType::SAMPLED_IMAGE, 32},
-        {gfx::EResourceType::UNIFORM_DYNAMIC, 6}
+        { gfx::EResourceType::SAMPLER, 6 },
+        { gfx::EResourceType::SAMPLED_IMAGE, max_sampled_images },
+        { gfx::EResourceType::UNIFORM_DYNAMIC, max_dynamic_uniforms }
       }
     );
+  }
   return descriptor_pool_;
 }
 

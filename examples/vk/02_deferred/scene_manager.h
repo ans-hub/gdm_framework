@@ -52,7 +52,9 @@ struct SceneManager
   void UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame, const std::vector<T>& pocbs);
 
 public:
-  constexpr static uint v_max_materials = 16;
+  constexpr static uint v_max_materials = 128;
+  constexpr static uint v_max_objects = 128;
+  constexpr static const char* v_dummy_image = "dummy_handle";
 
 private:
   auto GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>;

@@ -53,7 +53,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   MainInput input (win.GetHandle(), hInstance);
   Renderer gfx(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);  
   ViewportDesc viewport{0, static_cast<float>(height), static_cast<float>(width), -static_cast<float>(height), 0, 1};
-  SceneManager scene(gfx.GetDevice());
 
   api::Device& device = gfx.GetDevice();
   width = gfx.GetSurfaceWidth();
@@ -67,8 +66,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   MaterialFactory::SetPath("../../_models_new/materials/");
   TextureFactory::SetPath("../../_models_new/textures/");
   ImageFactory::SetPath("../../_models_new/textures/");
-
   std::vector<ModelHandle> models = helpers::LoadAbstractModels(cfg);
+  
+  SceneManager scene(gfx.GetDevice());
   scene.SetModels(models);
   uint vstg = scene.CreateStagingBuffer(MB(16));
   uint istg = scene.CreateStagingBuffer(MB(16));
@@ -77,12 +77,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   scene.CopyTexturesToGpu(models, tstg, setup_list);
   scene.CreateDummyView(setup_list);
   
-  constexpr uint v_max_objects = 32;
-
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
     scene.CreatePerFrameUBO<FlatVs_PFCB, 1>(setup_list);
-    scene.CreatePerObjectUBO<FlatVs_POCB, v_max_objects>(setup_list);
+    scene.CreatePerObjectUBO<FlatVs_POCB, SceneManager::v_max_objects>(setup_list);
   }
 
   auto depth_image = api::Image2D(&device, width, height, gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT, gfx::EFormatType::D16_UNORM);

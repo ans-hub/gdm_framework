@@ -180,12 +180,13 @@ void gdm::SceneManager::CopyTextureFromStagingBuffer(api::CommandList& cmd, Abst
 
 void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
 {
-  ASSERT(!TextureFactory::Has("dummy_handle"));
+  ASSERT(!TextureFactory::Has(v_dummy_image));
   
-  TextureHandle handle = TextureFactory::Load("dummy_handle");
-  AbstractTexture* dummy_texture = TextureFactory::Get(handle);
-  AbstractImage* dummy_image = ImageFactory::Get(dummy_texture->image_);
-  
+  ImageHandle image_handle = ImageFactory::Create(v_dummy_image, 1, 1, 32, 1, 0, 0);
+  AbstractImage* dummy_image = ImageFactory::Get(image_handle);
+  TextureHandle texture_handle = TextureFactory::Load(image_handle);
+  AbstractTexture* dummy_texture = TextureFactory::Get(texture_handle);
+
   const gfx::ImageUsage img_usage = gfx::TRANSFER_DST_IMG | gfx::SAMPLED;
   const gfx::FormatType img_format = gfx::UNORM4;
   const uint img_w = static_cast<uint>(dummy_image->GetWidth());
@@ -202,7 +203,7 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
 
 auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
 {
-  TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle("dummy_handle");
+  TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(v_dummy_image);
   AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
   api::ImageView* dummy_view = dummy_texture->GetImageView<api::ImageView>();
 
