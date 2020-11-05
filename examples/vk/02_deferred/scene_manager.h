@@ -34,10 +34,9 @@ struct SceneManager
   void CreateDummyView(api::CommandList& cmd);
   uint CreateStagingBuffer(uint bytes);
   auto GetStagingBuffer(uint index) -> api::Buffer& { return *staging_buffers_[index]; };
-  auto LoadAbstractModels(const Config& cfg) -> std::vector<ModelHandle>;
+  void SetModels(const std::vector<ModelHandle>& models);
   void CopyGeometryToGpu(const std::vector<ModelHandle>& models, uint vstg_index, uint istg_index, api::CommandList& list);
   void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
-  void UpdateCamera(CameraEul& cam, MainInput& input, float dt);
   auto GetRenderableModels() -> const std::set<ModelHandle>& { return models_; }
   auto GetRenderableMaterials() -> RenderableMaterials;
   auto GetPerFrameUBO(uint frame_num) -> api::Buffer* { return pfcb_uniform_[frame_num]; }

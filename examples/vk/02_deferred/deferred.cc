@@ -41,6 +41,7 @@
 #include "desc/std_sampler_desc.h"
 
 #include "scene_manager.h"
+#include "helpers.h"
 
 using namespace gdm;
 
@@ -67,7 +68,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   TextureFactory::SetPath("../../_models_new/textures/");
   ImageFactory::SetPath("../../_models_new/textures/");
 
-  std::vector<ModelHandle> models = scene.LoadAbstractModels(cfg);
+  std::vector<ModelHandle> models = helpers::LoadAbstractModels(cfg);
+  scene.SetModels(models);
   uint vstg = scene.CreateStagingBuffer(MB(16));
   uint istg = scene.CreateStagingBuffer(MB(16));
   uint tstg = scene.CreateStagingBuffer(MB(16));
@@ -195,7 +197,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     float dt = timer.GetLastDt();
     input.Capture();
     win.ProcessInput(input);
-    scene.UpdateCamera(camera, input, dt);
+    helpers::UpdateCamera(camera, input, dt);
     
     uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
     api::CommandList cmd = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
