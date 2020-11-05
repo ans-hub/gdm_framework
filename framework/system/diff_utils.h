@@ -9,6 +9,29 @@
 
 #define UNUSED(x) (&reinterpret_cast<const int&>(x))
 
-#include "diff_utils.h"
+namespace gdm {
+
+template<class T, class IterBegin = decltype(std::begin(std::declval<T>())),
+                  class IterEnd = decltype(std::end(std::declval<T>()))>
+constexpr auto Enumerate(T&& iterable)
+{
+  struct Iterator
+  {
+    std::size_t i;
+    IterBegin iter;
+    bool operator !=(const Iterator& other) const { return iter != other.iter; }
+    void operator ++() { ++i; ++iter; }
+    auto operator *() const { return std::tie(i, *iter); }
+  };
+  struct Wrapper
+  {
+    T iterable;
+    auto begin() { return Iterator{0, std::begin(iterable) }; }
+    auto end() { return Iterator{0, std::end(iterable) }; }
+  };
+  return Wrapper{std::forward<T>(iterable)};
+}
+
+} // namespace gdm
 
 #endif  // AH_GDM_DIFF_MACRO_H
