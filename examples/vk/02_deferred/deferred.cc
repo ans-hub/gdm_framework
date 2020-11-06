@@ -208,25 +208,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     Mat4f proj = camera.GetProjectionMx();
     pfcb.u_view_proj_ = proj * view;
     scene.UpdatePerFrameUBO<FlatVs_PFCB>(cmd, curr_frame, pfcb);
+    scene.UpdatePerObjectUBO<FlatVs_POCB>(cmd, curr_frame);
 
     RenderableMaterials renderable_materials = scene.GetRenderableMaterials();
     frame_descriptor_sets[curr_frame]->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, renderable_materials.diffuse_views_);
     frame_descriptor_sets[curr_frame]->Finalize();
-
-    std::vector<FlatVs_POCB> pocbs;
-    for (auto model_handle : scene.GetRenderableModels())
-    {
-      AbstractModel* model = ModelFactory::Get(model_handle);
-      for (auto mesh_handle : model->meshes_)
-      {
-        AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
-        AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
-        pocbs.push_back({});
-        pocbs.back().u_model_ = model->tm_;
-        pocbs.back().u_material_index_ = material->index_;
-      }
-    }
-    scene.UpdatePerObjectUBO<FlatVs_POCB>(cmd, curr_frame, pocbs);
 
     auto& fb = framebuffers.Get(GDM_HASH_N("MainFB", curr_frame));
     cmd.BindPipelineGraphics(pipeline);

@@ -49,7 +49,7 @@ struct SceneManager
   template<class T>
   void UpdatePerFrameUBO(api::CommandList& cmd, uint curr_frame, const T& pfcb);
   template<class T>
-  void UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame, const std::vector<T>& pocbs);
+  void UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame);
 
 public:
   constexpr static uint v_max_materials = 128;

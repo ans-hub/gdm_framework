@@ -56,8 +56,23 @@ inline void gdm::SceneManager::UpdatePerFrameUBO(api::CommandList& cmd, uint cur
 }
 
 template<class T>
-inline void gdm::SceneManager::UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame, const std::vector<T>& pocbs)
+inline void gdm::SceneManager::UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame)
 {
+  std::vector<T> pocbs = {};
+
+  for (auto model_handle : GetRenderableModels())
+  {
+    AbstractModel* model = ModelFactory::Get(model_handle);
+    for (auto mesh_handle : model->meshes_)
+    {
+      AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+      AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
+      pocbs.push_back({});
+      pocbs.back().u_model_ = model->tm_;
+      pocbs.back().u_material_index_ = material->index_;
+    }
+  }
+
   cmd.PushBarrier(*pocb_to_write_barriers_[curr_frame]);
   pocb_staging_[curr_frame]->CopyDataToGpu(pocbs.data(), pocbs.size());
   uint pocb_size = static_cast<uint>(sizeof(T) * pocbs.size());
