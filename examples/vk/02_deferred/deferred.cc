@@ -73,9 +73,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   
   SceneManager scene(gfx.GetDevice());
   scene.SetModels(models);
-  uint vstg = scene.CreateStagingBuffer(MB(32));
+  uint vstg = scene.CreateStagingBuffer(MB(64));
   uint istg = scene.CreateStagingBuffer(MB(32));
-  uint tstg = scene.CreateStagingBuffer(MB(32));
+  uint tstg = scene.CreateStagingBuffer(MB(96));
   scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
   scene.CopyTexturesToGpu(models, tstg, setup_list);
   scene.CreateDummyView(setup_list);

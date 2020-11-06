@@ -75,8 +75,10 @@ void gdm::SceneManager::CopyGeometryToGpu(const std::vector<ModelHandle>& handle
     istg.CopyDataToGpu(mesh->faces_.data(), curr_ioffset, mesh->faces_.size());
     curr_ioffset += static_cast<uint>(mesh->faces_.size() * sizeof(Vec3u));
 
-    auto* vxs_buffer = GMNew api::Buffer(&device_, curr_voffset, gfx::VERTEX | gfx::TRANSFER_DST, gfx::DEVICE_LOCAL);
-    auto* idx_buffer = GMNew api::Buffer(&device_, curr_ioffset, gfx::INDEX | gfx::TRANSFER_DST, gfx::DEVICE_LOCAL);
+    uint curr_vbuffer_sz = curr_voffset - mesh_voffsets.back();
+    auto* vxs_buffer = GMNew api::Buffer(&device_, curr_vbuffer_sz, gfx::VERTEX | gfx::TRANSFER_DST, gfx::DEVICE_LOCAL);
+    uint curr_ibuffer_sz = curr_ioffset - mesh_ioffsets.back();
+    auto* idx_buffer = GMNew api::Buffer(&device_, curr_ibuffer_sz, gfx::INDEX | gfx::TRANSFER_DST, gfx::DEVICE_LOCAL);
     mesh->SetVertexBuffer(vxs_buffer);
     mesh->SetIndexBuffer(idx_buffer);
   }

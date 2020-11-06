@@ -677,6 +677,8 @@ namespace helpers
 
 } // namespace helpers
 
+// todo: prevent duplication
+
 template<class T>
 inline std::vector<T> helpers::LoadXYZ(obj::Loader& obj, std::size_t mesh_num)
 {

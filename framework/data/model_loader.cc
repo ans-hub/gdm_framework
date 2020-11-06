@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "system/string_utils.h"
+#include "system/assert_utils.h"
 
 // --public
 
@@ -43,6 +44,8 @@ gdm::ModelLoader::ModelLoader(const char* model_fname, const char* material_path
     cfg.mtl_search_path = material_path;
     loader_obj_ = std::make_unique<obj::Loader>();
     loader_obj_->ParseFromFile(model_fname, cfg);
+    ASSERTF(loader_obj_->Error().empty(), "%s", loader_obj_->Error().c_str());
+    ENSUREF(loader_obj_->Warning().empty(), "%s", loader_obj_->Warning().c_str());
 #if 0
     loader_obj_ = std::make_unique<obj::Loader>(model_fname_, material_path_);
 #endif
@@ -101,8 +104,10 @@ const char* gdm::ModelLoader::GetMaterialName(std::size_t mat_num) const
     }
     case ELoaderType::OBJ :
     {
-      assert(mat_num < loader_obj_->GetMaterials().size());
-      return loader_obj_->GetMaterials()[mat_num].name.c_str();
+      if (mat_num < loader_obj_->GetMaterials().size())
+        return loader_obj_->GetMaterials()[mat_num].name.c_str();
+      else
+        return v_dummy_name;
 #if 0
       assert(mat_num < loader_obj_->LoadedMaterials.size());
       return loader_obj_->LoadedMaterials[mat_num].name.c_str();
@@ -138,8 +143,6 @@ const char* gdm::ModelLoader::GetMeshMaterialName(std::size_t mesh_num) const
     case ELoaderType::OBJ :
     {
       assert(mesh_num < loader_obj_->GetShapes().size());
-
-      static const char* v_dummy_name = "";
       int mat_num = loader_obj_->GetShapes()[mesh_num].mesh.material_ids[0];
 
       if (mat_num != -1)

@@ -54,6 +54,8 @@ private:
   gdm::Config material_ply_;
   std::unique_ptr<obj::Loader> loader_obj_;
 
+  inline static const char* v_dummy_name = "";
+
 }; // struct ModelLoader
 
 } // namespace gdm
