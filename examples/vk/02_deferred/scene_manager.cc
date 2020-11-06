@@ -10,6 +10,7 @@
 #include "memory/defines.h"
 #include "render/api.h"
 #include "system/assert_utils.h"
+#include "system/diff_utils.h"
 
 // --public
 
@@ -63,7 +64,7 @@ void gdm::SceneManager::CopyGeometryToGpu(const std::vector<ModelHandle>& handle
         meshes_to_load.push_back(mesh_handle);
   }
 
-  for (auto mesh_handle : meshes_to_load)
+  for (auto [index, mesh_handle] : Enumerate(meshes_to_load))
   {
     AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
 
@@ -110,7 +111,7 @@ void gdm::SceneManager::CopyTexturesToGpu(const std::vector<ModelHandle>& handle
   std::vector<MaterialHandle> materials_to_load = GetMaterialsToLoad(handles);
   
   tstg.Map();
-  for (auto material_handle : materials_to_load)
+  for (auto [index, material_handle] : Enumerate(materials_to_load))
   {
     AbstractMaterial* material = MaterialFactory::Get(material_handle);
     auto textures = TextureFactory::Get(material->GetTextureHandles());
@@ -123,7 +124,7 @@ void gdm::SceneManager::CopyTexturesToGpu(const std::vector<ModelHandle>& handle
   tstg.Unmap();
 
   auto offset = offsets.begin();
-  for (auto material_handle : materials_to_load)
+  for (auto [index, material_handle] : Enumerate(materials_to_load))
   {
     AbstractMaterial* material = MaterialFactory::Get(material_handle);
     auto textures = TextureFactory::Get(material->GetTextureHandles());
@@ -214,7 +215,8 @@ auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
   materials.specular_views_.resize(v_max_materials, dummy_view);
   materials.normal_views_.resize(v_max_materials, dummy_view);
 
-  for (auto model_handle : GetRenderableModels())
+  auto& renderable = GetRenderableModels();
+  for (auto [index,model_handle] : Enumerate(renderable))
   {
     auto model = ModelFactory::Get(model_handle);
     for (auto mesh_handle : model->meshes_)

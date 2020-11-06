@@ -53,7 +53,7 @@ struct SceneManager
 
 public:
   constexpr static uint v_max_materials = 128;
-  constexpr static uint v_max_objects = 128;
+  constexpr static uint v_max_objects = 1024;
   constexpr static const char* v_dummy_image = "dummy_handle";
 
 private:

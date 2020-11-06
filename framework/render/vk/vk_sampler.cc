@@ -12,9 +12,9 @@
 // --public
 
 gdm::vk::Sampler::Sampler(VkDevice device, const SamplerState& sampler_state)
-  : device_{device}
-  , sampler_state_{sampler_state}
-  , sampler_{CreateSampler()}
+  : device_{ device }
+  , sampler_state_{ sampler_state }
+  , sampler_{ CreateSampler() }
 { }
 
 gdm::vk::Sampler::~Sampler()
@@ -26,24 +26,23 @@ gdm::vk::Sampler::~Sampler()
 
 auto gdm::vk::Sampler::CreateSampler() -> VkSampler
 {
-  // todo: proper fill from sampler_state_
   VkSamplerCreateInfo sampler_create_info = {};
   sampler_create_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
   sampler_create_info.flags = 0;
   sampler_create_info.magFilter = VK_FILTER_LINEAR;
   sampler_create_info.minFilter = VK_FILTER_LINEAR;
   sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-  sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-  sampler_create_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+  sampler_create_info.addressModeU = static_cast<VkSamplerAddressMode>(sampler_state_.address_);
+  sampler_create_info.addressModeV = static_cast<VkSamplerAddressMode>(sampler_state_.address_);
+  sampler_create_info.addressModeW = static_cast<VkSamplerAddressMode>(sampler_state_.address_);
   sampler_create_info.mipLodBias = 0.f;
   sampler_create_info.anisotropyEnable = VK_FALSE;
   sampler_create_info.maxAnisotropy = 1.f;
   sampler_create_info.compareEnable = VK_FALSE;
-  sampler_create_info.compareOp = VK_COMPARE_OP_ALWAYS;
+  sampler_create_info.compareOp = static_cast<VkCompareOp>(sampler_state_.comparsion_);
   sampler_create_info.minLod = 0.f;
   sampler_create_info.maxLod = 0.f;
-  sampler_create_info.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+  sampler_create_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
   sampler_create_info.unnormalizedCoordinates = VK_FALSE;
 
   VkSampler sampler = {};

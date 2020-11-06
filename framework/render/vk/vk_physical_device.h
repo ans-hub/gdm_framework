@@ -18,6 +18,8 @@ struct PhysicalDevice
   VkPhysicalDevice device_;
   VkPhysicalDeviceProperties device_props_;
   VkPhysicalDeviceProperties2 device_props2_;
+  VkPhysicalDeviceFeatures device_features_;
+  VkPhysicalDeviceFeatures2 device_features2_;
   VkPhysicalDeviceMemoryProperties device_mem_props_;
   std::vector<VkQueueFamilyProperties> queue_family_props_;
   std::vector<VkBool32> queue_supports_present_;

@@ -15,7 +15,7 @@ namespace gdm {
 struct StdSamplerState : public SamplerState
 {
   StdSamplerState() : SamplerState({
-    gfx::ETextureAddressMode::CLAMP,
+    gfx::ETextureAddressMode::WRAP,
     color::Green,
     gfx::ECompareFunc::ALWAYS})
   { }

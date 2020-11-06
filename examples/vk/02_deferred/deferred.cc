@@ -217,10 +217,14 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     for (auto model_handle : scene.GetRenderableModels())
     {
       AbstractModel* model = ModelFactory::Get(model_handle);
-      AbstractMaterial* material = MaterialFactory::Get(model->materials_[0]);
-      pocbs.push_back({});
-      pocbs.back().u_model_ = model->tm_;
-      pocbs.back().u_material_index_ = material->index_;
+      for (auto mesh_handle : model->meshes_)
+      {
+        AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+        AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
+        pocbs.push_back({});
+        pocbs.back().u_model_ = model->tm_;
+        pocbs.back().u_material_index_ = material->index_;
+      }
     }
     scene.UpdatePerObjectUBO<FlatVs_POCB>(cmd, curr_frame, pocbs);
 
@@ -228,16 +232,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     cmd.BindPipelineGraphics(pipeline);
     cmd.BeginRenderPass(render_pass, fb, width, height);
 
-    uint model_number = 0;
+    uint mesh_number = 0;
     for (auto model_handle : scene.GetRenderableModels())
     {
       AbstractModel* model = ModelFactory::Get(model_handle);
-      uint offset = sizeof(FlatVs_POCB) * model_number++;
-      cmd.BindDescriptorSetGraphics(api::DescriptorSets{*frame_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});
-      
       for (auto mesh_handle : model->meshes_)
       {
         AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+        uint offset = sizeof(FlatVs_POCB) * mesh_number++;
+        
+        cmd.BindDescriptorSetGraphics(api::DescriptorSets{*frame_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});      
         cmd.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
         cmd.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
         cmd.DrawIndexed(mesh->faces_);

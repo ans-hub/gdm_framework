@@ -44,7 +44,7 @@ Ni 1.000000
 d 1.000000
 illum 2
 map_Kd sponza/vase_plant.tga
-map_d vase_plant_mask.tga
+map_d sponza/vase_plant_mask.tga
 map_Ka sponza/vase_plant.tga
 
 newmtl arch
@@ -92,7 +92,7 @@ Ni 1.000000
 d 1.000000
 illum 2
 map_Kd sponza/chain_texture.tga
-map_d chain_texture_mask.tga
+map_d sponza/chain_texture_mask.tga
 map_Disp sponza/chain_texture_ddn.tga
 map_Ka sponza/chain_texture.tga
 
@@ -253,7 +253,7 @@ Ni 1.000000
 d 1.000000
 illum 2
 map_Kd sponza/sponza_thorn_diff.tga
-map_d sponza_thorn_mask.tga
+map_d sponza/sponza_thorn_mask.tga
 map_Disp sponza/sponza_thorn_ddn.tga
 map_Ka sponza/sponza_thorn_diff.tga
 

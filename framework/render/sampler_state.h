@@ -14,7 +14,7 @@ namespace gdm {
 
 struct SamplerState
 {
-  gfx::ETextureAddressMode address_ = gfx::CLAMP;
+  gfx::ETextureAddressMode address_ = gfx::WRAP;
   Vec4f border_color_ = {0.f, 0.f, 0.f, 0.f};
   gfx::ECompareFunc comparsion_ = gfx::ALWAYS;
 
