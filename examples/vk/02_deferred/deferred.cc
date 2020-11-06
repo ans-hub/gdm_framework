@@ -61,7 +61,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
   api::Fence submit_fence (device);
 
-  Config cfg("../../_configs/simple.cfg");
+  ENSUREF(wcslen(cmdLine) != 0, "Config file name is empty");
+
+  std::string cfg_name = str::Utf2Ansi(cmdLine);
+  Config cfg(cfg_name.c_str());
   ModelFactory::SetPath("../../_models_new/models/");
   MaterialFactory::SetPath("../../_models_new/materials/");
   TextureFactory::SetPath("../../_models_new/textures/");
@@ -70,9 +73,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   
   SceneManager scene(gfx.GetDevice());
   scene.SetModels(models);
-  uint vstg = scene.CreateStagingBuffer(MB(16));
-  uint istg = scene.CreateStagingBuffer(MB(16));
-  uint tstg = scene.CreateStagingBuffer(MB(16));
+  uint vstg = scene.CreateStagingBuffer(MB(32));
+  uint istg = scene.CreateStagingBuffer(MB(32));
+  uint tstg = scene.CreateStagingBuffer(MB(32));
   scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
   scene.CopyTexturesToGpu(models, tstg, setup_list);
   scene.CreateDummyView(setup_list);
