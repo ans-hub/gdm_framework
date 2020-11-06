@@ -118,7 +118,7 @@
 
 # VK_LAYER_KHRONOS_validation Settings
 
-khronos_validation.debug_action = VK_DBG_LAYER_ACTION_LOG_MSG
+khronos_validation.debug_action = VK_DBG_LAYER_ACTION_DEBUG_OUTPUT_MSG, VK_DBG_LAYER_ACTION_BREAK_MSG
 khronos_validation.report_flags = error,warn,perf
 khronos_validation.log_filename = stdout
 
@@ -135,7 +135,7 @@ khronos_validation.log_filename = stdout
 #khronos_validation.disables = VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT,VALIDATION_CHECK_DISABLE_DESTROY_PIPELINE
 
 # Example entry showing how to Enable GPU-Assisted Validation
-#khronos_validation.enables = VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT
+khronos_validation.enables = VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,VK_VALIDATION_FEATURE_SYNCHRONIZATION_VALIDATION_EXT
 
 # Example entry showing how to Enable Best Practices Validation
 #khronos_validation.enables = VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT

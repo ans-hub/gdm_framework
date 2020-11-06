@@ -44,7 +44,9 @@ inline void gdm::vk::Buffer::CopyDataToGpu(const T* data, uint offset, size_t co
   uintptr_t mapped_end = mapped_begin + buffer_info_.size;
   uintptr_t write_begin = mapped_begin + offset;
   uintptr_t write_end = write_begin + write_size;
-  ASSERT(write_begin >= mapped_begin && write_end <= mapped_end);
+
+  ASSERTF(write_begin >= mapped_begin, "Before range begin %d", (int)(write_begin - mapped_begin));
+  ASSERTF(write_end <= mapped_end, "Over range end %d", (int)(write_end - mapped_end));
 
   memcpy(mem::UptrToPtr(write_begin), data, write_size);
 

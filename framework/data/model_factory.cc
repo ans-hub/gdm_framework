@@ -18,19 +18,27 @@ gdm::ModelHandle gdm::ModelFactory::Load(const char* fpath)
   ModelLoader model_loader {full_path.c_str(), MaterialFactory::GetPath()};
   AbstractModel* model = GMNew AbstractModel();
   
+  MaterialHandle dummy_handle = {};
+  if (MaterialFactory::Has(MaterialFactory::v_dummy_name))
+    dummy_handle = MaterialFactory::GetHandle(MaterialFactory::v_dummy_name);
+  else
+    dummy_handle = MaterialFactory::Create(MaterialFactory::v_dummy_name, 0, model_loader);
+
   for (int i = 0; i < model_loader.GetMaterialsCount(); ++i)
   {
     const char* mat_name = model_loader.GetMaterialName(i);
-    if (*mat_name == '\000')
-      mat_name = MaterialFactory::v_dummy_name;
+    Handle mat_handle = {};
 
-    Handle mat_handle {};
-    if (MaterialFactory::Has(mat_name))
+    if (*mat_name == '\000')
+      mat_handle = dummy_handle;
+    else if (MaterialFactory::Has(mat_name))
       mat_handle = MaterialFactory::GetHandle(mat_name);
     else
       mat_handle = MaterialFactory::Create(mat_name, i, model_loader);
+
     model->materials_.push_back(mat_handle);
   }
+
   for (int i = 0; i < model_loader.GetMeshesCount(); ++i)
   {
     std::string mesh_name = model_loader.GetMeshName(i);
