@@ -72,6 +72,9 @@ auto gdm::vk::Device::CreateLogicalDevice(VkPhysicalDevice phys_device, int queu
   
   VkPhysicalDeviceFeatures device_features = {};
   device_features.shaderClipDistance = true;
+  device_features.samplerAnisotropy = true;
+
+  // todo: validate device features using info_.device_features_
 
   VkDeviceCreateInfo device_info = {};
   device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
