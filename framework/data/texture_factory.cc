@@ -20,7 +20,13 @@
 
 #include "image_factory.h"
 
-// --public
+// --public AbstractTexture
+
+gdm::AbstractTexture::AbstractTexture(ImageHandle handle)
+  : image_{handle}
+{ }
+ 
+// --public TextureFactory
 
 gdm::TextureHandle gdm::TextureFactory::Load(ImageHandle img_handle)
 {

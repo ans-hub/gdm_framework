@@ -18,7 +18,7 @@
 
 using namespace gdm;
 
-TEST_CASE("ResourceManager")
+TEST_CASE("SceneManager")
 {
   gdm::ImageFactory::SetPath("examples/_models_new/textures/");
   gdm::TextureFactory::SetPath("examples/_models_new/textures/");

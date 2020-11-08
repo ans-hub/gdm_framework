@@ -8,6 +8,7 @@
 #define GM_VK_IMAGE_H
 
 #include "render/defines.h"
+#include "render/vk/vk_deleter.h"
 
 namespace gdm::vk {
 
@@ -15,12 +16,17 @@ struct Device;
 
 struct Image
 {
-  Image(Device* device, uint width, uint height, gfx::ImageUsage usage, gfx::FormatType format);
-  Image(Device* device, uint width, uint height, uint depth, gfx::ImageUsage usage, gfx::FormatType format);
-  ~Image();
+  using self = Image&;
+
+  Image(Device* device, uint width, uint height);
 
   Image(const Image&) = delete;
   Image& operator=(const Image&) = delete;
+
+  self GetProps() { return *this; }
+  self AddFormatType(gfx::FormatType format) { image_info_.format = VkFormat(format); return *this; }
+  self AddImageUsage(gfx::ImageUsage usage) { image_info_.usage = VkImageUsageFlagBits(usage); return *this; }
+  void Create();
 
   uint GetWidth() const { return image_info_.extent.width; }
   uint GetHeight() const { return image_info_.extent.height; }
@@ -35,14 +41,10 @@ struct Image
   operator VkImage() const { return image_; }
 
 private:
-  auto CreateImage(const VkImageCreateInfo& info) -> VkImage;
-  auto AllocateMemory(VkImage image) -> VkDeviceMemory;
-
-private:
   Device* device_;
   VkImageCreateInfo image_info_;
-  VkImage image_;
-  VkDeviceMemory image_memory_;
+  VkDeleter<VkImage> image_;
+  VkDeleter<VkDeviceMemory> image_memory_;
 
 }; // struct Image
 

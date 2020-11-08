@@ -49,7 +49,7 @@ void gdm::vk::CommandList::PushBarrier(const ImageBarrier& barrier)
 {
   ASSERTF(!explicitly_finalized_, "Command list finalized");
 
-  const VkImageMemoryBarrier vk_barrier = barrier;
+  const VkImageMemoryBarrier& vk_barrier = barrier;
   const VkPipelineStageFlagBits src = barrier.src_stage_mask_;
   const VkPipelineStageFlagBits dst = barrier.dst_stage_mask_;
 

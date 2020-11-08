@@ -14,7 +14,14 @@
 #include "render/viewport_desc.h"
 #include "render/scissor_desc.h"
 
-// --public
+// --public AttachmentDescription
+
+gdm::vk::AttachmentDescription::AttachmentDescription(RenderPass& pass, uint index)
+  : desc_{ pass.attachment_desc_[index] }
+  , ref_{ pass.attachment_ref_[index] }
+{ }
+
+// --public RenderPass
 
 gdm::vk::RenderPass::RenderPass(VkDevice device)
   : device_{device}
@@ -27,29 +34,31 @@ gdm::vk::RenderPass::RenderPass(VkDevice device)
   , explicitly_finalized_{}
 { }
 
-void gdm::vk::RenderPass::AddPassDescription(uint idx, gfx::EFormatType format, gfx::EImageLayout layout)
+auto gdm::vk::RenderPass::AddAttachmentDescription(uint idx) -> AttachmentDescription
 {
   ASSERTF(!explicitly_finalized_, "Render pass finalized");
 
   VkAttachmentDescription pass_attachment = { };
-  pass_attachment.format = static_cast<VkFormat>(format);
+  pass_attachment.format = VK_FORMAT_UNDEFINED;
   pass_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
   pass_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   pass_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
   pass_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
   pass_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-  pass_attachment.initialLayout = static_cast<VkImageLayout>(layout);
-  pass_attachment.finalLayout = static_cast<VkImageLayout>(layout);
+  pass_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+  pass_attachment.finalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   arr_utils::EnsureIndex(attachment_desc_, idx);
   attachment_desc_[idx] = pass_attachment;
 
   VkAttachmentReference attachment_reference = {};
   attachment_reference.attachment = static_cast<uint>(idx);
-  attachment_reference.layout = static_cast<VkImageLayout>(layout);
+  attachment_reference.layout = VK_IMAGE_LAYOUT_UNDEFINED;
 
   arr_utils::EnsureIndex(attachment_ref_, idx);
   attachment_ref_[idx] = attachment_reference;
+
+  return AttachmentDescription(*this, idx);
 }
 
 uint gdm::vk::RenderPass::CreateSubpass(gfx::EQueueType type)

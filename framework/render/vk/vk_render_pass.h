@@ -18,11 +18,26 @@ namespace gdm::vk{
 using Attachments = std::vector<uint>;
 using Attachment = uint;
 
+struct AttachmentDescription
+{
+  using self = AttachmentDescription&;
+
+  AttachmentDescription(RenderPass& pass, uint index);
+  self AddFormat(gfx::EFormatType format) { desc_.format = VkFormat(format); return *this; }
+  self AddInitLayout(gfx::EImageLayout layout) { desc_.initialLayout = VkImageLayout(layout); return *this; }
+  self AddFinalLayout(gfx::EImageLayout layout) { desc_.finalLayout = VkImageLayout(layout); return *this; }
+  self AddRefLayout(gfx::EImageLayout layout) { ref_.layout = VkImageLayout(layout); return *this; }
+
+private:
+  VkAttachmentDescription& desc_;
+  VkAttachmentReference& ref_;
+};
+
 struct RenderPass
 {
   RenderPass(VkDevice device);
 
-  void AddPassDescription(uint attachment_idx, gfx::EFormatType format, gfx::EImageLayout layout);
+  auto AddAttachmentDescription(uint attachment_idx) -> AttachmentDescription;
   uint CreateSubpass(gfx::EQueueType type);
   void AddSubpassColorAttachments(uint subpass_idx, const Attachments& attachments_indices);
   void AddSubpassDepthAttachments(uint subpass_idx, Attachment attachment_index);
@@ -32,11 +47,13 @@ struct RenderPass
   auto GetSubpassesCount() const -> uint { return static_cast<uint>(subpass_desc_.size()); }
   auto GetPassAttachmentsCount() const -> size_t { return attachment_desc_.size(); }
   auto GetHandle() const -> VkRenderPass { return render_pass_; }
+
   operator VkRenderPass() const { return render_pass_; }
 
 private:
   struct Subpass;
   struct Pass;
+  friend struct AttachmentDescription;
 
 private:
   VkDevice device_;

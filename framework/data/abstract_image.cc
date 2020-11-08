@@ -37,19 +37,18 @@ gdm::AbstractImage::AbstractImage(int width, int height, int depth, float r, flo
       data_[i+k] = color[k];
 }
 
-int gdm::AbstractImage::GetWidth() const
+unsigned gdm::AbstractImage::GetWidth() const
 {
-  return width_;
+  return static_cast<unsigned>(width_);
 }
 
-int gdm::AbstractImage::GetHeight() const
+unsigned gdm::AbstractImage::GetHeight() const
 {
-  return height_;
+  return static_cast<unsigned>(height_);
 }
-
-int gdm::AbstractImage::GetDepth() const
+unsigned gdm::AbstractImage::GetDepth() const
 {
-  return depth_;
+  return static_cast<unsigned>(depth_);
 }
 
 auto gdm::AbstractImage::GetRaw() const -> const std::vector<unsigned char>&

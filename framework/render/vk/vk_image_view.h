@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "render/defines.h"
+#include "vk_deleter.h"
 
 namespace gdm::vk {
 
@@ -17,21 +18,25 @@ struct Device;
 
 struct ImageView
 {
-  ImageView(VkDevice device, VkImage image, VkFormat format);
-  ~ImageView();
+  using self = ImageView&;
 
+  ImageView(VkDevice device);
+ 
   ImageView(const ImageView&) = delete;
   ImageView& operator=(const ImageView&) = delete;
 
-  auto GetFormat() const -> VkFormat { return format_; }
+  self GetProps() { return *this; }
+  self AddImage(VkImage image) { image_view_info_.image = image; return *this; }
+  self AddFormatType(gfx::FormatType format) { image_view_info_.format = VkFormat(format); return *this; }
+  void Create();
+
+  auto GetFormat() const -> VkFormat { return image_view_info_.format; }
   operator VkImageView() const { return image_view_; }
 
 private:
-  auto CreateImageView(VkImage image, VkFormat format) -> VkImageView;
-
   VkDevice device_;
-  VkFormat format_;
-  VkImageView image_view_;
+  VkImageViewCreateInfo image_view_info_;
+  VkDeleter<VkImageView> image_view_;
 
 }; // struct ImageView
 

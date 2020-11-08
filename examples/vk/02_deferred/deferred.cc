@@ -58,8 +58,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   width = gfx.GetSurfaceWidth();
   height = gfx.GetSurfaceHeight();
 
-  api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
-  api::Fence submit_fence (device);
 
   ENSUREF(wcslen(cmdLine) != 0, "Config file name is empty");
 
@@ -70,7 +68,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   TextureFactory::SetPath("../../_models_new/textures/");
   ImageFactory::SetPath("../../_models_new/textures/");
   std::vector<ModelHandle> models = helpers::LoadAbstractModels(cfg);
-  
+
+  api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::Fence submit_fence (device);
+ 
   SceneManager scene(gfx.GetDevice());
   scene.SetModels(models);
   uint vstg = scene.CreateStagingBuffer(MB(64));
@@ -85,11 +86,24 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     scene.CreatePerFrameUBO<FlatVs_PFCB, 1>(setup_list);
     scene.CreatePerObjectUBO<FlatVs_POCB, SceneManager::v_max_objects>(setup_list);
   }
+  api::Image2D depth_image(&device, width, height);
+  api::ImageView depth_image_view (device);
+  api::ImageBarrier depth_barrier;
 
-  auto depth_image = api::Image2D(&device, width, height, gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT, gfx::EFormatType::D16_UNORM);
-  auto depth_image_view = api::ImageView(device, depth_image.GetHandle(), depth_image.GetFormat());
-  auto barrier = api::ImageBarrier(&device, depth_image.GetHandle(), gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-  setup_list.PushBarrier(barrier);
+  depth_image.GetProps()
+    .AddImageUsage(gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT)
+    .AddFormatType(gfx::EFormatType::D16_UNORM)
+    .Create();
+  depth_image_view.GetProps()
+    .AddImage(depth_image.GetHandle())
+    .AddFormatType(depth_image.GetFormat())
+    .Create();
+  depth_barrier.GetProps()
+    .AddImage(depth_image)
+    .AddOldLayout(gfx::EImageLayout::UNDEFINED)
+    .AddNewLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    .Finalize();
+  setup_list.PushBarrier(depth_barrier);
 
   setup_list.Finalize();
   gfx.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
@@ -100,11 +114,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   render_passes.Create(GDM_HASH("MainRenderPass"), device);
 
   api::RenderPass& render_pass = render_passes.Get(GDM_HASH("MainRenderPass"));
+  
   uint color_idx = 0;
+  render_pass.AddAttachmentDescription(color_idx)
+    .AddFormat(gfx.GetSurfaceFormat())
+    .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+    .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+    .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+  
   uint depth_idx = 1;
-  uint input_idx = -1;
-  render_pass.AddPassDescription(color_idx, gfx.GetSurfaceFormat(), gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
-  render_pass.AddPassDescription(depth_idx, depth_image.GetFormat<gfx::EFormatType>(), gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+  render_pass.AddAttachmentDescription(depth_idx)
+    .AddFormat(depth_image.GetFormat<gfx::EFormatType>())
+    .AddInitLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    .AddFinalLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
+    .AddRefLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
   uint subpass_idx = render_pass.CreateSubpass(gfx::EQueueType::GRAPHICS);
   render_pass.AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
   render_pass.AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
@@ -113,7 +137,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   DataStorage<api::Framebuffer> framebuffers {};
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
-    api::ImageViews image_views {gfx.GetBackBufferViews()[i], &depth_image_view};
+    api::ImageViews image_views {
+      gfx.GetBackBufferViews()[i],
+      &depth_image_view
+    };
     framebuffers.Create(GDM_HASH_N("MainFB", i), gfx.GetDevice(), width, height, render_pass, image_views);
   }
 
@@ -122,10 +149,20 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
   
   auto* descriptor_layout = GMNew api::DescriptorSetLayout(device);
-  descriptor_layout->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(2, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  descriptor_layout->AddBinding(3, static_cast<uint>(SceneManager::v_max_materials), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
+  
+  descriptor_layout->AddBinding(0, 1,
+    gfx::EResourceType::UNIFORM_BUFFER,
+    gfx::EShaderStage::VERTEX_STAGE);
+  descriptor_layout->AddBinding(1, 1,
+    gfx::EResourceType::UNIFORM_DYNAMIC,
+    gfx::EShaderStage::VERTEX_STAGE);
+  descriptor_layout->AddBinding(2, 1, 
+    gfx::EResourceType::SAMPLER,
+    gfx::EShaderStage::FRAGMENT_STAGE);
+  descriptor_layout->AddBinding(3, SceneManager::v_max_materials,
+    gfx::EResourceType::SAMPLED_IMAGE,
+    gfx::EShaderStage::FRAGMENT_STAGE,
+    gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
   descriptor_layout->Finalize();
 
   api::Sampler sampler(device, StdSamplerState{});
@@ -167,15 +204,26 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   api::Semaphore srender_done(device);
 
   auto present_images = gfx.GetBackBufferImages();
-  std::vector<api::ImageBarrier*> present_to_read_barrier = {};
-  std::vector<api::ImageBarrier*> present_to_write_barrier = {};
+  std::vector<api::ImageBarrier> present_to_read_barrier = {};
+  std::vector<api::ImageBarrier> present_to_write_barrier = {};
 
   for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
   {
-    auto* barrier_to_read = GMNew api::ImageBarrier(
-      &device, present_images[i], gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL, gfx::EImageLayout::PRESENT_SRC);
-    auto* barrier_to_write = GMNew api::ImageBarrier(
-      &device, present_images[i], gfx::EImageLayout::PRESENT_SRC, gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+    api::ImageBarrier barrier_to_read;
+    api::ImageBarrier barrier_to_write;
+
+    barrier_to_read.GetProps()
+      .AddImage(present_images[i])
+      .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
+      .Finalize();
+
+    barrier_to_write.GetProps()
+      .AddImage(present_images[i])
+      .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
+      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+      .Finalize();
+
     present_to_read_barrier.push_back(barrier_to_read);
     present_to_write_barrier.push_back(barrier_to_write);
   }
@@ -202,7 +250,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     
     uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
     api::CommandList cmd = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
-    cmd.PushBarrier(*present_to_write_barrier[curr_frame]);
+    cmd.PushBarrier(present_to_write_barrier[curr_frame]);
 
     Mat4f view = camera.GetViewMx();
     Mat4f proj = camera.GetProjectionMx();
@@ -235,7 +283,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     }
     
     cmd.EndRenderPass();
-    cmd.PushBarrier(*present_to_read_barrier[curr_frame]);
+    cmd.PushBarrier(present_to_read_barrier[curr_frame]);
     cmd.Finalize();
 
     api::Fence submit_fence(device);

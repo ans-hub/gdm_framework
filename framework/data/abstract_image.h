@@ -21,9 +21,9 @@ struct AbstractImage
   AbstractImage() = default;
   AbstractImage(int width, int height, int depth, float r, float g, float b, float a = 1.f);
 
-  virtual auto GetWidth() const -> int;
-  virtual auto GetHeight() const -> int;
-  virtual auto GetDepth() const -> int;
+  virtual auto GetWidth() const -> unsigned;
+  virtual auto GetHeight() const -> unsigned;
+  virtual auto GetDepth() const -> unsigned;
   virtual auto GetRaw() const -> const StorageType&;
 
 protected:

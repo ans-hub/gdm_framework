@@ -158,13 +158,19 @@ uint gdm::SceneManager::CopyTextureToStagingBuffer(AbstractTexture* texture, api
   stg.CopyDataToGpu(image->GetRaw().data(), curr_offset, image->GetRaw().size());
   curr_offset += static_cast<uint>(image->GetRaw().size());
 
-  gfx::ImageUsage img_usage = gfx::TRANSFER_DST_IMG | gfx::SAMPLED;
-  gfx::FormatType img_format = gfx::UNORM4;
-  uint img_w = static_cast<uint>(image->GetWidth());
-  uint img_h = static_cast<uint>(image->GetHeight());
-  auto* api_img = GMNew api::Image2D(&device_, img_w, img_h, img_usage, img_format);
-  auto* api_img_view = GMNew api::ImageView(device_, *api_img, api_img->GetFormat());
-  texture->SetApiImageBuffer(api_img);
+  auto* api_img = GMNew api::Image2D(&device_, image->GetWidth(), image->GetHeight());
+  auto* api_img_view = GMNew api::ImageView(device_);
+  
+  api_img->GetProps()
+    .AddFormatType(gfx::UNORM4)
+    .AddImageUsage(gfx::TRANSFER_DST_IMG | gfx::SAMPLED)
+    .Create();
+  api_img_view->GetProps()
+    .AddImage(*api_img)
+    .AddFormatType(api_img->GetFormat())
+    .Create();
+  
+  texture->SetApiImage(api_img);
   texture->SetApiImageView(api_img_view);
 
   return curr_offset;
@@ -172,10 +178,23 @@ uint gdm::SceneManager::CopyTextureToStagingBuffer(AbstractTexture* texture, api
 
 void gdm::SceneManager::CopyTextureFromStagingBuffer(api::CommandList& cmd, AbstractTexture* texture, api::Buffer& stg, uint curr_offset)
 {
-  api::Image2D* img = texture->GetImageBuffer<api::Image2D>();
+  api::Image2D* img = texture->GetApiImage<api::Image2D>();
   auto& img_raw = ImageFactory::Get(texture->image_)->GetRaw();
-  auto barrier_undef_to_transfer = api::ImageBarrier(&device_, *img, gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::TRANSFER_DST_OPTIMAL);
-  auto barrier_transfer_to_shader = api::ImageBarrier(&device_, *img, gfx::EImageLayout::TRANSFER_DST_OPTIMAL, gfx::EImageLayout::SHADER_READ_OPTIMAL);
+  
+  api::ImageBarrier barrier_undef_to_transfer;
+  api::ImageBarrier barrier_transfer_to_shader;
+
+  barrier_undef_to_transfer.GetProps()
+    .AddImage(*img)
+    .AddOldLayout(gfx::EImageLayout::UNDEFINED)
+    .AddNewLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL)
+    .Finalize();
+  barrier_transfer_to_shader.GetProps()
+    .AddImage(*img)
+    .AddOldLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL)
+    .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL)
+    .Finalize();
+
   cmd.PushBarrier(barrier_undef_to_transfer);
   cmd.CopyBufferToImage(stg, *img, curr_offset, 0, static_cast<uint>(img_raw.size()));
   cmd.PushBarrier(barrier_transfer_to_shader);
@@ -190,25 +209,34 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
   TextureHandle texture_handle = TextureFactory::Load(image_handle);
   AbstractTexture* dummy_texture = TextureFactory::Get(texture_handle);
 
-  const gfx::ImageUsage img_usage = gfx::TRANSFER_DST_IMG | gfx::SAMPLED;
-  const gfx::FormatType img_format = gfx::UNORM4;
-  const uint img_w = static_cast<uint>(dummy_image->GetWidth());
-  const uint img_h = static_cast<uint>(dummy_image->GetHeight());
-  
-  auto* api_img = GMNew api::Image2D(&device_, img_w, img_h, img_usage, img_format);
-  auto* api_img_view = GMNew api::ImageView(device_, *api_img, api_img->GetFormat());
-  dummy_texture->SetApiImageBuffer(api_img);
-  dummy_texture->SetApiImageView(api_img_view);
+  api::Image2D* api_img = GMNew api::Image2D(&device_, dummy_image->GetWidth(), dummy_image->GetHeight());
+  api::ImageView* api_img_view = GMNew api::ImageView(device_);
+  api::ImageBarrier barrier_undef_to_srv;
 
-  auto barrier_undef_to_srv = api::ImageBarrier(&device_, *api_img, gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::SHADER_READ_OPTIMAL);
+  api_img->GetProps()
+    .AddImageUsage(gfx::TRANSFER_DST_IMG | gfx::SAMPLED)
+    .AddFormatType(gfx::UNORM4)
+    .Create();
+  api_img_view->GetProps()
+    .AddImage(*api_img)
+    .AddFormatType(api_img->GetFormat())
+    .Create();
+  barrier_undef_to_srv.GetProps()
+    .AddImage(*api_img)
+    .AddOldLayout(gfx::EImageLayout::UNDEFINED)
+    .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL)
+    .Finalize();
+
   cmd.PushBarrier(barrier_undef_to_srv);
+  dummy_texture->SetApiImage(api_img);
+  dummy_texture->SetApiImageView(api_img_view);
 }
 
 auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
 {
   TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(v_dummy_image);
   AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
-  api::ImageView* dummy_view = dummy_texture->GetImageView<api::ImageView>();
+  api::ImageView* dummy_view = dummy_texture->GetApiImageView<api::ImageView>();
 
   RenderableMaterials materials = {};
   materials.diffuse_views_.resize(v_max_materials, dummy_view);
@@ -225,11 +253,11 @@ auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
       auto material = MaterialFactory::Get(mesh->material_);
 
       auto diffuse_texture = TextureFactory::Get(material->diff_);
-      materials.diffuse_views_[material->index_] = diffuse_texture->GetImageView<api::ImageView>();
+      materials.diffuse_views_[material->index_] = diffuse_texture->GetApiImageView<api::ImageView>();
       auto specular_texture = TextureFactory::Get(material->spec_);
-      materials.specular_views_[material->index_] = specular_texture->GetImageView<api::ImageView>();
+      materials.specular_views_[material->index_] = specular_texture->GetApiImageView<api::ImageView>();
       auto normal_texture = TextureFactory::Get(material->norm_);
-      materials.normal_views_[material->index_] = normal_texture->GetImageView<api::ImageView>();
+      materials.normal_views_[material->index_] = normal_texture->GetApiImageView<api::ImageView>();
     }
   }
   return materials;

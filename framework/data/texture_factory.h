@@ -21,25 +21,20 @@ using TextureHandle = Handle;
 
 struct AbstractTexture
 {
-  template<class T>
-  void SetApiImageBuffer(T* buffer) { image_buffer_impl_ = static_cast<void*>(buffer); }
-  template<class T>
-  void SetApiImageView(T* view) { image_view_impl_ = static_cast<void*>(view); }
-  template<class T>
-  auto GetImageBuffer() const -> T* { return static_cast<T*>(image_buffer_impl_); }
-  template<class T>
-  auto GetImageView() const -> T* { return static_cast<T*>(image_view_impl_); }
+  AbstractTexture(ImageHandle handle);
 
-  AbstractTexture(ImageHandle handle)
-    : image_{handle}
-  { }
-  ~AbstractTexture()
-  {
-    // delete(texture_impl_); // uncomment when include all
-  }
-  
+  template<class T>
+  void SetApiImage(T* image) { image_impl_ = static_cast<void*>(image); }
+  template<class T>
+  auto GetApiImage() const -> T* { return static_cast<T*>(image_impl_); }
+
+  template<class T>
+  auto SetApiImageView(T* image_view) {  image_view_impl_ = static_cast<void*>(image_view); }
+  template<class T>
+  auto GetApiImageView() const -> T* { return static_cast<T*>(image_view_impl_); }
+
   ImageHandle image_; 
-  void* image_buffer_impl_ = nullptr;
+  void* image_impl_ = nullptr;
   void* image_view_impl_ = nullptr;
 
 }; // struct AbstractTexture

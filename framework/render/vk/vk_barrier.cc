@@ -4,9 +4,6 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-// srcAccessMask - ops before barrier
-// dstAccessMask - ops waiting on barrier
-
 #include "vk_barrier.h"
 
 #include "render/vk/vk_image.h"
@@ -16,46 +13,24 @@
 
 // --public ImageBarrier
 
-gdm::vk::ImageBarrier::ImageBarrier(Device* device, VkImage image, gfx::EImageLayout old_layout, gfx::EImageLayout new_layout)
+gdm::vk::ImageBarrier::ImageBarrier()
   : image_barrier_{}
   , src_stage_mask_{}
-  , dst_stage_mask_{}
+  , dst_stage_mask_{}  
 {
   image_barrier_.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-  image_barrier_.oldLayout = static_cast<VkImageLayout>(old_layout);
-  image_barrier_.newLayout = static_cast<VkImageLayout>(new_layout);
   image_barrier_.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
   image_barrier_.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  image_barrier_.image = image;
   image_barrier_.subresourceRange.baseMipLevel = 0;
   image_barrier_.subresourceRange.levelCount = 1;
   image_barrier_.subresourceRange.baseArrayLayer = 0;
   image_barrier_.subresourceRange.layerCount = 1;
   image_barrier_.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-  FillAspectMask(image_barrier_.newLayout, VK_FORMAT_UNDEFINED);
-  FillAccessMasks(image_barrier_.oldLayout, image_barrier_.newLayout);
-  src_stage_mask_ = helpers::GetStageMask(image_barrier_.srcAccessMask);
-  dst_stage_mask_ = helpers::GetStageMask(image_barrier_.dstAccessMask);
 }
 
-gdm::vk::ImageBarrier::ImageBarrier(Device* device, const Image& image, gfx::EImageLayout old_layout, gfx::EImageLayout new_layout)
-  : image_barrier_{}
-  , src_stage_mask_{}
-  , dst_stage_mask_{}
+void gdm::vk::ImageBarrier::Finalize()
 {
-  image_barrier_.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-  image_barrier_.oldLayout = static_cast<VkImageLayout>(old_layout);
-  image_barrier_.newLayout = static_cast<VkImageLayout>(new_layout);
-  image_barrier_.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  image_barrier_.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-  image_barrier_.image = image.GetHandle();
-  image_barrier_.subresourceRange.baseMipLevel = 0;
-  image_barrier_.subresourceRange.levelCount = image.GetMipsCount();
-  image_barrier_.subresourceRange.baseArrayLayer = 0;
-  image_barrier_.subresourceRange.layerCount = image.GetLayersCount();
-
-  FillAspectMask(image_barrier_.newLayout, image.GetFormat());
+  FillAspectMask(image_barrier_.newLayout, VK_FORMAT_UNDEFINED);
   FillAccessMasks(image_barrier_.oldLayout, image_barrier_.newLayout);
   src_stage_mask_ = helpers::GetStageMask(image_barrier_.srcAccessMask);
   dst_stage_mask_ = helpers::GetStageMask(image_barrier_.dstAccessMask);

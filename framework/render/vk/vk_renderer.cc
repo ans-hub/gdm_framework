@@ -298,14 +298,22 @@ void gdm::vk::Renderer::InitializePresentImages()
     
     if (!transition_done[frame_num])
     {
-      VkImage img = present_images_[frame_num];
-      ImageBarrier barrier(device_, img, gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::PRESENT_SRC);
+      ImageBarrier barrier;
+
+      barrier.GetProps()
+        .AddImage(present_images_[frame_num])
+        .AddOldLayout(gfx::EImageLayout::UNDEFINED)
+        .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
+        .Finalize();
+
       CommandList list = CreateSetupCommandList(GDM_HASH("SetupRenderer"), gfx::ECommandListFlags::ONCE);
       list.PushBarrier(barrier);
       list.Finalize();
+
       SubmitCommandLists(vk::CommandLists{list}, vk::Semaphores{present_complete_sem}, vk::Semaphores::empty, submit_fence_);
       submit_fence_.WaitSignalFromGpu();
       submit_fence_.Reset();
+      
       transition_done[frame_num] = true;
       ++transitions_total;
     }
@@ -319,9 +327,11 @@ auto gdm::vk::Renderer::CreatePresentImagesView() -> std::vector<ImageView*>
 
   for (size_t i = 0; i < present_images_.size(); ++i)
   {
-    VkImage image = present_images_[i];
-    VkFormat format = static_cast<VkFormat>(GetSurfaceFormat());
-    views[i] = GMNew ImageView(*device_, image, format);
+    views[i] = GMNew ImageView(*device_);
+    views[i]->GetProps()
+      .AddImage(present_images_[i])
+      .AddFormatType(GetSurfaceFormat())
+      .Create();
   }
   return views;
 }

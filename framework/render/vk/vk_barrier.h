@@ -21,8 +21,16 @@ struct RenderPass;
 
 struct ImageBarrier
 {
-  ImageBarrier(Device* device, VkImage image, gfx::EImageLayout old_layout, gfx::EImageLayout new_layout);
-  ImageBarrier(Device* device, const Image& image, gfx::EImageLayout old_layout, gfx::EImageLayout new_layout);
+  using self = ImageBarrier&;
+
+  ImageBarrier();
+
+  self GetProps() { return *this; }
+  self AddImage(VkImage image) { image_barrier_.image = image; return *this; }
+  self AddOldLayout(gfx::EImageLayout old_layout) { image_barrier_.oldLayout = VkImageLayout(old_layout); return *this; }
+  self AddNewLayout(gfx::EImageLayout new_layout) { image_barrier_.newLayout = VkImageLayout(new_layout); return *this; }
+  void Finalize();
+
   operator VkImageMemoryBarrier() const { return image_barrier_; }
 
 private:
@@ -30,9 +38,9 @@ private:
   void FillAccessMasks(VkImageLayout old_layout, VkImageLayout new_layout);
 
 private:
-  VkImageMemoryBarrier image_barrier_;
-  VkPipelineStageFlagBits src_stage_mask_;
-  VkPipelineStageFlagBits dst_stage_mask_;
+  VkImageMemoryBarrier image_barrier_ = {};
+  VkPipelineStageFlagBits src_stage_mask_ = {};
+  VkPipelineStageFlagBits dst_stage_mask_ = {};
 
   friend struct CommandList;
   friend struct RenderPass;

@@ -14,16 +14,16 @@
 
 // --public
 
-gdm::vk::Image::Image(Device* device, uint width, uint height, gfx::ImageUsage usage, gfx::FormatType format)
+gdm::vk::Image::Image(Device* device, uint width, uint height)
   : device_{ device }
   , image_info_{}
-  , image_{VK_NULL_HANDLE}
-  , image_memory_{VK_NULL_HANDLE}
+  , image_{}
+  , image_memory_{}
 {
   image_info_.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   image_info_.extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1};
-  image_info_.format = static_cast<VkFormat>(format);
-  image_info_.usage = static_cast<VkImageUsageFlagBits>(usage);
+  image_info_.format = VK_FORMAT_UNDEFINED;
+  image_info_.usage = 0;
   image_info_.imageType = VK_IMAGE_TYPE_2D;
   image_info_.mipLevels = 1;
   image_info_.arrayLayers = 1;
@@ -33,36 +33,23 @@ gdm::vk::Image::Image(Device* device, uint width, uint height, gfx::ImageUsage u
   image_info_.queueFamilyIndexCount = 0;
   image_info_.pQueueFamilyIndices = NULL;
   image_info_.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-  image_ = CreateImage(image_info_);
-  image_memory_ = AllocateMemory(image_);
 }
 
-gdm::vk::Image::~Image()
+void gdm::vk::Image::Create()
 {
-  if (device_)
-  {
-    vkDestroyImage(*device_, image_, HostAllocator::GetPtr());
-    DeviceAllocator::Free(device_, image_memory_);
-  }
-}
-
-// --private
-
-auto gdm::vk::Image::CreateImage(const VkImageCreateInfo& info) -> VkImage
-{
+  static auto destroy_image = [this](VkImage image) { vkDestroyImage(*device_, image, HostAllocator::GetPtr()); };
+  static auto destroy_memory = [this](VkDeviceMemory memory) { DeviceAllocator::Free(device_, memory); };
+  
   VkImage image = {};
-  VkResult res = vkCreateImage(*device_, &info, HostAllocator::GetPtr(), &image);
+  VkResult res = vkCreateImage(*device_, &image_info_, HostAllocator::GetPtr(), &image);
   ASSERTF(res == VK_SUCCESS, "vkCreateImage error %d\n", res);
-  return image;
-}
 
-auto gdm::vk::Image::AllocateMemory(VkImage image) -> VkDeviceMemory
-{
-  VkDeviceMemory memory = DeviceAllocator::Allocate(device_, image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-  VkResult res = vkBindImageMemory(*device_, image, memory, 0);
+  VkDeviceMemory image_memory = DeviceAllocator::Allocate(device_, image, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  res = vkBindImageMemory(*device_, image, image_memory, 0);
   ASSERTF(res == VK_SUCCESS, "vkBindBufferMemory error %d\n", res);
-  return memory;
+
+  image_ = VkDeleter<VkImage>(destroy_image, image);
+  image_memory_ = VkDeleter<VkDeviceMemory>(destroy_memory, image_memory);
 }
 
 // --helpers

@@ -14,45 +14,36 @@
 
 // --public
 
-gdm::vk::ImageView::ImageView(VkDevice device, VkImage image, VkFormat format)
+gdm::vk::ImageView::ImageView(VkDevice device)
   : device_{ device }
-  , format_{format}
-  , image_view_{ CreateImageView(image, format) }
-{ }
-
-gdm::vk::ImageView::~ImageView()
+  , image_view_info_{}
+  , image_view_{}
 {
-  vkDestroyImageView(device_, image_view_, HostAllocator::GetPtr());
+  image_view_info_.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+  image_view_info_.format = VK_FORMAT_R8G8B8A8_SRGB;
+  image_view_info_.image = VK_NULL_HANDLE;
+  image_view_info_.viewType = VK_IMAGE_VIEW_TYPE_2D;
+  image_view_info_.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+  image_view_info_.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+  image_view_info_.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+  image_view_info_.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+  image_view_info_.subresourceRange.baseMipLevel = 0;
+  image_view_info_.subresourceRange.levelCount = 1;
+  image_view_info_.subresourceRange.baseArrayLayer = 0;
+  image_view_info_.subresourceRange.layerCount = 1;
 }
 
-// --private
-
-auto gdm::vk::ImageView::CreateImageView(VkImage image, VkFormat format) -> VkImageView
+void gdm::vk::ImageView::Create()
 {
-  VkImageViewCreateInfo image_view_create_info = {};
-  
-  image_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-  image_view_create_info.image = image;
-  image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-  image_view_create_info.format = format;
-  image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-  image_view_create_info.subresourceRange.baseMipLevel = 0;
-  image_view_create_info.subresourceRange.levelCount = 1;
-  image_view_create_info.subresourceRange.baseArrayLayer = 0;
-  image_view_create_info.subresourceRange.layerCount = 1;
-
-  if (helpers::HasStencil(format))
-    image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+  if (helpers::HasStencil(image_view_info_.format))
+    image_view_info_.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
   else
-    image_view_create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    image_view_info_.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
   VkImageView image_view = {};
-
-  VkResult res = vkCreateImageView(device_, &image_view_create_info, HostAllocator::GetPtr(), &image_view);
+  VkResult res = vkCreateImageView(device_, &image_view_info_, HostAllocator::GetPtr(), &image_view);
   ASSERTF(res == VK_SUCCESS, "vkCreateImageView error %d\n", res);
-  
-  return image_view;
+
+  static auto destroy_view = [this](VkImageView view) { vkDestroyImageView(device_, view, HostAllocator::GetPtr()); };
+  image_view_ = VkDeleter<VkImageView>(destroy_view, image_view);  
 }
