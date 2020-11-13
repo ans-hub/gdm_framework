@@ -45,7 +45,7 @@ struct RenderPass
   void Finalize();
 
   auto GetSubpassesCount() const -> uint { return static_cast<uint>(subpass_desc_.size()); }
-  auto GetPassAttachmentsCount() const -> size_t { return attachment_desc_.size(); }
+  auto GetPassAttachmentsCount() const -> uint { return static_cast<uint>(attachment_desc_.size()); }
   auto GetHandle() const -> VkRenderPass { return render_pass_; }
 
   operator VkRenderPass() const { return render_pass_; }

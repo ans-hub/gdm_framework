@@ -15,6 +15,7 @@ struct RasterizerDesc
 {
   gfx::ECullMode cull_ = gfx::BACK_FACE;
   gfx::EFillMode fill_ = gfx::SOLID;
+  gfx::EFrontFace front_face_ = gfx::CLOCKWISE;
 
 }; // struct RasterizerDesc
 

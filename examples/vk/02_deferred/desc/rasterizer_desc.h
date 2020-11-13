@@ -16,7 +16,17 @@ struct StdRasterizerDesc : public RasterizerDesc
 {
   StdRasterizerDesc() : RasterizerDesc({
     gfx::ECullMode::BACK_FACE,
-    gfx::EFillMode::SOLID})
+    gfx::EFillMode::SOLID,
+    gfx::EFrontFace::CLOCKWISE})
+  { }
+};
+
+struct ReverseRasterizerDesc : public RasterizerDesc
+{
+  ReverseRasterizerDesc() : RasterizerDesc({
+    gfx::ECullMode::FRONT_FACE,
+    gfx::EFillMode::SOLID,
+    gfx::EFrontFace::COUNTER_CLOCKWISE})
   { }
 };
 

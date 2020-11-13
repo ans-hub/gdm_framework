@@ -10,14 +10,10 @@
 
 #include "Windows.h"
 
-#include "render/api.h"
 #include "render/defines.h"
+#include "render/api.h"
 #include "render/renderer.h"
 
-#include "render/input_layout.h"
-#include "render/sampler_state.h"
-#include "render/rasterizer_desc.h"
-#include "render/viewport_desc.h"
 #include "render/colors.h"
 #include "render/shader.h"
 #include "render/camera_eul.h"
@@ -34,11 +30,14 @@
 #include "system/hash_utils.h"
 #include "system/array_utils.h"
 #include "system/timer.h"
+#include "system/diff_utils.h"
+#include "system/profiler.h"
 
-#include "shaders/flat_vert.h"
-#include "desc/std_rasterizer_desc.h"
-#include "desc/std_input_layout.h"
-#include "desc/std_sampler_desc.h"
+#include "desc/rasterizer_desc.h"
+#include "desc/input_layout.h"
+#include "desc/sampler_desc.h"
+#include "desc/deferred_pass.h"
+#include "desc/gbuffer_pass.h"
 
 #include "scene_manager.h"
 #include "helpers.h"
@@ -52,185 +51,69 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   MainWindow win (width, height, "Vk Deferred", MainWindow::CENTERED);
   MainInput input (win.GetHandle(), hInstance);
   Renderer gfx(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);  
-  ViewportDesc viewport{0, static_cast<float>(height), static_cast<float>(width), -static_cast<float>(height), 0, 1};
 
   api::Device& device = gfx.GetDevice();
   width = gfx.GetSurfaceWidth();
   height = gfx.GetSurfaceHeight();
 
-
   ENSUREF(wcslen(cmdLine) != 0, "Config file name is empty");
 
   std::string cfg_name = str::Utf2Ansi(cmdLine);
   Config cfg(cfg_name.c_str());
-  ModelFactory::SetPath("../../_models_new/models/");
-  MaterialFactory::SetPath("../../_models_new/materials/");
-  TextureFactory::SetPath("../../_models_new/textures/");
-  ImageFactory::SetPath("../../_models_new/textures/");
   std::vector<ModelHandle> models = helpers::LoadAbstractModels(cfg);
 
-  api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::CommandList setup_list = gfx.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
   api::Fence submit_fence (device);
  
-  SceneManager scene(gfx.GetDevice());
+  SceneManager scene(gfx);
   scene.SetModels(models);
+  
   uint vstg = scene.CreateStagingBuffer(MB(64));
   uint istg = scene.CreateStagingBuffer(MB(32));
   uint tstg = scene.CreateStagingBuffer(MB(96));
+  
   scene.CopyGeometryToGpu(models, vstg, istg, setup_list);
   scene.CopyTexturesToGpu(models, tstg, setup_list);
   scene.CreateDummyView(setup_list);
-  
-  for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
-  {
-    scene.CreatePerFrameUBO<FlatVs_PFCB, 1>(setup_list);
-    scene.CreatePerObjectUBO<FlatVs_POCB, SceneManager::v_max_objects>(setup_list);
-  }
-  api::Image2D depth_image(&device, width, height);
-  api::ImageView depth_image_view (device);
-  api::ImageBarrier depth_barrier;
 
-  depth_image.GetProps()
-    .AddImageUsage(gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT)
-    .AddFormatType(gfx::EFormatType::D16_UNORM)
-    .Create();
-  depth_image_view.GetProps()
-    .AddImage(depth_image.GetHandle())
-    .AddFormatType(depth_image.GetFormat())
-    .Create();
-  depth_barrier.GetProps()
-    .AddImage(depth_image)
-    .AddOldLayout(gfx::EImageLayout::UNDEFINED)
-    .AddNewLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    .Finalize();
-  setup_list.PushBarrier(depth_barrier);
+  GbufferPass v_gbuffer_pass(gfx, SceneManager::v_max_objects);
+  scene.CreateUbo<GbufferVs_PFCB>(setup_list, v_gbuffer_pass.data_, 1);
+  scene.CreateUbo<GbufferVs_POCB>(setup_list, v_gbuffer_pass.data_, SceneManager::v_max_objects);
+  v_gbuffer_pass.CreateImages(setup_list);
+  v_gbuffer_pass.CreateRenderPass();
+  v_gbuffer_pass.CreateFramebuffer();
+
+  RenderableMaterials rmat = scene.GetRenderableMaterials();
+  v_gbuffer_pass.CreateDescriptorSet(rmat.diffuse_views_, rmat.specular_views_, rmat.normal_views_);
+  v_gbuffer_pass.CreatePipeline();
+
+  DeferredPass v_deferred_pass(gfx::v_num_images, gfx);
+  for (auto& pass_data : v_deferred_pass.data_)
+    scene.CreateUbo<DeferredPs_PFCB>(setup_list, pass_data, SceneManager::v_max_lights);
+  v_deferred_pass.CreateImages(setup_list);
+  v_deferred_pass.CreateRenderPass();
+  v_deferred_pass.CreateFramebuffer();
+  v_deferred_pass.CreatePipeline(v_gbuffer_pass.data_.image_views_);
+
+  submit_fence.Reset();
+  api::Semaphore spresent_done(device);
+  api::Semaphore sgbuffer_done(device);
+  api::Semaphore sdeferred_done(device);
 
   setup_list.Finalize();
   gfx.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
   submit_fence.WaitSignalFromGpu();
   submit_fence.Reset();
 
-  DataStorage<api::RenderPass> render_passes {};
-  render_passes.Create(GDM_HASH("MainRenderPass"), device);
-
-  api::RenderPass& render_pass = render_passes.Get(GDM_HASH("MainRenderPass"));
-  
-  uint color_idx = 0;
-  render_pass.AddAttachmentDescription(color_idx)
-    .AddFormat(gfx.GetSurfaceFormat())
-    .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-    .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-    .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
-  
-  uint depth_idx = 1;
-  render_pass.AddAttachmentDescription(depth_idx)
-    .AddFormat(depth_image.GetFormat<gfx::EFormatType>())
-    .AddInitLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    .AddFinalLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    .AddRefLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
-  uint subpass_idx = render_pass.CreateSubpass(gfx::EQueueType::GRAPHICS);
-  render_pass.AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
-  render_pass.AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
-  render_pass.Finalize();
-
-  DataStorage<api::Framebuffer> framebuffers {};
-  for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
-  {
-    api::ImageViews image_views {
-      gfx.GetBackBufferViews()[i],
-      &depth_image_view
-    };
-    framebuffers.Create(GDM_HASH_N("MainFB", i), gfx.GetDevice(), width, height, render_pass, image_views);
-  }
-
-  DataStorage<Shader> shaders {};
-  shaders.Create(GDM_HASH("FlatVx"), "shaders/flat_vert.hlsl", gfx::EShaderType::VX);
-  shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
-  
-  auto* descriptor_layout = GMNew api::DescriptorSetLayout(device);
-  
-  descriptor_layout->AddBinding(0, 1,
-    gfx::EResourceType::UNIFORM_BUFFER,
-    gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(1, 1,
-    gfx::EResourceType::UNIFORM_DYNAMIC,
-    gfx::EShaderStage::VERTEX_STAGE);
-  descriptor_layout->AddBinding(2, 1, 
-    gfx::EResourceType::SAMPLER,
-    gfx::EShaderStage::FRAGMENT_STAGE);
-  descriptor_layout->AddBinding(3, SceneManager::v_max_materials,
-    gfx::EResourceType::SAMPLED_IMAGE,
-    gfx::EShaderStage::FRAGMENT_STAGE,
-    gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
-  descriptor_layout->Finalize();
-
-  api::Sampler sampler(device, StdSamplerState{});
-  RenderableMaterials renderable_materials = scene.GetRenderableMaterials();
-
-  std::vector<api::DescriptorSet*> frame_descriptor_sets;
-  for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
-  {
-    auto* descriptor_set = GMNew api::DescriptorSet(device, *descriptor_layout, gfx.GetDescriptorPool());
-    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *scene.GetPerFrameUBO(i));
-    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *scene.GetPerObjectUBO(i));
-    descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(2, sampler);
-    descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, renderable_materials.diffuse_views_);
-    descriptor_set->Finalize();
-    frame_descriptor_sets.push_back(descriptor_set);
-  }
-
-  DataStorage<api::Pipeline> pipelines {};
-  pipelines.Create(GDM_HASH("PipelineName"), gfx.GetDevice());
-  api::Pipeline& pipeline = pipelines.Get(GDM_HASH("PipelineName"));
-
-  pipeline.SetShaderStage(shaders.Get(GDM_HASH("FlatVx")), gfx::EShaderType::VX);
-  pipeline.SetShaderStage(shaders.Get(GDM_HASH("FlatPx")), gfx::EShaderType::PX);
-  pipeline.SetViewportState(viewport);
-  pipeline.SetRasterizerState(StdRasterizerDesc{});
-  pipeline.SetInputLayout(StdInputLayout{});
-  pipeline.SetRenderPass(render_pass);
-  pipeline.SetDescriptorSetLayouts(api::DescriptorSetLayouts{*descriptor_layout});
-  pipeline.Compile();
-
   MSG msg {0};
   Timer timer {60};
   FpsCounter fps {};
 
-  FlatVs_POCB pocb {Mat4f(1.f), Vec4f{0.5f, 0.5f, 0.5f, 0.5f}};
-  FlatVs_PFCB pfcb {};
-
-  api::Semaphore spresent_done(device);
-  api::Semaphore srender_done(device);
-
-  auto present_images = gfx.GetBackBufferImages();
-  std::vector<api::ImageBarrier> present_to_read_barrier = {};
-  std::vector<api::ImageBarrier> present_to_write_barrier = {};
-
-  for (uint i = 0; i < gfx.GetBackBuffersCount(); ++i)
-  {
-    api::ImageBarrier barrier_to_read;
-    api::ImageBarrier barrier_to_write;
-
-    barrier_to_read.GetProps()
-      .AddImage(present_images[i])
-      .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
-      .Finalize();
-
-    barrier_to_write.GetProps()
-      .AddImage(present_images[i])
-      .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
-      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .Finalize();
-
-    present_to_read_barrier.push_back(barrier_to_read);
-    present_to_write_barrier.push_back(barrier_to_write);
-  }
-
   CameraEul camera(75.f, win.GetAspectRatio(), 0.1f, 100.f);
   camera.SetPos(Vec3f(0.f, 0.f, 0.f));
   camera.SetMoveSpeed(2.f);
+
+  GDM_PROFILING_ENABLE();
 
   int exit = -1;
   while(exit == -1)
@@ -248,52 +131,96 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     win.ProcessInput(input);
     helpers::UpdateCamera(camera, input, dt);
     
-    uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
-    api::CommandList cmd = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
-    cmd.PushBarrier(present_to_write_barrier[curr_frame]);
+    GPU_PROFILE_ENTER("main", "gbuffer", color::White);
+
+    api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
 
     Mat4f view = camera.GetViewMx();
     Mat4f proj = camera.GetProjectionMx();
-    pfcb.u_view_proj_ = proj * view;
-    scene.UpdatePerFrameUBO<FlatVs_PFCB>(cmd, curr_frame, pfcb);
-    scene.UpdatePerObjectUBO<FlatVs_POCB>(cmd, curr_frame);
-
-    RenderableMaterials renderable_materials = scene.GetRenderableMaterials();
-    frame_descriptor_sets[curr_frame]->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, renderable_materials.diffuse_views_);
-    frame_descriptor_sets[curr_frame]->Finalize();
-
-    auto& fb = framebuffers.Get(GDM_HASH_N("MainFB", curr_frame));
-    cmd.BindPipelineGraphics(pipeline);
-    cmd.BeginRenderPass(render_pass, fb, width, height);
+    v_gbuffer_pass.data_.pfcb_data_.u_view_proj_ = proj * view;
+    v_gbuffer_pass.data_.pfcb_data_.u_cam_pos_ = camera.GetPos();
+    scene.UpdateUBO<GbufferVs_PFCB>(cmd_gbuffer, v_gbuffer_pass.data_, 1);
+    v_gbuffer_pass.data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *v_gbuffer_pass.data_.pfcb_uniform_);
 
     uint mesh_number = 0;
+    for (auto model_handle : scene.GetRenderableModels())
+    {
+      AbstractModel* model = ModelFactory::Get(model_handle);
+      for (auto&& [i, mesh_handle] : Enumerate(model->meshes_))
+      {
+        AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+        AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
+        v_gbuffer_pass.data_.pocb_data_[mesh_number].u_model_ = model->tm_;
+        v_gbuffer_pass.data_.pocb_data_[mesh_number].u_material_index_ = material->index_;
+        ++mesh_number;
+      }
+    }
+    scene.UpdateUBO<GbufferVs_POCB>(cmd_gbuffer, v_gbuffer_pass.data_, SceneManager::v_max_objects);
+    v_gbuffer_pass.data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *v_gbuffer_pass.data_.pocb_uniform_);
+
+    RenderableMaterials renderable_materials = scene.GetRenderableMaterials();
+    const int mat_descriptor_idx = 3;
+    v_gbuffer_pass.data_.descriptor_set_->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(mat_descriptor_idx, renderable_materials.diffuse_views_);
+    v_gbuffer_pass.data_.descriptor_set_->Finalize();
+
+    for(auto* barrier : v_gbuffer_pass.data_.image_barriers_to_write_)
+      cmd_gbuffer.PushBarrier(*barrier);
+
+    cmd_gbuffer.BindPipelineGraphics(*v_gbuffer_pass.pipeline_);
+    cmd_gbuffer.BeginRenderPass(*v_gbuffer_pass.pass_, *v_gbuffer_pass.data_.fb_, width, height);
+
+    mesh_number = 0;
     for (auto model_handle : scene.GetRenderableModels())
     {
       AbstractModel* model = ModelFactory::Get(model_handle);
       for (auto mesh_handle : model->meshes_)
       {
         AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
-        uint offset = sizeof(FlatVs_POCB) * mesh_number++;
+        uint offset = sizeof(GbufferVs_POCB) * mesh_number++;
+        api::DescriptorSets descriptor_sets {*v_gbuffer_pass.data_.descriptor_set_};
         
-        cmd.BindDescriptorSetGraphics(api::DescriptorSets{*frame_descriptor_sets[curr_frame]}, pipeline, gfx::Offsets{offset});      
-        cmd.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
-        cmd.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
-        cmd.DrawIndexed(mesh->faces_);
+        cmd_gbuffer.BindDescriptorSetGraphics(descriptor_sets, *v_gbuffer_pass.pipeline_, gfx::Offsets{offset});      
+        cmd_gbuffer.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
+        cmd_gbuffer.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
+        cmd_gbuffer.DrawIndexed(mesh->faces_);
       }
     }
     
-    cmd.EndRenderPass();
-    cmd.PushBarrier(present_to_read_barrier[curr_frame]);
-    cmd.Finalize();
+    cmd_gbuffer.EndRenderPass();
+    for(auto* barrier : v_gbuffer_pass.data_.image_barriers_to_read_)
+      cmd_gbuffer.PushBarrier(*barrier);
 
-    api::Fence submit_fence(device);
-    gfx.SubmitCommandLists(api::CommandLists{cmd}, api::Semaphores{spresent_done}, api::Semaphores{srender_done}, submit_fence);
-    gfx.SubmitPresentation(curr_frame, api::Semaphores{srender_done});
+    submit_fence.Reset();
+    cmd_gbuffer.Finalize();
+    gfx.SubmitCommandLists(api::CommandLists{cmd_gbuffer}, api::Semaphores::empty, api::Semaphores{sgbuffer_done}, submit_fence);
     submit_fence.WaitSignalFromGpu();
+
+    uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
+    api::CommandList cmd_frame = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
+
+    cmd_frame.PushBarrier(*v_deferred_pass.data_[curr_frame].present_to_write_barrier_);    
+
+    api::DescriptorSets descriptor_sets {*v_deferred_pass.data_[curr_frame].descriptor_set_};
+    cmd_frame.BindDescriptorSetGraphics(descriptor_sets, *v_deferred_pass.pipeline_, gfx::Offsets{0});      
+    cmd_frame.BindPipelineGraphics(*v_deferred_pass.pipeline_);
+    cmd_frame.BeginRenderPass(*v_deferred_pass.pass_, *v_deferred_pass.data_[curr_frame].fb_, width, height);
+    cmd_frame.DrawDummy();
+    cmd_frame.EndRenderPass();
+    cmd_frame.PushBarrier(*v_deferred_pass.data_[curr_frame].present_to_read_barrier_);
+
+    submit_fence.Reset();
+    cmd_frame.Finalize();
+    gfx.SubmitCommandLists(api::CommandLists{cmd_frame}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence);
+    gfx.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
+    submit_fence.WaitSignalFromGpu();
+
+    GDM_PROFILER_FRAME();
 
     timer.End();
     timer.Wait();  
   }
+
+  GDM_PROFILER_SHUTDOWN();
 
   return static_cast<int>(msg.wParam);
 }

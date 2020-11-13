@@ -33,9 +33,9 @@
 #include "system/timer.h"
 
 #include "shaders/flat_vert.h"
-#include "desc/std_rasterizer_desc.h"
-#include "desc/std_input_layout.h"
-#include "desc/std_sampler_desc.h"
+#include "desc/rasterizer_desc.h"
+#include "desc/input_layout.h"
+#include "desc/sampler_desc.h"
 
 #include "helpers.h"
 
@@ -59,7 +59,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   auto barrier = api::ImageBarrier(&device, depth_image.GetHandle(), gfx::EImageLayout::UNDEFINED, gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
   api::Fence submit_fence (device);
-  api::CommandList setup_list = gfx.CreateSetupCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::CommandList setup_list = gfx.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
   setup_list.PushBarrier(barrier);
 
   DataStorage<api::RenderPass> render_passes {};

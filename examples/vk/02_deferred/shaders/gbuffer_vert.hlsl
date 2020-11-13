@@ -1,37 +1,41 @@
-cbuffer PFCB : register(b0)
+[[vk::binding(0)]]  cbuffer GbufferVs_PFCB
 {
   float4x4 u_view_proj;
-  float4 u_cam_pos_WS;
+  float3 u_cam_pos_WS;
+  float u_dummy;
 }
 
-cbuffer POCB : register(b1)
+[[vk::binding(1)]] cbuffer GbufferVs_POCB
 {
-  matrix u_model;
+  float4x4 u_model;
+  float4 u_color;
+  uint u_material_index;
 }
 
 struct Input
 {
-  float3 pos_MS   : COORD;
+  float3 pos_MS : COORD;
   float2 texuv_MS : TEXUV;
-  float3 norm_MS 	: NORMAL;
-  float3 tg_MS 	  : TANGENT;
+  float3 norm_MS : NORMAL;
+  float3 tg_MS : TANGENT;
 };
 
 struct Output
 {
-  float3 pos_WS						: TEXCOORD0;
-  float3 norm_WS					: TEXCOORD1;
-  float2 texuv_TS   	   	: TEXCOORD2;
-  float3 view_pos_WS			: TEXCOORD3;
-  float3 tg_WS						: TANGENT;
-  float3 bt_WS						: BINORMAL;
-  float3 nm_WS						: NORMAL;
-  float4 position   	   	: SV_POSITION;
+  float3 pos_WS : TEXCOORD0;
+  float3 norm_WS : TEXCOORD1;
+  float2 texuv_TS : TEXCOORD2;
+  float3 view_pos_WS : TEXCOORD3;
+  nointerpolation uint material_index : TEXCOORD4;
+  float3 tg_WS : TANGENT;
+  float3 bt_WS : BINORMAL;
+  float3 nm_WS : NORMAL;
+  float4 position : SV_POSITION;
 };
 
 Output main(Input IN)
 {
-  matrix mvp = mul(u_view_proj, u_model);
+  float4x4 mvp = mul(u_view_proj, u_model);
 
   float3 tg_WS = normalize(mul((float3x3)u_model, IN.tg_MS));
   float3 norm_WS = normalize(mul((float3x3)u_model, IN.norm_MS));
@@ -42,11 +46,12 @@ Output main(Input IN)
   OUT.pos_WS = mul(u_model, float4(IN.pos_MS, 1.f)).xyz;
   OUT.norm_WS = mul(u_model, float4(IN.norm_MS, 0.f)).xyz;
   OUT.texuv_TS = IN.texuv_MS;
-  OUT.view_pos_WS = u_cam_pos_WS.xyz;
+  OUT.view_pos_WS = u_cam_pos_WS;
   OUT.tg_WS = tg_WS;
   OUT.bt_WS = bt_WS;
   OUT.nm_WS = norm_WS;
-  OUT.position = mul(mvp, float4(IN.pos_MS, 1.f));;
+  OUT.position = mul(mvp, float4(IN.pos_MS, 1.f));
+  OUT.material_index = u_material_index;
 
   return OUT;
 }

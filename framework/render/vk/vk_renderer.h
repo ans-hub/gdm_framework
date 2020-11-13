@@ -36,12 +36,13 @@ struct Renderer
   auto GetDescriptorPool() -> VkDescriptorPool;
   auto GetBackBufferViews() -> std::vector<ImageView*>;
   auto GetBackBufferImages() -> std::vector<VkImage>;
-  auto GetBackBuffersCount() const -> uint { return v_num_images_; };
   auto CreateFrameCommandList(uint frame_num, gfx::CommandListFlags flags) -> CommandList;
-  auto CreateSetupCommandList(Hash name, gfx::CommandListFlags flags) -> CommandList;
+  auto CreateCommandList(Hash name, gfx::CommandListFlags flags) -> CommandList;
   auto AcquireNextFrame(VkSemaphore sem_sig, VkFence fence) -> uint;
   void SubmitCommandLists(const std::vector<VkCommandBuffer>& command_lists, const std::vector<VkSemaphore>& sem_wait, const std::vector<VkSemaphore>& sem_sig, VkFence fence);
   void SubmitPresentation(uint frame_num, const std::vector<VkSemaphore>& sem_wait);
+  
+  constexpr auto GetBackBuffersCount() const -> uint { return v_num_images_; };
 
 private:
   auto CreateInstance() -> VkInstance;

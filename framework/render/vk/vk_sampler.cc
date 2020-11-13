@@ -46,7 +46,7 @@ auto gdm::vk::Sampler::CreateSampler() -> VkSampler
   sampler_create_info.unnormalizedCoordinates = VK_FALSE;
 
   VkSampler sampler = {};
-  VkResult res = vkCreateSampler(device_, &sampler_create_info, nullptr, &sampler);
+  VkResult res = vkCreateSampler(device_, &sampler_create_info, HostAllocator::GetPtr(), &sampler);
   ASSERTF(res == VK_SUCCESS, "vkCreateSampler failed %d", res);
   return sampler;
 }

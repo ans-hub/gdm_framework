@@ -6,76 +6,63 @@
 
 #include "scene_manager.h"
 
-#include "data/cfg_loader.h"
-#include "memory/defines.h"
-#include "render/api.h"
 #include "system/assert_utils.h"
 
 // --public
 
-template<class T, uint Count>
-inline void gdm::SceneManager::CreatePerObjectUBO(api::CommandList& cmd)
+template<class Ubo, class PassData>
+inline void gdm::SceneManager::CreateUbo(api::CommandList& cmd, PassData& pass, uint count)
 {
-  auto* pocb_buf = GMNew api::Buffer(&device_, sizeof(T) * Count, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
-  pocb_uniform_.push_back(pocb_buf);
-  auto* pocb_staging_buf = GMNew api::Buffer(&device_, sizeof(T) * Count, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE); // and COHERENT too?
-  pocb_staging_.push_back(pocb_staging_buf);
-  auto* pocb_to_read_barrier = GMNew api::BufferBarrier(&device_, *pocb_buf, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
-  pocb_to_read_barriers_.push_back(pocb_to_read_barrier);
-  auto* pocb_to_write_barrier = GMNew api::BufferBarrier(&device_, *pocb_buf, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
-  pocb_to_write_barriers_.push_back(pocb_to_write_barrier);
+  auto* staging = GMNew api::Buffer(&device_, sizeof(Ubo) * count, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
+  auto* uniform = GMNew api::Buffer(&device_, sizeof(Ubo) * count, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+  auto* to_read_barrier = GMNew api::BufferBarrier(&device_, *uniform, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
+  auto* to_write_barrier = GMNew api::BufferBarrier(&device_, *uniform, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
   
-  bool map_and_never_unmap = [&](){ pocb_staging_buf->Map(); return true; }();
-  cmd.PushBarrier(*pocb_to_read_barrier);
-}
-
-template<class T, uint Count>
-inline void gdm::SceneManager::CreatePerFrameUBO(api::CommandList& cmd)
-{
-  auto* pfcb_buf = GMNew api::Buffer(&device_, sizeof(T) * Count, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
-  pfcb_uniform_.push_back(pfcb_buf);
-  auto* pfcb_staging_buf = GMNew api::Buffer(&device_, sizeof(T) * Count, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE); // and COHERENT too?
-  pfcb_staging_.push_back(pfcb_staging_buf);
-  auto* pfcb_to_read_barrier = GMNew api::BufferBarrier(&device_, *pfcb_buf, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
-  pfcb_to_read_barriers_.push_back(pfcb_to_read_barrier);
-  auto* pfcb_to_write_barrier = GMNew api::BufferBarrier(&device_, *pfcb_buf, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
-  pfcb_to_write_barriers_.push_back(pfcb_to_write_barrier);
-
-  cmd.PushBarrier(*pfcb_to_read_barrier);
-}
-
-template<class T>
-inline void gdm::SceneManager::UpdatePerFrameUBO(api::CommandList& cmd, uint curr_frame, const T& pfcb)
-{
-  cmd.PushBarrier(*pfcb_to_write_barriers_[curr_frame]);
-  pfcb_staging_[curr_frame]->Map();
-  pfcb_staging_[curr_frame]->CopyDataToGpu(&pfcb, 1);
-  pfcb_staging_[curr_frame]->Unmap();
-  cmd.CopyBufferToBuffer(*pfcb_staging_[curr_frame], *pfcb_uniform_[curr_frame], sizeof(T));
-  cmd.PushBarrier(*pfcb_to_read_barriers_[curr_frame]); 
-}
-
-template<class T>
-inline void gdm::SceneManager::UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame)
-{
-  std::vector<T> pocbs = {};
-
-  for (auto model_handle : GetRenderableModels())
+  cmd.PushBarrier(*to_read_barrier);
+  
+  if constexpr (Ubo::v_type_ == gfx::EUboType::PER_FRAME)
   {
-    AbstractModel* model = ModelFactory::Get(model_handle);
-    for (auto mesh_handle : model->meshes_)
-    {
-      AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
-      AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
-      pocbs.push_back({});
-      pocbs.back().u_model_ = model->tm_;
-      pocbs.back().u_material_index_ = material->index_;
-    }
+    pass.pfcb_uniform_ = uniform;
+    pass.pfcb_staging_ = staging;
+    pass.pfcb_to_read_barrier_ = to_read_barrier;
+    pass.pfcb_to_write_barrier_ = to_write_barrier;
   }
+  else if constexpr (Ubo::v_type_ == gfx::EUboType::PER_OBJECT)
+  {
+    pass.pocb_uniform_ = uniform;
+    pass.pocb_staging_ = staging;
+    pass.pocb_to_read_barrier_ = to_read_barrier;
+    pass.pocb_to_write_barrier_ = to_write_barrier;
+    bool map_and_never_unmap = [&](){ pass.pocb_staging_->Map(); return true; }();
+  }
+  else
+  {
+    ASSERTF(false, "Such type of ubo is not implemented");
+  }
+}
 
-  cmd.PushBarrier(*pocb_to_write_barriers_[curr_frame]);
-  pocb_staging_[curr_frame]->CopyDataToGpu(pocbs.data(), pocbs.size());
-  uint pocb_size = static_cast<uint>(sizeof(T) * pocbs.size());
-  cmd.CopyBufferToBuffer(*pocb_staging_[curr_frame], *pocb_uniform_[curr_frame], pocb_size);
-  cmd.PushBarrier(*pocb_to_read_barriers_[curr_frame]);
+template<class Ubo, class PassData>
+inline void gdm::SceneManager::UpdateUBO(api::CommandList& cmd, PassData& pass, uint count)
+{
+  if constexpr (Ubo::v_type_ == gfx::EUboType::PER_FRAME)
+  {
+    cmd.PushBarrier(*pass.pfcb_to_write_barrier_);
+    pass.pfcb_staging_->Map();
+    pass.pfcb_staging_->CopyDataToGpu(&pass.pfcb_data_, 1);
+    pass.pfcb_staging_->Unmap();
+    cmd.CopyBufferToBuffer(*pass.pfcb_staging_, *pass.pfcb_uniform_, sizeof(Ubo));
+    cmd.PushBarrier(*pass.pfcb_to_read_barrier_); 
+  }
+  else if constexpr (Ubo::v_type_ == gfx::EUboType::PER_OBJECT)
+  {
+    cmd.PushBarrier(*pass.pocb_to_write_barrier_);
+    pass.pocb_staging_->CopyDataToGpu(pass.pocb_data_.data(), pass.pocb_data_.size());
+    uint pocb_size = static_cast<uint>(sizeof(Ubo) * pass.pocb_data_.size());
+    cmd.CopyBufferToBuffer(*pass.pocb_staging_, *pass.pocb_uniform_, pocb_size);
+    cmd.PushBarrier(*pass.pocb_to_read_barrier_);
+  }
+  else
+  {
+    ASSERTF(false, "Such type of ubo is not implemented");
+  }
 }

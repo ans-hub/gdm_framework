@@ -25,12 +25,12 @@ struct DataFactory
   static auto Get(const std::vector<Handle>& handles) -> std::vector<T*>;
   static bool Has(Handle handle);
   static bool Has(const char* fpath);
-  static void SetPath(const char* path) { resources_path_ = path; }
+  static bool SetPath(const char* path) { strncpy(resources_path_, path, strlen(path)); return true; }
   static auto GetPath() -> const char* { return resources_path_; }
   static uint GetCount() { static_cast<uint>(return resources_.size()); }
 
 protected:
-  inline static const char* resources_path_ {""};
+  inline static char resources_path_[512] {""};
   inline static std::unordered_map<Handle, T> resources_ {};
 };
 

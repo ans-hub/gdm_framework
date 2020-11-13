@@ -10,8 +10,8 @@
 #include <set>
 
 #include "render/camera_eul.h"
-#include "render/api.h"
 #include "render/defines.h"
+#include "render/api.h"
 #include "render/renderer.h"
 
 #include "memory/defines.h"

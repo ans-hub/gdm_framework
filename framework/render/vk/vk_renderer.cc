@@ -114,7 +114,7 @@ auto gdm::vk::Renderer::CreateFrameCommandList(uint frame_num, gfx::CommandListF
   return CommandList(*device_, frame_command_buffers_[frame_num], flags);
 }
 
-auto gdm::vk::Renderer::CreateSetupCommandList(Hash name, gfx::CommandListFlags flags) -> CommandList
+auto gdm::vk::Renderer::CreateCommandList(Hash name, gfx::CommandListFlags flags) -> CommandList
 {
   if (setup_command_pool_ == VK_NULL_HANDLE)
     setup_command_pool_ = CreateCommandPool(true, phys_device_.queue_id, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
@@ -306,7 +306,7 @@ void gdm::vk::Renderer::InitializePresentImages()
         .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
         .Finalize();
 
-      CommandList list = CreateSetupCommandList(GDM_HASH("SetupRenderer"), gfx::ECommandListFlags::ONCE);
+      CommandList list = CreateCommandList(GDM_HASH("SetupRenderer"), gfx::ECommandListFlags::ONCE);
       list.PushBarrier(barrier);
       list.Finalize();
 

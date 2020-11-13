@@ -7,13 +7,15 @@
 #ifndef AH_GDM_DIFF_MACRO_H
 #define AH_GDM_DIFF_MACRO_H
 
+#ifndef UNUSED
 #define UNUSED(x) (&reinterpret_cast<const int&>(x))
+#endif
 
 namespace gdm {
 
 template<class T, class IterBegin = decltype(std::begin(std::declval<T>())),
                   class IterEnd = decltype(std::end(std::declval<T>()))>
-constexpr auto Enumerate(T&& iterable)
+inline constexpr auto Enumerate(T&& iterable)
 {
   struct Iterator
   {

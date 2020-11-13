@@ -6,28 +6,25 @@
 
 #include "scene_manager.h"
 
-#include "data/cfg_loader.h"
-#include "memory/defines.h"
-#include "render/api.h"
-#include "system/assert_utils.h"
 #include "system/diff_utils.h"
+#include "render/shader.h"
+
+#include "desc/sampler_desc.h"
+#include "desc/input_layout.h"
+#include "desc/rasterizer_desc.h"
 
 // --public
 
-gdm::SceneManager::SceneManager(api::Device& device)
-  : device_{ device }
+gdm::SceneManager::SceneManager(api::Renderer& rdr)
+  : device_{ rdr.GetDevice() }
+  , rdr_{rdr}
   , models_{}
   , staging_buffers_{}
   , dummy_view_{}
-  , pocb_uniform_{}
-  , pocb_staging_{}
-  , pocb_to_write_barriers_{}
-  , pocb_to_read_barriers_{}
-  , pfcb_uniform_{}
-  , pfcb_staging_{}
-  , pfcb_to_write_barriers_{}
-  , pfcb_to_read_barriers_{}
-{ }
+{
+  float width = static_cast<float>(rdr_.GetSurfaceWidth());
+  float height = static_cast<float>(rdr_.GetSurfaceHeight());
+}
 
 auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
 {

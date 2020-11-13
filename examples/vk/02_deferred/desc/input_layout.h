@@ -23,6 +23,12 @@ struct StdInputLayout : public InputLayout
   { }
 };
 
+struct EmptyInputLayout : public InputLayout
+{
+  EmptyInputLayout() : InputLayout({}, gfx::EPrimitiveType::TRIANGLE_LIST)
+  { }
+};
+
 } // namespace gdm
 
 #endif // SH_STD_LAYOUT_DESC_H

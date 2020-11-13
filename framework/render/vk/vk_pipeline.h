@@ -33,6 +33,7 @@ struct Pipeline
   void SetRenderPass(VkRenderPass pass);
   void SetDescriptorSetLayouts(const DescriptorSetLayouts& layouts);
   void SetDynamicState(gfx::EDynamicState dynamic_state);
+  void SetBlendAttachmentsCount(uint count);
 
   operator VkPipeline() const;
   operator VkPipelineLayout() const;
@@ -57,6 +58,7 @@ private:
   InputLayout input_layout_ = {};
   std::vector<VkDynamicState> dynamic_state_ = {};
   VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
+  uint blend_attachments_count_ = 1;
 
 }; // struct Pipeline
 

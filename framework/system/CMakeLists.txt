@@ -29,7 +29,7 @@ set(SRC_FILES
 if ("${PROFILING_ENABLED}")
   message("  ** using microprofiler")
   set(SRC_FILES "${SRC_FILES};../../3rdparty/microprofile/microprofile.cpp")
-  add_definitions(-DMICROPROFILE_GPU_TIMERS=0
+  add_definitions(-DMICROPROFILE_GPU_TIMERS=1
                   -DMICROPROFILE_WEBSERVER=1
                   -DGDM_PROFILER_ENABLED=1
                   -DGDM_LOGGER_ENABLED=1

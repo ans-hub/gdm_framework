@@ -45,6 +45,12 @@ void gdm::vk::CommandList::Finalize()
   explicitly_finalized_ = true;
 }
 
+void gdm::vk::CommandList::Reuse()
+{
+  Reset();
+  Begin();
+}
+
 void gdm::vk::CommandList::PushBarrier(const ImageBarrier& barrier)
 {
   ASSERTF(!explicitly_finalized_, "Command list finalized");
@@ -187,6 +193,11 @@ void gdm::vk::CommandList::DrawIndexed(const std::vector<Vec3u>& data)
   vkCmdDrawIndexed(command_buffer_, static_cast<uint32_t>(data.size() * 3), 1, 0, 0, 0);
 }
 
+void gdm::vk::CommandList::DrawDummy()
+{
+  vkCmdDraw(command_buffer_, 3, 1, 0, 0);
+}
+
 gdm::vk::CommandList::operator VkCommandBuffer()
 {
   ASSERTF(explicitly_finalized_, "Trying to access underlying data while command list not finalized");
@@ -211,5 +222,6 @@ void gdm::vk::CommandList::Begin()
 
 void gdm::vk::CommandList::Reset()
 {
+  explicitly_finalized_ = false;
   vkResetCommandBuffer(command_buffer_, 0);
 }

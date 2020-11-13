@@ -138,10 +138,20 @@ void gdm::vk::ImageBarrier::FillAccessMasks(VkImageLayout old_layout, VkImageLay
       image_barrier_.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
       image_barrier_.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
   }
+  else if (old_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+  {
+      image_barrier_.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+      image_barrier_.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+  }
   else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
   {
       image_barrier_.srcAccessMask = 0;
       image_barrier_.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+  }
+    else if (old_layout == VK_IMAGE_LAYOUT_UNDEFINED && new_layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+  {
+      image_barrier_.srcAccessMask = 0;
+      image_barrier_.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
   }
   else if (old_layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && new_layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
   {
@@ -163,7 +173,7 @@ auto gdm::vk::helpers::GetStageMask(VkAccessFlags access) -> VkPipelineStageFlag
   if (bits::HasFlag(access, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT))
     return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
   else if (bits::HasFlag(access, VK_ACCESS_UNIFORM_READ_BIT))
-    return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+    return VK_PIPELINE_STAGE_VERTEX_SHADER_BIT; // TODO:
   else if (bits::HasFlag(access, VK_ACCESS_TRANSFER_WRITE_BIT))
     return VK_PIPELINE_STAGE_TRANSFER_BIT;
   else if (bits::HasFlag(access, VK_ACCESS_TRANSFER_READ_BIT))

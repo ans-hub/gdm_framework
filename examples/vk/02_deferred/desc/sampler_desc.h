@@ -9,6 +9,7 @@
 
 #include <render/defines.h>
 #include <render/sampler_state.h>
+#include <render/colors.h>
 
 namespace gdm {
 

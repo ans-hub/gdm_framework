@@ -7,13 +7,17 @@
 #include "vk_semaphore.h"
 
 #include "system/assert_utils.h"
+#include "system/bits_utils.h"
 
 // --public
 
 gdm::vk::Semaphore::Semaphore(VkDevice device, gfx::SemaphoreFlags flags)
   : device_{device}
   , semaphore_{ CreateSemaphore(flags) }
-{ }
+{
+  if (bits::HasFlag(flags, gfx::ESemaphoreFlags::SIGNALED))
+    Signal();
+}
 
 gdm::vk::Semaphore::~Semaphore()
 {
@@ -32,6 +36,16 @@ auto gdm::vk::Semaphore::CreateSemaphore(gfx::SemaphoreFlags /*flags*/) -> VkSem
   ASSERTF(res == VK_SUCCESS, "vkCreateSemaphore error %d\n", res);
 
   return sem;
+}
+
+void gdm::vk::Semaphore::Signal()
+{
+  VkSemaphoreSignalInfo info = {};
+  info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO;
+  info.semaphore = semaphore_;
+ 
+  VkResult res = vkSignalSemaphore(device_, &info);
+  ASSERTF(res == VK_SUCCESS, "vkSignalSemaphore error %d\n", res);
 }
 
 void gdm::vk::Semaphore::Reset()

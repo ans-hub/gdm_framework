@@ -74,6 +74,12 @@ gdm::vk::Pipeline::operator VkPipeline() const
   return pipeline_;
 }
 
+void gdm::vk::Pipeline::SetBlendAttachmentsCount(uint count)
+{
+  ASSERTF(!compiled_, "Trying access non compiled pipeline");
+  blend_attachments_count_ = count;
+}
+
 gdm::vk::Pipeline::operator VkPipelineLayout() const 
 {
   ASSERTF(compiled_, "Trying access non compiled pipeline");
@@ -89,10 +95,14 @@ void gdm::vk::Pipeline::Compile()
   input_assembly.topology = static_cast<VkPrimitiveTopology>(input_layout_.GetPrimitiveType());
   input_assembly.primitiveRestartEnable = VK_FALSE;
 
-  VkVertexInputBindingDescription vertex_binding_descritpion = {};
-  vertex_binding_descritpion.binding = 0;
-  vertex_binding_descritpion.stride = input_layout_.GetSize();
-  vertex_binding_descritpion.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  std::vector<VkVertexInputBindingDescription> vertex_binding_descritpion;
+  if (input_layout_.GetSize() != 0)
+  {
+    vertex_binding_descritpion.push_back({});
+    vertex_binding_descritpion.back().binding = 0;
+    vertex_binding_descritpion.back().stride = input_layout_.GetSize();
+    vertex_binding_descritpion.back().inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+  }
 
   const auto& elements = input_layout_.GetData();
   std::vector<VkVertexInputAttributeDescription> vertex_attribute_descritpion (elements.size()); 
@@ -107,8 +117,8 @@ void gdm::vk::Pipeline::Compile()
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
   vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertex_input_info.vertexBindingDescriptionCount = 1;
-  vertex_input_info.pVertexBindingDescriptions = &vertex_binding_descritpion;
+  vertex_input_info.vertexBindingDescriptionCount = static_cast<uint>(vertex_binding_descritpion.size());
+  vertex_input_info.pVertexBindingDescriptions = vertex_binding_descritpion.data();
   vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint>(vertex_attribute_descritpion.size());
   vertex_input_info.pVertexAttributeDescriptions = vertex_attribute_descritpion.data();
 
@@ -161,7 +171,7 @@ void gdm::vk::Pipeline::Compile()
   rasterizer.polygonMode = static_cast<VkPolygonMode>(rasterizer_state_.fill_);
   rasterizer.lineWidth = 1.0f;
   rasterizer.cullMode = static_cast<VkCullModeFlagBits>(rasterizer_state_.cull_);
-  rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+  rasterizer.frontFace = static_cast<VkFrontFace>(rasterizer_state_.front_face_);
   rasterizer.depthBiasEnable = VK_FALSE;
 
   VkPipelineMultisampleStateCreateInfo multisampling{};
@@ -169,16 +179,19 @@ void gdm::vk::Pipeline::Compile()
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-  VkPipelineColorBlendAttachmentState color_blend_attachment{};
-  color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-  color_blend_attachment.blendEnable = VK_FALSE;
+  std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachment(blend_attachments_count_);
+  for(auto& attachment : color_blend_attachment)
+  {
+    attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    attachment.blendEnable = VK_FALSE;
+  }
 
   VkPipelineColorBlendStateCreateInfo color_blending{};
   color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   color_blending.logicOpEnable = VK_FALSE;
   color_blending.logicOp = VK_LOGIC_OP_COPY;
-  color_blending.attachmentCount = 1;
-  color_blending.pAttachments = &color_blend_attachment;
+  color_blending.attachmentCount = blend_attachments_count_;
+  color_blending.pAttachments = color_blend_attachment.data();
   color_blending.blendConstants[0] = 0.0f;
   color_blending.blendConstants[1] = 0.0f;
   color_blending.blendConstants[2] = 0.0f;

@@ -23,6 +23,7 @@ struct Semaphore
 { 
   Semaphore(VkDevice device, gfx::SemaphoreFlags flags = 0);
   ~Semaphore();
+
   Semaphore(const Semaphore& sem) = delete;
   const Semaphore& operator=(const Semaphore& sem) = delete;
   operator VkSemaphore() const { return semaphore_; }
@@ -32,6 +33,7 @@ public:
 
 private:
   auto CreateSemaphore(gfx::SemaphoreFlags flags) -> VkSemaphore;
+  void Signal();
   void Reset();
 
 private:

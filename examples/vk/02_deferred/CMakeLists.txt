@@ -12,9 +12,10 @@ message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
 add_definitions(-DGFX_VK_API)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(VK_API 1)
-
 set(CMAKE_CXX_STANDARD 17)
+set(PROFILING_ENABLED 1)
 
 set(INCLUDE_DIRS
   "."
@@ -32,6 +33,8 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 endif()
 
 set(SRC deferred.cc
+        desc/deferred_pass.cc
+        desc/gbuffer_pass.cc
         helpers.cc
         scene_manager.cc)
 

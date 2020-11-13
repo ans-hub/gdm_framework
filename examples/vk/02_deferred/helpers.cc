@@ -11,10 +11,31 @@
 #include "render/api.h"
 #include "system/assert_utils.h"
 
+namespace {
+
+  bool RegisterFactoryPathes(const gdm::Config& cfg)
+  {
+    std::string models_path = cfg.Get<std::string>("models_factory_path");
+    std::string materials_path = cfg.Get<std::string>("material_factory_path");
+    std::string textures_path = cfg.Get<std::string>("texture_factory_path");
+    std::string images_path = cfg.Get<std::string>("image_factory_path");
+    
+    gdm::MaterialFactory::SetPath(materials_path.c_str());
+    gdm::TextureFactory::SetPath(textures_path.c_str());
+    gdm::ImageFactory::SetPath(images_path.c_str());
+    gdm::ModelFactory::SetPath(models_path.c_str());
+
+    return true;
+  }
+
+}
+
 // --public
 
 auto gdm::helpers::LoadAbstractModels(const Config& cfg) -> std::vector<ModelHandle>
 {
+  static const bool registered = RegisterFactoryPathes(cfg);
+
   std::vector<ModelHandle> result;
 
   auto obj_pathes = cfg.GetAllVals<std::string>("model_");

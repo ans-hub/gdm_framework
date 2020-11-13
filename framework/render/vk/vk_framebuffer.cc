@@ -38,7 +38,7 @@ auto gdm::vk::Framebuffer::CreateClearValues() -> std::vector<VkClearValue>
 
 auto gdm::vk::Framebuffer::CreateFrameBuffer(const RenderPass& render_pass, const ImageViews& views) -> VkFramebuffer
 {
-  ASSERTF(views.size() == render_pass.GetPassAttachmentsCount(), "Inconsistent attachments count");
+  ASSERTF(views.size() == size_t(render_pass.GetPassAttachmentsCount()), "Inconsistent attachments count");
   
   std::vector<VkImageView> vk_views = {};
   for (auto* view : views)

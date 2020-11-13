@@ -29,6 +29,7 @@ struct CommandList
   ~CommandList();
 
   void Finalize();
+  void Reuse();
   void PushBarrier(const ImageBarrier& image_barrier);
   void PushBarrier(const BufferBarrier& buffer_barrier);
   void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint src_offset, uint dst_offset, uint size);
@@ -42,6 +43,7 @@ struct CommandList
   void BindIndexBuffer(VkBuffer idx_buffer);
   void BindDescriptorSetGraphics(const vk::DescriptorSets& descriptor_sets, Pipeline& pipeline, const std::vector<uint>& offsets);
   void DrawIndexed(const std::vector<Vec3u>& data);
+  void DrawDummy();
 
   bool IsFinalized() const { return explicitly_finalized_; }
   operator VkCommandBuffer();

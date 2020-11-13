@@ -4,24 +4,30 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
+/*
+                    VS        PS        OUT
+#1 pass gbuffer    PFUBO   tex_diff   out_gpos
+        mrt        POUBO   tex_norm   out_gnorm
+        offscreen                     out_gdiff
+                                      out_depth
+
+#2 pass deferred      -    PFUBO[2]   backbuffer[2]
+        lighting      -    tex_gpos   depth[2]
+        main               tex_gdiff
+                           tex_gnorm
+*/
+
 #ifndef GFX_VK_SCENE_MGR
 #define GFX_VK_SCENE_MGR
 
 #include <set>
 
-#include "render/camera_eul.h"
-#include "render/api.h"
 #include "render/defines.h"
+#include "render/api.h"
 #include "render/renderer.h"
-
-#include "memory/defines.h"
-
-#include "window/main_input.h"
+#include "render/viewport_desc.h"
 
 #include "data/model_factory.h"
-#include "data/material_factory.h"
-#include "data/texture_factory.h"
-#include "data/image_factory.h"
 
 namespace gdm {
 
@@ -29,31 +35,29 @@ struct RenderableMaterials;
 
 struct SceneManager
 {
-  SceneManager(api::Device& device);
+  struct DeferredPass;
+  struct GbufferPass;
+
+  SceneManager(api::Renderer& gfx);
 
   void CreateDummyView(api::CommandList& cmd);
   uint CreateStagingBuffer(uint bytes);
   auto GetStagingBuffer(uint index) -> api::Buffer& { return *staging_buffers_[index]; };
-  void SetModels(const std::vector<ModelHandle>& models);
   void CopyGeometryToGpu(const std::vector<ModelHandle>& models, uint vstg_index, uint istg_index, api::CommandList& list);
   void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
+  void SetModels(const std::vector<ModelHandle>& models);
   auto GetRenderableModels() -> const std::set<ModelHandle>& { return models_; }
   auto GetRenderableMaterials() -> RenderableMaterials;
-  auto GetPerFrameUBO(uint frame_num) -> api::Buffer* { return pfcb_uniform_[frame_num]; }
-  auto GetPerObjectUBO(uint frame_num) -> api::Buffer* { return pocb_uniform_[frame_num]; }
 
-  template<class T, uint Count>
-  void CreatePerFrameUBO(api::CommandList& cmd);
-  template<class T, uint Count>
-  void CreatePerObjectUBO(api::CommandList& cmd);
-  template<class T>
-  void UpdatePerFrameUBO(api::CommandList& cmd, uint curr_frame, const T& pfcb);
-  template<class T>
-  void UpdatePerObjectUBO(api::CommandList& cmd, uint curr_frame);
+  template<class T, class Pass>
+  void CreateUbo(api::CommandList& cmd, Pass& pass, uint count);
+  template<class T, class Pass>
+  void UpdateUBO(api::CommandList& cmd, Pass& pass, uint count);
 
 public:
   constexpr static uint v_max_materials = 128;
-  constexpr static uint v_max_objects = 1024;
+  constexpr static uint v_max_lights = 8;
+  constexpr static uint v_max_objects = 32;
   constexpr static const char* v_dummy_image = "dummy_handle";
 
 private:
@@ -62,18 +66,11 @@ private:
   void CopyTextureFromStagingBuffer(api::CommandList& cmd, AbstractTexture* texture, api::Buffer& stg, uint curr_offset);
 
 private:
-  api::Device& device_;  
+  api::Device& device_;
+  api::Renderer& rdr_;
   std::set<ModelHandle> models_;
   std::vector<api::Buffer*> staging_buffers_;
   api::ImageView* dummy_view_;
-  std::vector<api::Buffer*> pocb_uniform_;
-  std::vector<api::Buffer*> pocb_staging_;
-  std::vector<api::BufferBarrier*> pocb_to_write_barriers_;
-  std::vector<api::BufferBarrier*> pocb_to_read_barriers_;
-  std::vector<api::Buffer*> pfcb_uniform_;
-  std::vector<api::Buffer*> pfcb_staging_;
-  std::vector<api::BufferBarrier*> pfcb_to_write_barriers_;
-  std::vector<api::BufferBarrier*> pfcb_to_read_barriers_;
 
 private:
   static constexpr const char* v_model_prefix = "model_";

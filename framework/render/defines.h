@@ -50,6 +50,14 @@ namespace gdm::gfx {
 
   using QueueType = uint;
 
+  enum EUboType : uint
+  {
+    PER_FRAME,
+    PER_OBJECT,
+  };
+
+  using UboType = uint;
+
   enum EShaderType : uint
   {
     VX,
