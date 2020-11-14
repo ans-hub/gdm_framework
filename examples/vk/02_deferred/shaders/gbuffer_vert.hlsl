@@ -9,7 +9,6 @@
 {
   float4x4 u_model;
   float4 u_color;
-  uint u_material_index;
 }
 
 struct Input
@@ -26,7 +25,6 @@ struct Output
   float3 norm_WS : TEXCOORD1;
   float2 texuv_TS : TEXCOORD2;
   float3 view_pos_WS : TEXCOORD3;
-  nointerpolation uint material_index : TEXCOORD4;
   float3 tg_WS : TANGENT;
   float3 bt_WS : BINORMAL;
   float3 nm_WS : NORMAL;
@@ -51,7 +49,6 @@ Output main(Input IN)
   OUT.bt_WS = bt_WS;
   OUT.nm_WS = norm_WS;
   OUT.position = mul(mvp, float4(IN.pos_MS, 1.f));
-  OUT.material_index = u_material_index;
 
   return OUT;
 }

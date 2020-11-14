@@ -21,10 +21,8 @@ gdm::SceneManager::SceneManager(api::Renderer& rdr)
   , models_{}
   , staging_buffers_{}
   , dummy_view_{}
-{
-  float width = static_cast<float>(rdr_.GetSurfaceWidth());
-  float height = static_cast<float>(rdr_.GetSurfaceHeight());
-}
+  , renderable_materials_{}
+{ }
 
 auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
 {
@@ -229,17 +227,18 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
   dummy_texture->SetApiImageView(api_img_view);
 }
 
-auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
+auto gdm::SceneManager::GetRenderableMaterials() -> const api::ImageViews&
 {
-  TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(v_dummy_image);
-  AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
-  api::ImageView* dummy_view = dummy_texture->GetApiImageView<api::ImageView>();
+  if (!dummy_view_)
+  {
+    TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(v_dummy_image);
+    AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
+    dummy_view_ = dummy_texture->GetApiImageView<api::ImageView>();
+  }
 
-  RenderableMaterials materials = {};
-  materials.diffuse_views_.resize(v_max_materials, dummy_view);
-  materials.specular_views_.resize(v_max_materials, dummy_view);
-  materials.normal_views_.resize(v_max_materials, dummy_view);
-
+  renderable_materials_.clear();
+  renderable_materials_.resize(v_max_materials * v_material_type_cnt, dummy_view_);
+  
   auto& renderable = GetRenderableModels();
   for (auto [index,model_handle] : Enumerate(renderable))
   {
@@ -248,14 +247,14 @@ auto gdm::SceneManager::GetRenderableMaterials() -> RenderableMaterials
     {
       auto mesh = MeshFactory::Get(mesh_handle);
       auto material = MaterialFactory::Get(mesh->material_);
-
       auto diffuse_texture = TextureFactory::Get(material->diff_);
-      materials.diffuse_views_[material->index_] = diffuse_texture->GetApiImageView<api::ImageView>();
-      auto specular_texture = TextureFactory::Get(material->spec_);
-      materials.specular_views_[material->index_] = specular_texture->GetApiImageView<api::ImageView>();
       auto normal_texture = TextureFactory::Get(material->norm_);
-      materials.normal_views_[material->index_] = normal_texture->GetApiImageView<api::ImageView>();
+      auto specular_texture = TextureFactory::Get(material->spec_);
+      
+      renderable_materials_[material->index_ * 3 + v_diff_offset] = diffuse_texture->GetApiImageView<api::ImageView>();
+      renderable_materials_[material->index_ * 3 + v_norm_offset] = normal_texture->GetApiImageView<api::ImageView>();
+      renderable_materials_[material->index_ * 3 + v_spec_offset] = specular_texture->GetApiImageView<api::ImageView>();
     }
   }
-  return materials;
+  return renderable_materials_;
 }

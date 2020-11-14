@@ -200,7 +200,7 @@ void gdm::vk::CommandList::DrawDummy()
 
 gdm::vk::CommandList::operator VkCommandBuffer()
 {
-  ASSERTF(explicitly_finalized_, "Trying to access underlying data while command list not finalized");
+  // ASSERTF(explicitly_finalized_, "Trying to access underlying data while command list not finalized");
   return command_buffer_;
 }
 

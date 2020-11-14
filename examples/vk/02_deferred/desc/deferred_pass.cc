@@ -10,6 +10,25 @@
 
 // --public
 
+void gdm::DeferredPass::CreateUbo(api::CommandList& cmd, uint frame_num)
+{
+  data_[frame_num].pfcb_staging_ps_ = GMNew api::Buffer(device_, sizeof(DeferredPs_PFCB) * 1, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
+  data_[frame_num].pfcb_uniform_ps_ = GMNew api::Buffer(device_, sizeof(DeferredPs_PFCB) * 1, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+  data_[frame_num].pfcb_to_read_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_ps_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
+  data_[frame_num].pfcb_to_write_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_ps_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+  cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
+}
+
+void gdm::DeferredPass::UpdateUbo(api::CommandList& cmd, uint frame_num)
+{
+  cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
+  data_[frame_num].pfcb_staging_ps_->Map();
+  data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 1);
+  data_[frame_num].pfcb_staging_ps_->Unmap();
+  cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_ps_, *data_[frame_num].pfcb_uniform_ps_, sizeof(DeferredPs_PFCB));
+  cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
+}
+
 void gdm::DeferredPass::CreateImages(api::CommandList& cmd)
 {
   auto present_images = rdr_->GetBackBufferImages();
@@ -108,7 +127,7 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
   for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
   {
     auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
-    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(0, *data_[i].pfcb_uniform_);
+    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(0, *data_[i].pfcb_uniform_ps_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(1, *sampler_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(2, *gbuffer_image_views[0]);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, *gbuffer_image_views[1]);

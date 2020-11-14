@@ -35,6 +35,7 @@ __declspec(align(64)) struct Light
   float attenuation_quadr_ = 0.0f;
   LightType type_ = LightType::DIR;
   bool  enabled_ = false;
+  Vec2f padding_;
 
 }; // struct Light
 
@@ -45,6 +46,7 @@ __declspec(align(64)) struct DeferredPs_PFCB
   alignas(16) std::array<Light,4> lights_ = {};
   
   static const gfx::UboType v_type_ = gfx::EUboType::PER_FRAME; 
+  static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::PX; 
 
 }; // struct DeferredPs_PFCB
 
@@ -54,8 +56,8 @@ struct DeferredPassData
 
   api::Renderer* rdr_;
   api::Device* device_;
-  api::Buffer* pfcb_uniform_;
-  api::Buffer* pfcb_staging_;
+  api::Buffer* pfcb_staging_ps_;
+  api::Buffer* pfcb_uniform_ps_;
   api::BufferBarrier* pfcb_to_write_barrier_;
   api::BufferBarrier* pfcb_to_read_barrier_;
   api::Image2D* depth_image_;
@@ -65,7 +67,7 @@ struct DeferredPassData
   api::ImageBarrier* present_to_read_barrier_;
   api::ImageBarrier* present_to_write_barrier_;
 
-  DeferredPs_PFCB pfcb_data_ = {};
+  DeferredPs_PFCB pfcb_data_ps_ = {};
 };
 
 struct DeferredPass
@@ -80,6 +82,8 @@ struct DeferredPass
   
   std::vector<DeferredPassData> data_;
 
+  void CreateUbo(api::CommandList& cmd, uint frame_num);
+  void UpdateUbo(api::CommandList& cmd, uint frame_num);
   void CreateImages(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();

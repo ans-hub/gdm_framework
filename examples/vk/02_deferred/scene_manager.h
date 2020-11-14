@@ -31,8 +31,6 @@
 
 namespace gdm {
 
-struct RenderableMaterials;
-
 struct SceneManager
 {
   struct DeferredPass;
@@ -47,15 +45,19 @@ struct SceneManager
   void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
   void SetModels(const std::vector<ModelHandle>& models);
   auto GetRenderableModels() -> const std::set<ModelHandle>& { return models_; }
-  auto GetRenderableMaterials() -> RenderableMaterials;
+  auto GetRenderableMaterials() -> const api::ImageViews&;
 
-  template<class T, class Pass>
-  void CreateUbo(api::CommandList& cmd, Pass& pass, uint count);
-  template<class T, class Pass>
-  void UpdateUBO(api::CommandList& cmd, Pass& pass, uint count);
+  // template<class T, class Pass>
+  // void CreateUbo(api::CommandList& cmd, Pass& pass, uint count);
+  // template<class T, class Pass>
+  // void UpdateUBO(api::CommandList& cmd, Pass& pass, uint count);
 
 public:
-  constexpr static uint v_max_materials = 128;
+  constexpr static uint v_material_type_cnt = 3; // diff_map + norm_map + v_spec_map
+  constexpr static uint v_max_materials = 32;
+  constexpr static uint v_diff_offset = 0;
+  constexpr static uint v_norm_offset = 1;
+  constexpr static uint v_spec_offset = 2;
   constexpr static uint v_max_lights = 8;
   constexpr static uint v_max_objects = 32;
   constexpr static const char* v_dummy_image = "dummy_handle";
@@ -69,6 +71,7 @@ private:
   api::Device& device_;
   api::Renderer& rdr_;
   std::set<ModelHandle> models_;
+  api::ImageViews renderable_materials_;
   std::vector<api::Buffer*> staging_buffers_;
   api::ImageView* dummy_view_;
 
@@ -77,14 +80,6 @@ private:
   static constexpr const char* v_model_pos_prefix = "model_pos_";
 
 };  // struct SceneManager
-
-struct RenderableMaterials
-{
-  api::ImageViews diffuse_views_;
-  api::ImageViews specular_views_;
-  api::ImageViews normal_views_;
-
-};  // struct RenderableMaterials
 
 } // namespace gdm::scene
 

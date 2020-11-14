@@ -21,13 +21,14 @@ using MaterialHandle = Handle;
 
 struct AbstractMaterial
 {
-  __declspec(align(64)) struct Props
+  struct Props
   {
     Vec4f emissive_ = Vec4f(0.f);
     Vec4f ambient_ = Vec4f(0.1f);
     Vec4f diffuse_ = Vec4f(1.f);
     Vec4f specular_ = Vec4f(1.f);
     float specular_power_ = 128.f;
+    Vec3f padding_;
   
   }; // struct Props
   
@@ -37,7 +38,6 @@ struct AbstractMaterial
   TextureHandle spec_;
   TextureHandle norm_;
   TextureHandle diff_;
-  MaterialHandle properties_;
   Props props_;
 };
 

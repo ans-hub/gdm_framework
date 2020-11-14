@@ -62,7 +62,7 @@ inline std::string gdm::ModelLoader::GetMaterial(const char* resource_name, std:
       if (strcmp(resource_name, "specular_map") == 0)
         return material.specular_texname.c_str();
       if (strcmp(resource_name, "normal_map") == 0)
-        return material.normal_texname.c_str();
+        return material.bump_texname.c_str();
       return {};
     }
   }

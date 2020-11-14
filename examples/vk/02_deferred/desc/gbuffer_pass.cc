@@ -6,7 +6,60 @@
 
 #include "gbuffer_pass.h"
 
+#include "render/api.h"
+
 // --public
+
+void gdm::GbufferPass::CreateUbo(api::CommandList& cmd, uint max_objects)
+{
+  data_.pocb_data_vs_.resize(max_objects);
+  data_.pocb_data_ps_.resize(max_objects);
+  data_.pfcb_staging_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_PFCB) * 1, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
+  data_.pocb_staging_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_POCB) * max_objects, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
+  data_.pocb_staging_ps_ = GMNew api::Buffer(device_, sizeof(GbufferPs_POCB) * max_objects, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
+  data_.pfcb_uniform_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_PFCB) * 1, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+  data_.pocb_uniform_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_POCB) * max_objects, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+  data_.pocb_uniform_ps_ = GMNew api::Buffer(device_, sizeof(GbufferPs_POCB) * max_objects, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+  data_.to_read_barriers_.resize(3);
+  data_.to_write_barriers_.resize(3);
+  data_.to_read_barriers_[0] = GMNew api::BufferBarrier(device_, *data_.pfcb_uniform_vs_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
+  data_.to_read_barriers_[1] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_vs_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
+  data_.to_read_barriers_[2] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_ps_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
+  data_.to_write_barriers_[0] = GMNew api::BufferBarrier(device_, *data_.pfcb_uniform_vs_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+  data_.to_write_barriers_[1] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_vs_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+  data_.to_write_barriers_[2] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_ps_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+  
+  cmd.PushBarrier(*data_.to_read_barriers_[0]);
+  cmd.PushBarrier(*data_.to_read_barriers_[1]);
+  cmd.PushBarrier(*data_.to_read_barriers_[2]);
+
+  bool map_and_never_unmap_0 = [&](){ data_.pocb_staging_vs_->Map(); return true; }();
+  bool map_and_never_unmap_1 = [&](){ data_.pocb_staging_ps_->Map(); return true; }();
+}
+
+void gdm::GbufferPass::UpdateUbo(api::CommandList& cmd, uint max_objects)
+{
+  cmd.PushBarrier(*data_.to_write_barriers_[0]);
+  cmd.PushBarrier(*data_.to_write_barriers_[1]);
+  cmd.PushBarrier(*data_.to_write_barriers_[2]);
+
+  data_.pfcb_staging_vs_->Map();
+  data_.pfcb_staging_vs_->CopyDataToGpu(&data_.pfcb_data_vs_, 1);
+  data_.pfcb_staging_vs_->Unmap();
+  cmd.CopyBufferToBuffer(*data_.pfcb_staging_vs_, *data_.pfcb_uniform_vs_, sizeof(GbufferVs_PFCB));
+  
+  data_.pocb_staging_vs_->CopyDataToGpu(data_.pocb_data_vs_.data(), data_.pocb_data_vs_.size());
+  uint pocb_size_vs = static_cast<uint>(sizeof(GbufferVs_POCB) * data_.pocb_data_vs_.size());
+  cmd.CopyBufferToBuffer(*data_.pocb_staging_vs_, *data_.pocb_uniform_vs_, pocb_size_vs);
+
+  data_.pocb_staging_ps_->CopyDataToGpu(data_.pocb_data_ps_.data(), data_.pocb_data_ps_.size());
+  uint pocb_size_ps = static_cast<uint>(sizeof(GbufferPs_POCB) * data_.pocb_data_ps_.size());
+  cmd.CopyBufferToBuffer(*data_.pocb_staging_ps_, *data_.pocb_uniform_ps_, pocb_size_ps);
+
+  cmd.PushBarrier(*data_.to_read_barriers_[0]);
+  cmd.PushBarrier(*data_.to_read_barriers_[1]);
+  cmd.PushBarrier(*data_.to_read_barriers_[2]);
+}
 
 void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
 {
@@ -107,26 +160,25 @@ void gdm::GbufferPass::CreateRenderPass()
   pass_->Finalize();
 }
 
-void gdm::GbufferPass::CreateDescriptorSet(api::ImageViews& diffuse, api::ImageViews& specular, api::ImageViews& normals)
+void gdm::GbufferPass::CreateDescriptorSet(const api::ImageViews& materials)
 {
   auto* dsl = GMNew api::DescriptorSetLayout(*device_);
 
   dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
   dsl->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
-  dsl->AddBinding(2, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  dsl->AddBinding(3, static_cast<uint>(diffuse.size()), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
-  // todo: normals and pe pass in 3
-  // dsl->AddBinding(4, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
-  // dsl->AddBinding(5, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
+  dsl->AddBinding(2, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::FRAGMENT_STAGE);
+  dsl->AddBinding(3, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
+  dsl->AddBinding(4, static_cast<uint>(materials.size()), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
   dsl->Finalize();
 
   data_.sampler_ = GMNew api::Sampler(*device_, StdSamplerState{});
 
   auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
-  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_.pfcb_uniform_);
-  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *data_.pocb_uniform_);
-  descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(2, *data_.sampler_);
-  descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(3, diffuse);
+  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_.pfcb_uniform_vs_);
+  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *data_.pocb_uniform_vs_);
+  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, *data_.pocb_uniform_ps_);
+  descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(3, *data_.sampler_);
+  descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(4, materials);
   descriptor_set->Finalize();
   
   data_.descriptor_set_layout_ = dsl;

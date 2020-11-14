@@ -15,7 +15,7 @@ add_definitions(-DGFX_VK_API)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(VK_API 1)
 set(CMAKE_CXX_STANDARD 17)
-set(PROFILING_ENABLED 1)
+set(PROFILING_ENABLED 0)
 
 set(INCLUDE_DIRS
   "."
@@ -25,11 +25,19 @@ set(INCLUDE_DIRS
   ${GDM_LIBDXC_DIR}/include)
 include_directories(${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  set(warnings "-ansi -pedantic -Wall -Wextra -Werror")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-  set(warnings "/W4 /WX /EHsc") # todo: W4 ???
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+if ("${PROFILING_ENABLED}")
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /O2")
+  endif()
+else()
+  if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set(warnings "-ansi -pedantic -Wall -Wextra -Werror")
+  elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+    set(warnings "/W4 /WX /EHsc") # todo: W4 ???
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+  endif()
 endif()
 
 set(SRC deferred.cc
@@ -59,14 +67,18 @@ add_subdirectory(${GDM_FRAMEWORK_DIR}/math/ static_libs/math)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/data/ static_libs/data)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/window/ static_libs/window)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/render/ static_libs/render)
+add_subdirectory(${GDM_FRAMEWORK_DIR}/threads/ static_libs/threads)
 
 message("* App ${BIN}: adding executable")
 add_executable(${BIN} ${SRC})
 
 message("* App ${BIN}: linking 3rd libraries")
-target_link_libraries(${BIN} math system data window render)
+target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} math system data window render threads)
 target_link_libraries(${BIN} winmm dxgi dinput8 dxguid)
 target_link_libraries(${BIN} ${Vulkan_LIBRARY})
+if(WIN32)
+  target_link_libraries(${BIN} wsock32 ws2_32)
+endif()
 
 message("* App ${BIN}: copy dlls")
 add_custom_command(TARGET ${BIN} POST_BUILD

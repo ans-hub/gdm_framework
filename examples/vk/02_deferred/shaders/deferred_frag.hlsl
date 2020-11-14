@@ -1,45 +1,33 @@
 #define DIR_LIGHT 0
 #define POINT_LIGHT 1
 #define SPOT_LIGHT 2
+#define LIGHTS_COUNT 4
 
 SamplerState sampler_gen : register(s1);
 Texture2D gbuffer_pos : register(t2);
 Texture2D gbuffer_diff : register(t3);
 Texture2D gbuffer_norm : register(t4);
-// struct MaterialProps
-// {
-//   float4 emissive_;
-//   float4 ambient_;
-//   float4 diffuse_;
-//   float4 specular_;
-//   float specular_power_;
-// };
 
-// struct LightProps
-// {
-//   float4 pos_WS;
-//   float4 dir_WS;
-//   float4 color_;
-//   float spot_angle_;
-//   float attenuation_const_;
-//   float attenuation_linear_;
-//   float attenuation_quadr_;
-//   int type_;
-//   int enabled_;
-//   float2 padding_;
-// };
+struct LightProps
+{
+  float4 pos_WS;
+  float4 dir_WS;
+  float4 color_;
+  float spot_angle_;
+  float attenuation_const_;
+  float attenuation_linear_;
+  float attenuation_quadr_;
+  int type_;
+  int enabled_;
+  float2 padding_;
+};
 
-// cbuffer MaterialPropsBuffer : register(b0)
-// {
-//   MaterialProps material_props_;
-// };
-
-// cbuffer LightPropsBuffer : register(b0)
-// {
-//   float4 g_global_ambient_;
-//   float4 g_camera_pos_;
-//   LightProps g_lights_[4];
-// };
+cbuffer LightPropsBuffer : register(b0)
+{
+  float4 g_global_ambient_;
+  float4 g_camera_pos_;
+  LightProps g_lights_[LIGHTS_COUNT];
+};
 
 struct VSOutput
 {
@@ -49,73 +37,79 @@ struct VSOutput
 
 float4 main(VSOutput input) : SV_TARGET
 {
-  return gbuffer_diff.Sample(sampler_gen, input.UV);
-  // return float4(1,1,1,1);
-	// Get G-Buffer values
-	// float3 fragPos = textureposition.Sample(samplerposition, inUV).rgb;
-	// float3 normal = textureNormal.Sample(samplerNormal, inUV).rgb;
-	// float4 albedo = textureAlbedo.Sample(samplerAlbedo, inUV);
+	float3 pixel_diff = gbuffer_diff.Sample(sampler_gen, input.UV).xyz;
+	float3 pos_WS = gbuffer_pos.Sample(sampler_gen, input.UV).xyz;
+	float3 normal_WS = gbuffer_norm.Sample(sampler_gen, input.UV).xyz;
 
-	// float3 fragcolor;
+  float4 diff_total = {0,0,0,0};
+  float4 spec_total = {0,0,0,0};
 
-	// // Debug display
-	// if (ubo.displayDebugTarget > 0) {
-	// 	switch (ubo.displayDebugTarget) {
-	// 		case 1: 
-	// 			fragcolor.rgb = fragPos;
-	// 			break;
-	// 		case 2: 
-	// 			fragcolor.rgb = normal;
-	// 			break;
-	// 		case 3: 
-	// 			fragcolor.rgb = albedo.rgb;
-	// 			break;
-	// 		case 4: 
-	// 			fragcolor.rgb = albedo.aaa;
-	// 			break;
-	// 	}		
-	// 	return float4(fragcolor, 1.0);
-	// }
+  float spec_pow_from_material = gbuffer_pos.Sample(sampler_gen, input.UV).w;
+  float emissive_from_material = gbuffer_norm.Sample(sampler_gen, input.UV).w;
 
-	// #define lightCount 6
-	// #define ambient 0.0
+  for(int i = 0; i < LIGHTS_COUNT; ++i)
+  {
+    if (!g_lights_[i].enabled_)
+      continue;
 
-	// // Ambient part
-	// fragcolor = albedo.rgb * ambient;
+    float4 diff_curr = {0,0,0,0};
+    float4 spec_curr = {0,0,0,0};
 
-	// for(int i = 0; i < lightCount; ++i)
-	// {
-	// 	// Vector to light
-	// 	float3 L = ubo.lights[i].position.xyz - fragPos;
-	// 	// Distance from light to fragment position
-	// 	float dist = length(L);
+    switch(g_lights_[i].type_)
+    {
+      case DIR_LIGHT:
+      {
+        float3 LD = normalize(g_lights_[i].dir_WS.xyz);
+        float3 N = normalize(normal_WS.xyz);
+        float3 R = normalize(reflect(-LD,N));
+        float3 V = normalize(g_camera_pos_.xyz - pos_WS.xyz);
+        int visibility = max(0,dot(LD,N)) + 0.999f;
+        float diff_dot = max(0.f, dot(LD,N));
+        diff_curr = g_lights_[i].color_ * diff_dot;
+        float spec_dot = max(0.f, dot(R,V));
+        spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * visibility;
+        break;
+      }
+      case POINT_LIGHT:
+      {
+        float3 LD = g_lights_[i].pos_WS.xyz - pos_WS.xyz;
+        float3 N = normalize(normal_WS.xyz);
+        float dist = length(LD);
+        LD = normalize(LD);
+        float3 R = normalize(reflect(-LD,N));
+        float3 V = normalize(g_camera_pos_.xyz - pos_WS.xyz);
+        // int visibility = max(0,dot(LD,N)) + 0.999f;
+        float A = 1.0f / (g_lights_[i].attenuation_const_ + g_lights_[i].attenuation_linear_ * dist +
+                          g_lights_[i].attenuation_quadr_ * dist * dist);
 
-	// 	// Viewer to fragment
-	// 	float3 V = ubo.viewPos.xyz - fragPos;
-	// 	V = normalize(V);
+        float diff_dot = max(0.f,dot(LD,N));
+        diff_curr = g_lights_[i].color_ * diff_dot * A;
+       
+        float spec_dot = max(0.f, dot(R,V));
+        spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * A;
 
-	// 	//if(dist < ubo.lights[i].radius)
-	// 	{
-	// 		// Light to fragment
-	// 		L = normalize(L);
+        break;
+      }
+    }
+    diff_total += diff_curr;
+    spec_total += spec_curr;
+  }
 
-	// 		// Attenuation
-	// 		float atten = ubo.lights[i].radius / (pow(dist, 2.0) + 1.0);
+  diff_total = saturate(diff_total);
+  spec_total = saturate(spec_total);
 
-	// 		// Diffuse part
-	// 		float3 N = normalize(normal);
-	// 		float NdotL = max(0.0, dot(N, L));
-	// 		float3 diff = ubo.lights[i].color * albedo.rgb * NdotL * atten;
+  // float4 spec_map = SpecularMap.Sample(Sampler, IN.texuv_TS);
+  // int has_spec_own = clamp(0, 1, ceil(length(material_props_.specular_)));
+  // int has_spec_map = !has_spec_own;
+  // float4 specular = spec_map * has_spec_map * spec_total + material_props_.specular_ * has_spec_own * spec_total;
+  float4 emissive = 0; //emissive_from_material;
+  float4 ambient = g_global_ambient_;
+  float4 diffuse = diff_total;//material_props_.diffuse_ * diff_total;
+	float4 specular = spec_total;
+  float4 tex_color = float4(pixel_diff, 1.f);
 
-	// 		// Specular part
-	// 		// Specular map values are stored in alpha of albedo mrt
-	// 		float3 R = reflect(-L, N);
-	// 		float NdotR = max(0.0, dot(R, V));
-	// 		float3 spec = ubo.lights[i].color * albedo.a * pow(NdotR, 16.0) * atten;
-
-	// 		fragcolor += diff + spec;
-	// 	}
-	// }
-
-  // return float4(fragcolor, 1.0);
+  if (length(emissive) == 0)
+    return (ambient + diffuse + specular) * tex_color;
+  else
+    return (emissive);
 }

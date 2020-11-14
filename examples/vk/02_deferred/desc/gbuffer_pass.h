@@ -15,6 +15,8 @@
 #include "math/matrix.h"
 #include "math/vector4.h"
 
+#include "data/material_factory.h"
+
 #include "desc/sampler_desc.h"
 #include "desc/rasterizer_desc.h"
 #include "desc/input_layout.h"
@@ -27,7 +29,8 @@ struct alignas(64) GbufferVs_PFCB
   alignas(16) Vec3f u_cam_pos_;
   float dummy;
 
-  static const gfx::UboType v_type_ = gfx::EUboType::PER_FRAME; 
+  static const gfx::UboType v_ubo_type_ = gfx::EUboType::PER_FRAME; 
+  static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::VX; 
 
 }; // struct GbufferVs_PFCB
 
@@ -35,22 +38,32 @@ struct alignas(64) GbufferVs_POCB
 {
   alignas(16) Mat4f u_model_;
   alignas(16) Vec4f u_color_;
-  alignas(16) unsigned int u_material_index_;
 
   static const gfx::UboType v_type_ = gfx::EUboType::PER_OBJECT; 
+  static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::VX; 
   
 }; // struct GbufferVs_POCB
 
+struct alignas(64) GbufferPs_POCB
+{
+  alignas(16) AbstractMaterial::Props u_material_props_;
+  alignas(16) unsigned int u_material_index_;
+
+  static const gfx::UboType v_type_ = gfx::EUboType::PER_OBJECT; 
+  static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::PX; 
+
+}; // struct GbufferPs_POCB
+
 struct GbufferPassData
 {
-  api::Buffer* pfcb_uniform_;
-  api::Buffer* pfcb_staging_;
-  api::BufferBarrier* pfcb_to_write_barrier_;
-  api::BufferBarrier* pfcb_to_read_barrier_;
-  api::Buffer* pocb_uniform_;
-  api::Buffer* pocb_staging_;
-  api::BufferBarrier* pocb_to_write_barrier_;
-  api::BufferBarrier* pocb_to_read_barrier_;
+  api::Buffer* pfcb_staging_vs_;
+  api::Buffer* pocb_staging_vs_;
+  api::Buffer* pocb_staging_ps_;
+  api::Buffer* pfcb_uniform_vs_;
+  api::Buffer* pocb_uniform_vs_;
+  api::Buffer* pocb_uniform_ps_;
+  std::vector<api::BufferBarrier*> to_read_barriers_;
+  std::vector<api::BufferBarrier*> to_write_barriers_;
   api::Sampler* sampler_;
   std::vector<api::Image2D*> images_; // pos, diff, norm
   std::vector<api::ImageView*> image_views_;  // pos, diff, norm
@@ -60,19 +73,18 @@ struct GbufferPassData
   api::DescriptorSetLayout* descriptor_set_layout_;
   api::DescriptorSet* descriptor_set_;  
 
-  GbufferVs_PFCB pfcb_data_;
-  std::vector<GbufferVs_POCB> pocb_data_;
+  GbufferVs_PFCB pfcb_data_vs_;
+  std::vector<GbufferVs_POCB> pocb_data_vs_;
+  std::vector<GbufferPs_POCB> pocb_data_ps_; 
 };
 
 struct GbufferPass
 {
-  GbufferPass(api::Renderer& rdr, uint max_objects)
+  GbufferPass(api::Renderer& rdr)
     : rdr_{&rdr}
     , device_{&rdr.GetDevice()}
     , data_()
-  {
-    data_.pocb_data_.resize(max_objects);
-  }
+  { }
 
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;
@@ -82,10 +94,12 @@ struct GbufferPass
 
   GbufferPassData data_;
 
+  void CreateUbo(api::CommandList& cmd, uint max_objects);
+  void UpdateUbo(api::CommandList& cmd, uint max_objects);
   void CreateImages(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();
-  void CreateDescriptorSet(api::ImageViews& diffuse, api::ImageViews& specular, api::ImageViews& normals);
+  void CreateDescriptorSet(const api::ImageViews& materials);
   void CreatePipeline();
 };
 
