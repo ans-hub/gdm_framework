@@ -40,7 +40,7 @@ else()
   endif()
 endif()
 
-set(SRC deferred.cc
+set(SRC main.cc
         desc/deferred_pass.cc
         desc/gbuffer_pass.cc
         helpers.cc
