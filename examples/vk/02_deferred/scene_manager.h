@@ -20,8 +20,6 @@
 #ifndef GFX_VK_SCENE_MGR
 #define GFX_VK_SCENE_MGR
 
-#include <set>
-
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
@@ -43,14 +41,10 @@ struct SceneManager
   auto GetStagingBuffer(uint index) -> api::Buffer& { return *staging_buffers_[index]; };
   void CopyGeometryToGpu(const std::vector<ModelHandle>& models, uint vstg_index, uint istg_index, api::CommandList& list);
   void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
-  void SetModels(const std::vector<ModelHandle>& models);
-  auto GetRenderableModels() -> const std::set<ModelHandle>& { return models_; }
+  void SetModels(const std::vector<ModelHandle>& objs, const std::vector<ModelHandle>& lamps);
+  auto GetRenderableObjects() -> const std::vector<ModelHandle>&;
   auto GetRenderableMaterials() -> const api::ImageViews&;
-
-  // template<class T, class Pass>
-  // void CreateUbo(api::CommandList& cmd, Pass& pass, uint count);
-  // template<class T, class Pass>
-  // void UpdateUBO(api::CommandList& cmd, Pass& pass, uint count);
+  auto GetLights() -> const std::vector<ModelHandle>& { return lights_; }
 
 public:
   constexpr static uint v_material_type_cnt = 3; // diff_map + norm_map + v_spec_map
@@ -59,7 +53,7 @@ public:
   constexpr static uint v_norm_offset = 1;
   constexpr static uint v_spec_offset = 2;
   constexpr static uint v_max_lights = 8;
-  constexpr static uint v_max_objects = 32;
+  constexpr static uint v_max_objects = 512;
   constexpr static const char* v_dummy_image = "dummy_handle";
 
 private:
@@ -70,7 +64,8 @@ private:
 private:
   api::Device& device_;
   api::Renderer& rdr_;
-  std::set<ModelHandle> models_;
+  std::vector<ModelHandle> models_;
+  std::vector<ModelHandle> lights_;
   api::ImageViews renderable_materials_;
   std::vector<api::Buffer*> staging_buffers_;
   api::ImageView* dummy_view_;
@@ -82,7 +77,5 @@ private:
 };  // struct SceneManager
 
 } // namespace gdm::scene
-
-#include "scene_manager.inl"
 
 #endif // GFX_VK_SCENE_MGR

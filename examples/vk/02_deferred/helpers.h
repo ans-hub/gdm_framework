@@ -25,7 +25,9 @@
 
 namespace gdm::helpers {
 
-auto LoadAbstractModels(const Config& cfg) -> std::vector<ModelHandle>;
+auto LoadObjects(const Config& cfg) -> std::vector<ModelHandle>;
+auto LoadLamps(const Config& cfg) -> std::vector<ModelHandle>;
+auto MergeObjects(const std::vector<ModelHandle>& objs, const std::vector<ModelHandle>& lamps) -> std::vector<ModelHandle>;
 void UpdateCamera(CameraEul& cam, MainInput& input, float dt);
 
 } // namespace gdm::helpers

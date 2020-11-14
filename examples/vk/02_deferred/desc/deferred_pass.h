@@ -7,11 +7,17 @@
 #ifndef GFX_DEFERRED_DESC_H
 #define GFX_DEFERRED_DESC_H
 
+#include <set>
+
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
 #include "render/colors.h"
 #include "render/shader.h"
+#include "render/camera_eul.h"
+
+#include "data/material_factory.h"
+#include "data/model_factory.h"
 
 #include "desc/sampler_desc.h"
 #include "desc/rasterizer_desc.h"
@@ -82,12 +88,15 @@ struct DeferredPass
   
   std::vector<DeferredPassData> data_;
 
-  void CreateUbo(api::CommandList& cmd, uint frame_num);
-  void UpdateUbo(api::CommandList& cmd, uint frame_num);
+  void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateImages(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();
   void CreatePipeline(const api::ImageViews& gbuffer_image_views_);
+  
+  void UpdateUniforms(api::CommandList& cmd, uint frame_num);
+  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelHandle>& lights);
+  void Draw(api::CommandList& cmd, uint frame_num);
 };
 
 } // namespace gdm

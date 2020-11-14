@@ -7,10 +7,12 @@
 #include "gbuffer_pass.h"
 
 #include "render/api.h"
+#include "render/defines.h"
+#include "system/diff_utils.h"
 
-// --public
+// --public create
 
-void gdm::GbufferPass::CreateUbo(api::CommandList& cmd, uint max_objects)
+void gdm::GbufferPass::CreateUniforms(api::CommandList& cmd, uint max_objects)
 {
   data_.pocb_data_vs_.resize(max_objects);
   data_.pocb_data_ps_.resize(max_objects);
@@ -35,30 +37,6 @@ void gdm::GbufferPass::CreateUbo(api::CommandList& cmd, uint max_objects)
 
   bool map_and_never_unmap_0 = [&](){ data_.pocb_staging_vs_->Map(); return true; }();
   bool map_and_never_unmap_1 = [&](){ data_.pocb_staging_ps_->Map(); return true; }();
-}
-
-void gdm::GbufferPass::UpdateUbo(api::CommandList& cmd, uint max_objects)
-{
-  cmd.PushBarrier(*data_.to_write_barriers_[0]);
-  cmd.PushBarrier(*data_.to_write_barriers_[1]);
-  cmd.PushBarrier(*data_.to_write_barriers_[2]);
-
-  data_.pfcb_staging_vs_->Map();
-  data_.pfcb_staging_vs_->CopyDataToGpu(&data_.pfcb_data_vs_, 1);
-  data_.pfcb_staging_vs_->Unmap();
-  cmd.CopyBufferToBuffer(*data_.pfcb_staging_vs_, *data_.pfcb_uniform_vs_, sizeof(GbufferVs_PFCB));
-  
-  data_.pocb_staging_vs_->CopyDataToGpu(data_.pocb_data_vs_.data(), data_.pocb_data_vs_.size());
-  uint pocb_size_vs = static_cast<uint>(sizeof(GbufferVs_POCB) * data_.pocb_data_vs_.size());
-  cmd.CopyBufferToBuffer(*data_.pocb_staging_vs_, *data_.pocb_uniform_vs_, pocb_size_vs);
-
-  data_.pocb_staging_ps_->CopyDataToGpu(data_.pocb_data_ps_.data(), data_.pocb_data_ps_.size());
-  uint pocb_size_ps = static_cast<uint>(sizeof(GbufferPs_POCB) * data_.pocb_data_ps_.size());
-  cmd.CopyBufferToBuffer(*data_.pocb_staging_ps_, *data_.pocb_uniform_ps_, pocb_size_ps);
-
-  cmd.PushBarrier(*data_.to_read_barriers_[0]);
-  cmd.PushBarrier(*data_.to_read_barriers_[1]);
-  cmd.PushBarrier(*data_.to_read_barriers_[2]);
 }
 
 void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
@@ -205,4 +183,92 @@ void gdm::GbufferPass::CreatePipeline()
   const int depth_attachments_cnt = 1;
   pipeline_->SetBlendAttachmentsCount(pass_->GetPassAttachmentsCount() - depth_attachments_cnt);
   pipeline_->Compile();
+}
+
+// --public Updates
+
+void gdm::GbufferPass::UpdateUniforms(api::CommandList& cmd, uint max_objects)
+{
+  cmd.PushBarrier(*data_.to_write_barriers_[0]);
+  cmd.PushBarrier(*data_.to_write_barriers_[1]);
+  cmd.PushBarrier(*data_.to_write_barriers_[2]);
+
+  data_.pfcb_staging_vs_->Map();
+  data_.pfcb_staging_vs_->CopyDataToGpu(&data_.pfcb_data_vs_, 1);
+  data_.pfcb_staging_vs_->Unmap();
+  cmd.CopyBufferToBuffer(*data_.pfcb_staging_vs_, *data_.pfcb_uniform_vs_, sizeof(GbufferVs_PFCB));
+  
+  data_.pocb_staging_vs_->CopyDataToGpu(data_.pocb_data_vs_.data(), data_.pocb_data_vs_.size());
+  uint pocb_size_vs = static_cast<uint>(sizeof(GbufferVs_POCB) * data_.pocb_data_vs_.size());
+  cmd.CopyBufferToBuffer(*data_.pocb_staging_vs_, *data_.pocb_uniform_vs_, pocb_size_vs);
+
+  data_.pocb_staging_ps_->CopyDataToGpu(data_.pocb_data_ps_.data(), data_.pocb_data_ps_.size());
+  uint pocb_size_ps = static_cast<uint>(sizeof(GbufferPs_POCB) * data_.pocb_data_ps_.size());
+  cmd.CopyBufferToBuffer(*data_.pocb_staging_ps_, *data_.pocb_uniform_ps_, pocb_size_ps);
+
+  cmd.PushBarrier(*data_.to_read_barriers_[0]);
+  cmd.PushBarrier(*data_.to_read_barriers_[1]);
+  cmd.PushBarrier(*data_.to_read_barriers_[2]);
+}
+
+void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::vector<ModelHandle>& renderable_models)
+{
+  Mat4f view = camera.GetViewMx();
+  Mat4f proj = camera.GetProjectionMx();
+  data_.pfcb_data_vs_.u_view_proj_ = proj * view;
+  data_.pfcb_data_vs_.u_cam_pos_ = camera.GetPos();
+
+  uint mesh_number = 0;
+  for (auto model_handle : renderable_models)
+  {
+    AbstractModel* model = ModelFactory::Get(model_handle);
+    for (auto&& [i, mesh_handle] : Enumerate(model->meshes_))
+    {
+      AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+      AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
+      data_.pocb_data_vs_[mesh_number].u_model_ = model->tm_;
+      data_.pocb_data_ps_[mesh_number].u_material_index_ = material->index_;
+      data_.pocb_data_ps_[mesh_number].u_material_props_ = material->props_;
+      ++mesh_number;
+    }
+  }
+}
+
+void gdm::GbufferPass::UpdateDescriptorSet(const api::ImageViews& renderable_materials)
+{
+  data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_.pfcb_uniform_vs_);
+  data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *data_.pocb_uniform_vs_);
+  data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, *data_.pocb_uniform_ps_);
+  data_.descriptor_set_->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(4, renderable_materials);
+  data_.descriptor_set_->Finalize();
+}
+
+void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelHandle>& renderable_models)
+{
+  for(auto* barrier : data_.image_barriers_to_write_)
+    cmd.PushBarrier(*barrier);
+
+  cmd.BindPipelineGraphics(*pipeline_);
+  cmd.BeginRenderPass(*pass_, *data_.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+
+  int mesh_number = 0;
+  for (auto model_handle : renderable_models)
+  {
+    AbstractModel* model = ModelFactory::Get(model_handle);
+    for (auto mesh_handle : model->meshes_)
+    {
+      AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
+      uint offset = sizeof(GbufferVs_POCB) * mesh_number++;
+      api::DescriptorSets descriptor_sets {*data_.descriptor_set_};
+      
+      cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{offset, offset});      
+      cmd.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
+      cmd.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
+      cmd.DrawIndexed(mesh->faces_);
+    }
+  }
+  
+  cmd.EndRenderPass();
+  for(auto* barrier : data_.image_barriers_to_read_)
+    cmd.PushBarrier(*barrier);
 }

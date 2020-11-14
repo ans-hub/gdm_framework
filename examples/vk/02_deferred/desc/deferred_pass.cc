@@ -8,24 +8,14 @@
 
 #include "system/diff_utils.h"
 
-// --public
+// --public create
 
-void gdm::DeferredPass::CreateUbo(api::CommandList& cmd, uint frame_num)
+void gdm::DeferredPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
   data_[frame_num].pfcb_staging_ps_ = GMNew api::Buffer(device_, sizeof(DeferredPs_PFCB) * 1, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
   data_[frame_num].pfcb_uniform_ps_ = GMNew api::Buffer(device_, sizeof(DeferredPs_PFCB) * 1, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
   data_[frame_num].pfcb_to_read_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_ps_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
   data_[frame_num].pfcb_to_write_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_ps_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
-  cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
-}
-
-void gdm::DeferredPass::UpdateUbo(api::CommandList& cmd, uint frame_num)
-{
-  cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
-  data_[frame_num].pfcb_staging_ps_->Map();
-  data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 1);
-  data_[frame_num].pfcb_staging_ps_->Unmap();
-  cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_ps_, *data_[frame_num].pfcb_uniform_ps_, sizeof(DeferredPs_PFCB));
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
 }
 
@@ -149,4 +139,43 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
   pipeline_->SetRenderPass(*pass_);
   pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
   pipeline_->Compile();
+}
+
+// --public update
+
+void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
+{
+  cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
+  data_[frame_num].pfcb_staging_ps_->Map();
+  data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 1);
+  data_[frame_num].pfcb_staging_ps_->Unmap();
+  cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_ps_, *data_[frame_num].pfcb_uniform_ps_, sizeof(DeferredPs_PFCB));
+  cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
+}
+
+void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelHandle>& lights)
+{
+  data_[curr_frame].pfcb_data_ps_.camera_pos_ = Vec4f(camera.GetPos(), 1.f);
+  data_[curr_frame].pfcb_data_ps_.global_ambient_ = Vec4f(0.2f);
+  for(auto& light : data_[curr_frame].pfcb_data_ps_.lights_)
+  {
+    light.color_ = color::LightYellow;
+    light.dir_ = Vec4f(0.f,-1.f,1.f,0.f);
+    light.enabled_ = true;
+    light.type_ = LightType::DIR;
+  }  
+}
+
+void gdm::DeferredPass::Draw(api::CommandList& cmd, uint curr_frame)
+{
+  cmd.PushBarrier(*data_[curr_frame].present_to_write_barrier_);    
+
+  api::DescriptorSets descriptor_sets {*data_[curr_frame].descriptor_set_};
+  cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{0});      
+  cmd.BindPipelineGraphics(*pipeline_);
+  cmd.BeginRenderPass(*pass_, *data_[curr_frame].fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  cmd.DrawDummy();
+  cmd.EndRenderPass();
+
+  cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
 }

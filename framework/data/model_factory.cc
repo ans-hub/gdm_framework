@@ -51,7 +51,10 @@ gdm::ModelHandle gdm::ModelFactory::Load(const char* fpath)
       mesh_handle = MeshFactory::Create(mesh_name.c_str(), i, model_loader);
     model->meshes_.push_back(mesh_handle);
   }
+  
   model->tm_ = Mat4f(1.f);
+  model->color_ = Vec4f(1.f);
+  
   ModelHandle handle = helpers::GenerateHandle(fpath);
   resources_[handle] = model;
   return handle;

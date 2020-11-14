@@ -19,6 +19,7 @@ gdm::SceneManager::SceneManager(api::Renderer& rdr)
   : device_{ rdr.GetDevice() }
   , rdr_{rdr}
   , models_{}
+  , lights_{}
   , staging_buffers_{}
   , dummy_view_{}
   , renderable_materials_{}
@@ -31,10 +32,13 @@ auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
   return static_cast<uint>(staging_buffers_.size() - 1);
 }
 
-void gdm::SceneManager::SetModels(const std::vector<ModelHandle>& models)
+void gdm::SceneManager::SetModels(const std::vector<ModelHandle>& objs, const std::vector<ModelHandle>& lamps)
 {
-  for (auto handle : models)
-    models_.emplace(handle);
+  for (auto handle : objs)
+    models_.push_back(handle);
+  for (auto handle : lamps)
+    models_.push_back(handle);
+  lights_ = lamps;
 }
 
 void gdm::SceneManager::CopyGeometryToGpu(const std::vector<ModelHandle>& handles, uint vstg_index, uint istg_index, api::CommandList& cmd)
@@ -227,6 +231,11 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
   dummy_texture->SetApiImageView(api_img_view);
 }
 
+auto gdm::SceneManager::GetRenderableObjects() -> const std::vector<ModelHandle>&
+{
+  return models_;
+}
+
 auto gdm::SceneManager::GetRenderableMaterials() -> const api::ImageViews&
 {
   if (!dummy_view_)
@@ -239,7 +248,7 @@ auto gdm::SceneManager::GetRenderableMaterials() -> const api::ImageViews&
   renderable_materials_.clear();
   renderable_materials_.resize(v_max_materials * v_material_type_cnt, dummy_view_);
   
-  auto& renderable = GetRenderableModels();
+  auto& renderable = GetRenderableObjects();
   for (auto [index,model_handle] : Enumerate(renderable))
   {
     auto model = ModelFactory::Get(model_handle);

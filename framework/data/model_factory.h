@@ -29,6 +29,7 @@ struct AbstractModel
   std::vector<MaterialHandle> materials_;
   std::vector<MeshHandle> meshes_;
   Mat4f tm_;
+  Vec4f color_;
 
 }; // struct AbstractModel
 

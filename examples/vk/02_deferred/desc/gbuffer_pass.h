@@ -7,14 +7,18 @@
 #ifndef GFX_GBUFFER_DESC_H
 #define GFX_GBUFFER_DESC_H
 
+#include <set>
+
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
 #include "render/shader.h"
+#include "render/camera_eul.h"
 
 #include "math/matrix.h"
 #include "math/vector4.h"
 
+#include "data/model_factory.h"
 #include "data/material_factory.h"
 
 #include "desc/sampler_desc.h"
@@ -94,13 +98,17 @@ struct GbufferPass
 
   GbufferPassData data_;
 
-  void CreateUbo(api::CommandList& cmd, uint max_objects);
-  void UpdateUbo(api::CommandList& cmd, uint max_objects);
+  void CreateUniforms(api::CommandList& cmd, uint max_objects);
   void CreateImages(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();
   void CreateDescriptorSet(const api::ImageViews& materials);
   void CreatePipeline();
+  
+  void UpdateUniforms(api::CommandList& cmd, uint max_objects);
+  void UpdateUniformsData(const CameraEul& camera, const std::vector<ModelHandle>& renderable_models);
+  void UpdateDescriptorSet(const api::ImageViews& renderable_materials);
+  void Draw(api::CommandList& cmd, const std::vector<ModelHandle>& renderable_models);
 };
 
 } // namespace gdm
