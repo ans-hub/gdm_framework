@@ -106,9 +106,9 @@ struct GbufferPass
   void CreatePipeline();
   
   void UpdateUniforms(api::CommandList& cmd, uint max_objects);
-  void UpdateUniformsData(const CameraEul& camera, const std::vector<ModelHandle>& renderable_models);
+  void UpdateUniformsData(const CameraEul& camera, const std::vector<ModelInstance>& renderable_models);
   void UpdateDescriptorSet(const api::ImageViews& renderable_materials);
-  void Draw(api::CommandList& cmd, const std::vector<ModelHandle>& renderable_models);
+  void Draw(api::CommandList& cmd, const std::vector<ModelInstance>& renderable_models);
 };
 
 } // namespace gdm

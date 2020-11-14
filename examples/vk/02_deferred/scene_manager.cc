@@ -32,12 +32,12 @@ auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
   return static_cast<uint>(staging_buffers_.size() - 1);
 }
 
-void gdm::SceneManager::SetModels(const std::vector<ModelHandle>& objs, const std::vector<ModelHandle>& lamps)
+void gdm::SceneManager::SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps)
 {
-  for (auto handle : objs)
-    models_.push_back(handle);
-  for (auto handle : lamps)
-    models_.push_back(handle);
+  for (auto instance : objs)
+    models_.push_back(instance);
+  for (auto instance : lamps)
+    models_.push_back(instance);
   lights_ = lamps;
 }
 
@@ -231,7 +231,7 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
   dummy_texture->SetApiImageView(api_img_view);
 }
 
-auto gdm::SceneManager::GetRenderableObjects() -> const std::vector<ModelHandle>&
+auto gdm::SceneManager::GetRenderableInstances() -> const std::vector<ModelInstance>&
 {
   return models_;
 }
@@ -248,10 +248,10 @@ auto gdm::SceneManager::GetRenderableMaterials() -> const api::ImageViews&
   renderable_materials_.clear();
   renderable_materials_.resize(v_max_materials * v_material_type_cnt, dummy_view_);
   
-  auto& renderable = GetRenderableObjects();
-  for (auto [index,model_handle] : Enumerate(renderable))
+  auto& renderable = GetRenderableInstances();
+  for (auto [index,model_instance] : Enumerate(renderable))
   {
-    auto model = ModelFactory::Get(model_handle);
+    auto model = ModelFactory::Get(model_instance.handle_);
     for (auto mesh_handle : model->meshes_)
     {
       auto mesh = MeshFactory::Get(mesh_handle);

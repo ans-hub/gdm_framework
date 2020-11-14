@@ -25,6 +25,7 @@ struct Output
   float3 norm_WS : TEXCOORD1;
   float2 texuv_TS : TEXCOORD2;
   float3 view_pos_WS : TEXCOORD3;
+  float4 color : TEXCOORD4;
   float3 tg_WS : TANGENT;
   float3 bt_WS : BINORMAL;
   float3 nm_WS : NORMAL;
@@ -48,6 +49,7 @@ Output main(Input IN)
   OUT.tg_WS = tg_WS;
   OUT.bt_WS = bt_WS;
   OUT.nm_WS = norm_WS;
+  OUT.color = u_color;
   OUT.position = mul(mvp, float4(IN.pos_MS, 1.f));
 
   return OUT;

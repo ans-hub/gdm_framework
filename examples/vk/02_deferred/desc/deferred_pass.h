@@ -30,7 +30,7 @@ enum LightType : int
   DIR, POINT 
 };
 
-__declspec(align(64)) struct Light
+struct Light
 {
   Vec4f pos_ = Vec4f(0.f);
   Vec4f dir_ = Vec4f(0.f);
@@ -95,7 +95,7 @@ struct DeferredPass
   void CreatePipeline(const api::ImageViews& gbuffer_image_views_);
   
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
-  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelHandle>& lights);
+  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelInstance>& lights);
   void Draw(api::CommandList& cmd, uint frame_num);
 };
 

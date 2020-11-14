@@ -23,6 +23,7 @@ struct Input
   float3 norm_WS					: TEXCOORD1;
   float2 texuv_TS   	   	: TEXCOORD2;
   float3 view_pos_WS			: TEXCOORD3;
+  float4 color            : TEXCOORD4;
   float3 tg_WS						: TANGENT;
   float3 bt_WS						: BINORMAL;
   float3 nm_WS						: NORMAL;
@@ -43,28 +44,38 @@ static const int v_spec_offset = 2;
 
 Output main(Input IN)
 {
-  const int diff_idx = NonUniformResourceIndex(material_index_ * 3 + v_diff_offset);
-  const int norm_idx = NonUniformResourceIndex(material_index_ * 3 + v_norm_offset);
-
-  float3 normal_TS = Textures[norm_idx].Sample(Sampler, IN.texuv_TS).xyz;
-  bool no_normal_map = normal_TS.x == 1 && normal_TS.y == 1 && normal_TS.z == 1;
-  normal_TS = normalize(normal_TS * 2.f - 1.f);
-
-  float3x3 tbn = float3x3(normalize(IN.tg_WS), normalize(IN.bt_WS), normalize(IN.nm_WS));
-
-  float3 normal_WS;
-  if (no_normal_map)
-    normal_WS = normalize(IN.norm_WS);
-  else
-    normal_WS = normalize(mul(normal_TS, tbn));
-
 	Output output = (Output)0;
-  output.diff = Textures[diff_idx].Sample(Sampler, IN.texuv_TS) * material_props_.diffuse_;
-  output.norm = float4(normal_WS, 1.0);
-	output.pos = float4(IN.pos_WS, 1.0);
 
-  output.diff.w = material_props_.specular_power_;
-  output.norm.w = material_props_.emissive_;
+  if (IN.color.w >= -(1e-10))
+  {
+    output.diff = IN.color;
+    output.norm = float4(0,0,0,1);
+	  output.pos = float4(IN.pos_WS, 1.0);
+  }
+  else
+  {
+    const int diff_idx = NonUniformResourceIndex(material_index_ * 3 + v_diff_offset);
+    const int norm_idx = NonUniformResourceIndex(material_index_ * 3 + v_norm_offset);
+
+    float3 normal_TS = Textures[norm_idx].Sample(Sampler, IN.texuv_TS).xyz;
+    bool no_normal_map = normal_TS.x == 1 && normal_TS.y == 1 && normal_TS.z == 1;
+    normal_TS = normalize(normal_TS * 2.f - 1.f);
+
+    float3x3 tbn = float3x3(normalize(IN.tg_WS), normalize(IN.bt_WS), normalize(IN.nm_WS));
+
+    float3 normal_WS;
+    if (no_normal_map)
+      normal_WS = normalize(IN.norm_WS);
+    else
+      normal_WS = normalize(mul(normal_TS, tbn));
+
+    output.diff = Textures[diff_idx].Sample(Sampler, IN.texuv_TS) * material_props_.diffuse_;
+    output.norm = float4(normal_WS, 1.0);
+  	output.pos = float4(IN.pos_WS, 1.0);
+
+    output.diff.w = material_props_.specular_power_;
+    output.norm.w = material_props_.emissive_;
+  }
 
   return output;
 }

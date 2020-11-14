@@ -34,9 +34,9 @@ namespace gdm::_private{
     return true;
   }
 
-  auto LoadModelsByPathes(const std::vector<std::string>& pathes) -> std::vector<ModelHandle>
+  auto LoadModelsByPathes(const std::vector<std::string>& pathes) -> std::vector<ModelInstance>
   {
-    std::vector<ModelHandle> result;
+    std::vector<ModelInstance> result;
     for (std::size_t i = 0; i < pathes.size(); ++i)
     {
       const char* model_fpath = pathes[i].c_str();
@@ -45,7 +45,12 @@ namespace gdm::_private{
         model_handle = ModelFactory::GetHandle(model_fpath);
       else
         model_handle = ModelFactory::Load(model_fpath);
-      result.push_back(model_handle);
+
+      ModelInstance instance;
+      instance.handle_ = model_handle;
+      instance.tm_ = Mat4f(1.f);
+      instance.color_ = Vec4f(-1.f);
+      result.push_back(instance);
     }
     return result;
   }
@@ -53,7 +58,7 @@ namespace gdm::_private{
 
 // --public
 
-auto gdm::helpers::LoadLamps(const Config& cfg) -> std::vector<ModelHandle>
+auto gdm::helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -65,22 +70,30 @@ auto gdm::helpers::LoadLamps(const Config& cfg) -> std::vector<ModelHandle>
   ASSERT(lamp_pathes.size() == lamp_colors.size());
   ASSERT(lamp_pathes.size() == lamp_dirs.size());
 
-  std::vector<ModelHandle> result = _private::LoadModelsByPathes(lamp_pathes);
+  std::vector<ModelInstance> result = _private::LoadModelsByPathes(lamp_pathes);
   ASSERT(lamp_pathes.size() == result.size());
 
   for (std::size_t i = 0; i < lamp_poses.size(); ++i)
   {
-    AbstractModel* model = ModelFactory::Get(result[i]);
-    model->tm_ = Mat4f(1.f);
-    model->tm_.SetCol(3, lamp_poses[i].xyz());
-    Mat4f tm = matrix::MakeScale(lamp_poses[i][3]) % model->tm_;
-    model->tm_ = tm;
-    model->color_ = lamp_colors[i];
+    ModelInstance& instance = result[i];
+    Mat4f tm = Mat4f(1.f);
+    Vec3f fwd = vec3::Normalize(lamp_dirs[i].xyz());
+    Vec3f up = Vec3f(0,1,0);
+    Vec3f right = vec3::Normalize(fwd % up);
+    up = vec3::Normalize(right % fwd);
+    tm.SetCol(0, -fwd);
+    tm.SetCol(1, up);
+    tm.SetCol(2, -right);
+    tm.SetCol(3, lamp_poses[i].xyz());
+    instance.tm_ = tm;
+    Mat4f tm_tmp = matrix::MakeScale(lamp_poses[i][3]) % instance.tm_;
+    instance.tm_ = tm_tmp;
+    instance.color_ = lamp_colors[i];
   }
   return result;
 }
 
-auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelHandle>
+auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -88,27 +101,28 @@ auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelHandle>
   auto obj_poses = cfg.GetAllVals<Vec4f>("model_pos_");
   ASSERT(obj_pathes.size() == obj_poses.size());
 
-  std::vector<ModelHandle> result = _private::LoadModelsByPathes(obj_pathes);
+  std::vector<ModelInstance> result = _private::LoadModelsByPathes(obj_pathes);
   ASSERT(obj_pathes.size() == result.size());
 
   for (std::size_t i = 0; i < obj_poses.size(); ++i)
   {
-    AbstractModel* model = ModelFactory::Get(result[i]);
-    model->tm_ = Mat4f(1.f);
-    model->tm_.SetCol(3, obj_poses[i].xyz());
-    Mat4f tm = matrix::MakeScale(obj_poses[i][3]) % model->tm_;
-    model->tm_ = tm;
+    ModelInstance& instance = result[i];
+    instance.tm_ = Mat4f(1.f);
+    instance.tm_.SetCol(3, obj_poses[i].xyz());
+    Mat4f tm = matrix::MakeScale(obj_poses[i][3]) % instance.tm_;
+    instance.tm_ = tm;
+    instance.color_.w = -1.f;
   }
   return result;
 }
 
-auto gdm::helpers::MergeObjects(const std::vector<ModelHandle>& objs, const std::vector<ModelHandle>& lamps) -> std::vector<gdm::ModelHandle>
+auto gdm::helpers::GetUniqueModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps) -> std::vector<gdm::ModelHandle>
 {
   std::set<ModelHandle> to_sort;
-  for (auto handle : objs)
-    to_sort.emplace(handle);
-  for (auto handle : lamps)
-    to_sort.emplace(handle);
+  for (const auto& instance : objs)
+    to_sort.emplace(instance.handle_);
+  for (const auto& instance : lamps)
+    to_sort.emplace(instance.handle_);
   std::vector<ModelHandle> result;
   for(auto handle : to_sort)
     result.push_back(handle);

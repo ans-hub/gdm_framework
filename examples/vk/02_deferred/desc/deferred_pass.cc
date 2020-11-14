@@ -153,16 +153,23 @@ void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
 }
 
-void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelHandle>& lights)
+void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelInstance>& lights)
 {
   data_[curr_frame].pfcb_data_ps_.camera_pos_ = Vec4f(camera.GetPos(), 1.f);
   data_[curr_frame].pfcb_data_ps_.global_ambient_ = Vec4f(0.2f);
-  for(auto& light : data_[curr_frame].pfcb_data_ps_.lights_)
+
+  for(auto&& [i, light] : Enumerate(data_[curr_frame].pfcb_data_ps_.lights_))
   {
-    light.color_ = color::LightYellow;
-    light.dir_ = Vec4f(0.f,-1.f,1.f,0.f);
+    if(i >= lights.size())
+    {
+      light.enabled_ = false;
+      continue;
+    }
+    light.pos_ = Vec4f(lights[i].tm_.GetCol(3), 1.f);
+    light.dir_ = Vec4f(lights[i].tm_.GetCol(1), 0.f);
+    light.color_ = lights[i].color_;
     light.enabled_ = true;
-    light.type_ = LightType::DIR;
+    light.type_ = static_cast<LightType>(lights[i].color_.w);
   }  
 }
 

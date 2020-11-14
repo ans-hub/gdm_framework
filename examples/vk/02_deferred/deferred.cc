@@ -65,17 +65,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   api::Fence submit_fence (device);
  
   SceneManager scene(gfx);
-  std::vector<ModelHandle> object_models = helpers::LoadObjects(cfg);
-  std::vector<ModelHandle> lamp_models = helpers::LoadLamps(cfg);
+  std::vector<ModelInstance> object_models = helpers::LoadObjects(cfg);
+  std::vector<ModelInstance> lamp_models = helpers::LoadLights(cfg);
   scene.SetModels(object_models, lamp_models);
 
   uint vstg = scene.CreateStagingBuffer(MB(64));
   uint istg = scene.CreateStagingBuffer(MB(32));
   uint tstg = scene.CreateStagingBuffer(MB(96));
   
-  std::vector<ModelHandle> unique_objects = helpers::MergeObjects(object_models, lamp_models);
-  scene.CopyGeometryToGpu(unique_objects, vstg, istg, setup_list);
-  scene.CopyTexturesToGpu(unique_objects, tstg, setup_list);
+  std::vector<ModelHandle> unique_models = helpers::GetUniqueModels(object_models, lamp_models);
+  scene.CopyGeometryToGpu(unique_models, vstg, istg, setup_list);
+  scene.CopyTexturesToGpu(unique_models, tstg, setup_list);
   scene.CreateDummyView(setup_list);
 
   GbufferPass v_gbuffer_pass(gfx);
@@ -134,10 +134,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
     api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
   
-    v_gbuffer_pass.UpdateUniformsData(camera, scene.GetRenderableObjects());
+    v_gbuffer_pass.UpdateUniformsData(camera, scene.GetRenderableInstances());
     v_gbuffer_pass.UpdateUniforms(cmd_gbuffer, SceneManager::v_max_objects);
     v_gbuffer_pass.UpdateDescriptorSet(scene.GetRenderableMaterials());
-    v_gbuffer_pass.Draw(cmd_gbuffer, scene.GetRenderableObjects());
+    v_gbuffer_pass.Draw(cmd_gbuffer, scene.GetRenderableInstances());
 
     submit_fence.Reset();
     cmd_gbuffer.Finalize();

@@ -28,10 +28,16 @@ struct AbstractModel
 {
   std::vector<MaterialHandle> materials_;
   std::vector<MeshHandle> meshes_;
+
+}; // struct AbstractModel
+
+struct ModelInstance
+{
+  ModelHandle handle_;
   Mat4f tm_;
   Vec4f color_;
 
-}; // struct AbstractModel
+}; // struct AbstractModelInstance
 
 struct ModelFactory : public DataFactory<AbstractModel*>
 {

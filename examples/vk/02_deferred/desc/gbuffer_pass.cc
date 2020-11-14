@@ -9,6 +9,7 @@
 #include "render/api.h"
 #include "render/defines.h"
 #include "system/diff_utils.h"
+#include "data/model_factory.h"
 
 // --public create
 
@@ -211,7 +212,7 @@ void gdm::GbufferPass::UpdateUniforms(api::CommandList& cmd, uint max_objects)
   cmd.PushBarrier(*data_.to_read_barriers_[2]);
 }
 
-void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::vector<ModelHandle>& renderable_models)
+void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::vector<ModelInstance>& renderable_models)
 {
   Mat4f view = camera.GetViewMx();
   Mat4f proj = camera.GetProjectionMx();
@@ -219,14 +220,15 @@ void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::ve
   data_.pfcb_data_vs_.u_cam_pos_ = camera.GetPos();
 
   uint mesh_number = 0;
-  for (auto model_handle : renderable_models)
+  for (const auto& model_instance : renderable_models)
   {
-    AbstractModel* model = ModelFactory::Get(model_handle);
+    AbstractModel* model = ModelFactory::Get(model_instance.handle_);
     for (auto&& [i, mesh_handle] : Enumerate(model->meshes_))
     {
       AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
       AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
-      data_.pocb_data_vs_[mesh_number].u_model_ = model->tm_;
+      data_.pocb_data_vs_[mesh_number].u_model_ = model_instance.tm_;
+      data_.pocb_data_vs_[mesh_number].u_color_ = model_instance.color_;
       data_.pocb_data_ps_[mesh_number].u_material_index_ = material->index_;
       data_.pocb_data_ps_[mesh_number].u_material_props_ = material->props_;
       ++mesh_number;
@@ -243,7 +245,7 @@ void gdm::GbufferPass::UpdateDescriptorSet(const api::ImageViews& renderable_mat
   data_.descriptor_set_->Finalize();
 }
 
-void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelHandle>& renderable_models)
+void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelInstance>& renderable_models)
 {
   for(auto* barrier : data_.image_barriers_to_write_)
     cmd.PushBarrier(*barrier);
@@ -252,9 +254,9 @@ void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelHandle
   cmd.BeginRenderPass(*pass_, *data_.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
 
   int mesh_number = 0;
-  for (auto model_handle : renderable_models)
+  for (const auto& model_instance : renderable_models)
   {
-    AbstractModel* model = ModelFactory::Get(model_handle);
+    AbstractModel* model = ModelFactory::Get(model_instance.handle_);
     for (auto mesh_handle : model->meshes_)
     {
       AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
