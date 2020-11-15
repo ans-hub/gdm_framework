@@ -166,7 +166,7 @@ void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& cam
       continue;
     }
     light.pos_ = Vec4f(lights[i].tm_.GetCol(3), 1.f);
-    light.dir_ = Vec4f(lights[i].tm_.GetCol(1), 0.f);
+    light.dir_ = vec3::Normalize(lights[i].tm_.GetCol(1));
     light.color_ = lights[i].color_;
     light.enabled_ = true;
     light.type_ = static_cast<LightType>(lights[i].color_.w);

@@ -33,7 +33,8 @@ enum LightType : int
 struct Light
 {
   Vec4f pos_ = Vec4f(0.f);
-  Vec4f dir_ = Vec4f(0.f);
+  Vec3f dir_ = Vec3f(0.f,1.f,0.f);
+  float padding0;
   Vec4f color_ = color::Black;
   float spot_angle_ = 0.f;
   float attenuation_const_ = 1.f;
@@ -41,7 +42,7 @@ struct Light
   float attenuation_quadr_ = 0.0f;
   LightType type_ = LightType::DIR;
   bool  enabled_ = false;
-  Vec2f padding_;
+  Vec2f padding1;
 
 }; // struct Light
 

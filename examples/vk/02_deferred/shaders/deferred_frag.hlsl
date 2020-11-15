@@ -11,7 +11,8 @@ Texture2D gbuffer_norm : register(t4);
 struct LightProps
 {
   float4 pos_WS;
-  float4 dir_WS;
+  float3 dir_WS;
+  float padding0;
   float4 color_;
   float spot_angle_;
   float attenuation_const_;
@@ -19,7 +20,7 @@ struct LightProps
   float attenuation_quadr_;
   int type_;
   int enabled_;
-  float2 padding_;
+  float2 padding1;
 };
 
 cbuffer LightPropsBuffer : register(b0)
@@ -59,7 +60,7 @@ float4 main(VSOutput input) : SV_TARGET
     {
       case DIR_LIGHT:
       {
-        float3 LD = normalize(g_lights_[i].dir_WS.xyz);
+        float3 LD = normalize(g_lights_[i].dir_WS);
         float3 N = normalize(normal_WS.xyz);
         float3 R = normalize(reflect(-LD,N));
         float3 V = normalize(g_camera_pos_.xyz - pos_WS.xyz);
@@ -78,16 +79,11 @@ float4 main(VSOutput input) : SV_TARGET
         LD = normalize(LD);
         float3 R = normalize(reflect(-LD,N));
         float3 V = normalize(g_camera_pos_.xyz - pos_WS.xyz);
-        // int visibility = max(0,dot(LD,N)) + 0.999f;
-        float A = 1.0f / (g_lights_[i].attenuation_const_ + g_lights_[i].attenuation_linear_ * dist +
-                          g_lights_[i].attenuation_quadr_ * dist * dist);
-
-        float diff_dot = max(0.f,dot(LD,N));
-        diff_curr = g_lights_[i].color_ * diff_dot * A;
-       
+        int visibility = max(0,dot(LD,N)) + 0.999f;
+        float diff_dot = max(0.f, dot(LD,N));
+        diff_curr = g_lights_[i].color_ * diff_dot;
         float spec_dot = max(0.f, dot(R,V));
-        spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * A;
-
+        spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * visibility;
         break;
       }
     }
@@ -108,6 +104,8 @@ float4 main(VSOutput input) : SV_TARGET
 	float4 specular = spec_total;
   float4 tex_color = float4(pixel_diff, 1.f);
 
+  // return tex_color;
+  // return float4(normal_WS, 1.f);
   if (length(emissive) == 0)
     return (ambient + diffuse + specular) * tex_color;
   else

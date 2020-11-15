@@ -4,10 +4,15 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-// Description: col-major matrix with post-multiplication (i.e. p*v*m)
+// Description: col-major matrix with pre-multiplication (i.e. p*v*m)
+//  all rotation matrix therefore need to be premultiplied or transposed before postmul
 // Cartesian cs: OpenGL - RH (-z fwd). DirectX - LH (+z fwd)
 // Ndc: OpenGL - [-1;+1], DirectX - [0;+1]
 // Matrices: OpenGl, Dx10 && later - Col major (pre-mp), DirectX 9 - Row major 
+// Math: a e g x  row_major (means in array we are storing mx rows): aegx bfiy cgjz dhk1
+//       b f i y  col_major (means in array we are storing mx cols): abcd efgh gijk xyz1
+//       c g j z  with col major we need to either post-multiplication or transpose mxs
+//       d h k 1
 
 #ifndef AH_GDM_MATRIX_H
 #define AH_GDM_MATRIX_H

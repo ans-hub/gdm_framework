@@ -76,16 +76,23 @@ auto gdm::helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
   for (std::size_t i = 0; i < lamp_poses.size(); ++i)
   {
     ModelInstance& instance = result[i];
-    Mat4f tm = Mat4f(1.f);
-    Vec3f fwd = vec3::Normalize(lamp_dirs[i].xyz());
-    Vec3f up = Vec3f(0,1,0);
-    Vec3f right = vec3::Normalize(fwd % up);
-    up = vec3::Normalize(right % fwd);
-    tm.SetCol(0, -fwd);
-    tm.SetCol(1, up);
-    tm.SetCol(2, -right);
-    tm.SetCol(3, lamp_poses[i].xyz());
-    instance.tm_ = tm;
+    instance.tm_.SetCol(0, Vec3f(0.f, 0.f, 1.f));
+    instance.tm_.SetCol(1, Vec3f(0.f, 1.f, 0.f));
+    instance.tm_.SetCol(2, Vec3f(1.f, 0.f, 0.f));
+    instance.tm_.SetCol(3, lamp_poses[i].xyz());
+    // Vec3f fwd = vec3::Normalize(lamp_dirs[i].xyz());
+    // Vec3f up = Vec3f(0,1,0);
+    // float upfwd_dot = vec3::DotProduct(fwd,up);
+    // if (upfwd_dot > 1.f - std::numeric_limits<float>::epsilon())
+    //   up = Vec3f(0,0,-1);
+    // else if(upfwd_dot < -1.f + std::numeric_limits<float>::epsilon())
+    //   up = Vec3f(0,0,1);
+    // Vec3f right = vec3::Normalize(fwd % up);
+    // up = vec3::Normalize(right % fwd);
+    // tm.SetCol(0, -fwd);
+    // tm.SetCol(1, up);
+    // tm.SetCol(2, -right);
+    // instance.tm_ = tm;
     Mat4f tm_tmp = matrix::MakeScale(lamp_poses[i][3]) % instance.tm_;
     instance.tm_ = tm_tmp;
     instance.color_ = lamp_colors[i];
@@ -107,7 +114,9 @@ auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
   for (std::size_t i = 0; i < obj_poses.size(); ++i)
   {
     ModelInstance& instance = result[i];
-    instance.tm_ = Mat4f(1.f);
+    // instance.tm_.SetCol(0, Vec3f(0.f, 0.f, 1.f));
+    // instance.tm_.SetCol(1, Vec3f(0.f, 1.f, 0.f));
+    // instance.tm_.SetCol(2, Vec3f(1.f, 0.f, 0.f));
     instance.tm_.SetCol(3, obj_poses[i].xyz());
     Mat4f tm = matrix::MakeScale(obj_poses[i][3]) % instance.tm_;
     instance.tm_ = tm;

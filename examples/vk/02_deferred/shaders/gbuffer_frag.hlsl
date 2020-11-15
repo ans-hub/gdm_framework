@@ -46,16 +46,17 @@ Output main(Input IN)
 {
 	Output output = (Output)0;
 
+  const int diff_idx = NonUniformResourceIndex(material_index_ * 3 + v_diff_offset);
+  const int norm_idx = NonUniformResourceIndex(material_index_ * 3 + v_norm_offset);
+
   if (IN.color.w >= -(1e-10))
   {
-    output.diff = IN.color;
+    output.diff = IN.color + Textures[diff_idx].Sample(Sampler, IN.texuv_TS) * IN.color;
     output.norm = float4(0,0,0,1);
 	  output.pos = float4(IN.pos_WS, 1.0);
   }
   else
   {
-    const int diff_idx = NonUniformResourceIndex(material_index_ * 3 + v_diff_offset);
-    const int norm_idx = NonUniformResourceIndex(material_index_ * 3 + v_norm_offset);
 
     float3 normal_TS = Textures[norm_idx].Sample(Sampler, IN.texuv_TS).xyz;
     bool no_normal_map = normal_TS.x == 1 && normal_TS.y == 1 && normal_TS.z == 1;
