@@ -29,7 +29,7 @@ struct DxObject
   DxObject(DxRenderer& d3d, const char* model_fpath);
 
   Mat4f& GetTm() { return tm_; } 
-  Mat4f GetItm() { return matrix::InverseTransform(matrix::RotateBasisYCW(tm_)); }
+  Mat4f GetItm() { return matrix::InverseTransform(matrix::SwapForwardRight(tm_)); }
   Vec3f GetPos() const { return tm_.GetCol(3); }
   void SetTm(const Mat4f& tm) { tm_ = tm; }
   void SetPos(const Vec3f& pos) { tm_.SetCol(3, pos); }

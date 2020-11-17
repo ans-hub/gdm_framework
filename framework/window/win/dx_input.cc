@@ -64,8 +64,8 @@ void gdm::DxInput::Capture()
   for (std::size_t i = 0; i < 256; ++i) // todo: by memcpy
     kbd_prev_state_[i] = (bool)kbd_prev_state_[i] && (bool)(kbd_state_[i] & 0x80);
   
-  pos_x_ += static_cast<float>(mouse_state_.lY) * mouse_sensitive_;
-  pos_y_ += static_cast<float>(mouse_state_.lX) * mouse_sensitive_;
+  pos_x_ += static_cast<float>(mouse_state_.lX) * mouse_sensitive_;
+  pos_y_ += static_cast<float>(mouse_state_.lY) * mouse_sensitive_;
 }
 
 bool gdm::DxInput::IsKeyboardBtnPressed(BYTE btn) const

@@ -134,7 +134,7 @@ namespace matrix {
   
   Mat4f ClearOrient(const Mat4f& mx);
   Mat4f MakeLHBasis();
-  Mat4f RotateBasisYCW(Mat4f mx);
+  Mat4f SwapForwardRight(Mat4f mx);
 
   // Other helpers
 
@@ -758,12 +758,12 @@ inline void matrix::MakeLookAt(Mat4f& mx, const Vec3f& look_at, Vec3f look_from,
   assert(vec3::SqLength(up_dir) > std::numeric_limits<float>::epsilon());
 
   Vec3f fwd = vec3::Normalize(look_at - look_from);
-  Vec3f right = vec3::Normalize(fwd % up_dir);
-  up_dir = vec3::Normalize(right % fwd);
+  Vec3f right = -vec3::Normalize(fwd % up_dir);
+  up_dir = -vec3::Normalize(right % fwd);
 
-  mx.SetCol(0, -fwd);
+  mx.SetCol(0, right);
   mx.SetCol(1, up_dir);
-  mx.SetCol(2, -right);
+  mx.SetCol(2, fwd);
   mx.SetCol(3, look_from);
 }
 
@@ -782,30 +782,31 @@ inline void matrix::Orthonormalize(Mat4f& mx)
   Vec3f up = vec3::Normalize(mx.GetCol(2));
   fwd = vec3::Normalize(fwd - up * (fwd * up)); // re-orthogonalize fwd relative to up
   Vec3f right = up % fwd;
-  mx.SetCol(0, fwd);
+  mx.SetCol(0, right);
   mx.SetCol(1, up);
-  mx.SetCol(2, right);
+  mx.SetCol(2, fwd);
 }
 
-// Returns matrix contains basis for left handed system (fwd, up, right) 
+// Returns matrix contains basis for left handed system (right, up, fwd) 
 
 inline Mat4f matrix::MakeLHBasis()
 {
   Mat4f m {};
-  m.SetCol(0, {0.f, 0.f, -1.f});
+  m.SetCol(0, {1.f, 0.f, 0.f});
   m.SetCol(1, {0.f, 1.f, 0.f});
-  m.SetCol(2, {1.f, 0.f, 0.f});
+  m.SetCol(2, {0.f, 0.f, 1.f});
   m.SetCol(3, {0.f, 0.f, 0.f});
   return m;
 }
 
-// Flips matrix by vector "up" counter clockwise 90 degree (makes rot matrix from transform)
- 
-inline Mat4f matrix::RotateBasisYCW(Mat4f mx)
+// Swap right and fwd axis to be convient with projection matrix
+//  as it expect RUF
+
+inline Mat4f matrix::SwapForwardRight(Mat4f mx)
 {
   Vec3f right = mx.GetCol(0);
   mx.SetCol(0, mx.GetCol(2));
-  mx.SetCol(2, right * -1.f);
+  mx.SetCol(2, right);
   return mx;
 }
 

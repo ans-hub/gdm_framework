@@ -67,8 +67,8 @@ float4 main(VSOutput input) : SV_TARGET
         int visibility = max(0,dot(LD,N)) + 0.999f;
         float diff_dot = max(0.f, dot(LD,N));
         diff_curr = g_lights_[i].color_ * diff_dot;
-        float spec_dot = max(0.f, dot(R,V));
-        spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * visibility;
+        // float spec_dot = max(0.f, dot(R,V));
+        // spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * visibility;
         break;
       }
       case POINT_LIGHT:
@@ -82,8 +82,8 @@ float4 main(VSOutput input) : SV_TARGET
         int visibility = max(0,dot(LD,N)) + 0.999f;
         float diff_dot = max(0.f, dot(LD,N));
         diff_curr = g_lights_[i].color_ * diff_dot;
-        float spec_dot = max(0.f, dot(R,V));
-        spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * visibility;
+        // float spec_dot = max(0.f, dot(R,V));
+        // spec_curr = g_lights_[i].color_ * pow(spec_dot, spec_pow_from_material) * visibility;
         break;
       }
     }
@@ -107,7 +107,7 @@ float4 main(VSOutput input) : SV_TARGET
   // return tex_color;
   // return float4(normal_WS, 1.f);
   if (length(emissive) == 0)
-    return (ambient + diffuse + specular) * tex_color;
+    return (ambient + diffuse) * tex_color;
   else
     return (emissive);
 }

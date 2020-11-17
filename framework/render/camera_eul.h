@@ -42,11 +42,8 @@ public:
   void Move(const Vec3f& dir, float dt);
   void LookAt(const Vec3f& look_at);
   void SetAspectRatio(float ar);
-  void Rotate(float yaw, float pitch);
+  void Rotate(float pitch, float yaw);
   void Rotate(const Vec3f& axis, float angle);
-
-private:
-  void PrepareItm();
 
 }; // struct CameraEul
 

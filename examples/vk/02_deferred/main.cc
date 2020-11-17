@@ -111,7 +111,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   FpsCounter fps {};
 
   CameraEul camera(75.f, win.GetAspectRatio(), 0.1f, 100.f);
-  camera.SetPos(Vec3f(0.f, 5.f, -5.f));
+  camera.SetPos(Vec3f(5.f, 5.f, -5.f));
   camera.LookAt(Vec3f(0.f, 0.f, 0.f));
   camera.SetMoveSpeed(3.f);
 

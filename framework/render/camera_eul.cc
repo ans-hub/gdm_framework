@@ -18,37 +18,31 @@ gdm::CameraEul::CameraEul(float fov, float ar, float z_near, float z_far)
   , speed_{0.005f}
 { }
 
-void gdm::CameraEul::PrepareItm()
-{
-  Mat4f cw_tm = matrix::RotateBasisYCW(tm_);
-  itm_ = matrix::InverseTransform(cw_tm);
-}
-
 void gdm::CameraEul::SetOrient(const Mat4f& tm)
 {
   tm_.SetCol(0, tm.GetCol(0));
   tm_.SetCol(1, tm.GetCol(1));
   tm_.SetCol(2, tm.GetCol(2));
-  PrepareItm();
+  itm_ = matrix::InverseTransform(tm_);
 }
 
 void gdm::CameraEul::SetPos(Vec3f pos)
 {
   tm_.SetCol(3, pos);
-  PrepareItm();
+  itm_ = matrix::InverseTransform(tm_);
 }
 
 void gdm::CameraEul::LookAt(const Vec3f& look_at)
 {
   matrix::MakeLookAt(tm_, look_at, tm_.GetCol(3), tm_.GetCol(1));
-  PrepareItm();
+  itm_ = matrix::InverseTransform(tm_);
 }
 
 void gdm::CameraEul::Move(const Vec3f& dir, float dt)
 {
   Vec3f vel = dir * speed_ * dt;
   tm_.SetCol(3, tm_.GetCol(3) + vel);
-  PrepareItm();
+  itm_ = matrix::InverseTransform(tm_);
 }
 
 void gdm::CameraEul::SetAspectRatio(float ar)
@@ -61,12 +55,12 @@ void gdm::CameraEul::SetAspectRatio(float ar)
   proj_tm_ = matrix::MakePerspectiveLH(fov_, ar_, z_near_, z_far_);
 }
 
-void gdm::CameraEul::Rotate(float yaw, float pitch)
+void gdm::CameraEul::Rotate(float pitch, float yaw)
 {
   Mat4f rot_y = matrix::MakeRotateY(yaw);
   Mat4f rot_p = matrix::MakeRotateX(pitch);
   Vec3f pos = tm_.GetCol(3);
   tm_ = rot_y % rot_p % matrix::MakeLHBasis();
-  tm_.SetCol(3, pos); // todo: % doesn't work; 27.05 - already work
-  PrepareItm();
+  tm_.SetCol(3, pos);
+  itm_ = matrix::InverseTransform(tm_);
 }

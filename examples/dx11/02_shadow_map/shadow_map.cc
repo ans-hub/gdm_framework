@@ -194,7 +194,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
       Mat4f lamp_view (1.f);
       matrix::MakeLookAt(lamp_view, cube.GetPos(), lamp.GetPos(), lamp_view.GetCol(1));
-      lamp.SetTm(matrix::RotateBasisYCW(lamp_view));
+      lamp.SetTm(matrix::MakeRotationFromBasisLH(lamp_view));
       Mat4f lamp_proj (1.f);
       if (is_ortho)
         lamp_proj = matrix::MakeOrthoLH(10, 10, 1, 20);//camera.z_near_, camera.z_far_);
