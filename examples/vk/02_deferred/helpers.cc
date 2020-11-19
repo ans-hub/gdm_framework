@@ -150,3 +150,18 @@ void gdm::helpers::UpdateCamera(CameraEul& cam, MainInput& input, float dt)
   if (input.IsKeyboardBtnHold(DIK_F))
     cam.Move(-cam.GetTm().GetCol(1), dt);
 }
+
+void gdm::helpers::UpdateLights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lights, float dt)
+{
+  if (lights.size() > 0)  // TODO cam light separately
+   lights[0].instance_.tm_ = cam.GetTm();
+
+  if (input.IsKeyboardBtnHold(DIK_0) && lights.size() > 0)
+    lights[0].enabled_ = !lights[0].enabled_;
+  if (input.IsKeyboardBtnHold(DIK_1) && lights.size() > 1)
+    lights[1].enabled_ = !lights[1].enabled_;
+  if (input.IsKeyboardBtnHold(DIK_2) && lights.size() > 2)
+    lights[2].enabled_ = !lights[2].enabled_;
+  if (input.IsKeyboardBtnHold(DIK_3) && lights.size() > 3)
+    lights[3].enabled_ = !lights[3].enabled_;
+}

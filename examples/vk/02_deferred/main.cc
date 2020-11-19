@@ -111,8 +111,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   FpsCounter fps {};
 
   CameraEul camera(75.f, win.GetAspectRatio(), 0.1f, 100.f);
-  camera.SetPos(Vec3f(5.f, 5.f, -5.f));
-  camera.LookAt(Vec3f(0.f, 0.f, 0.f));
+  camera.SetPos(cfg.Get<Vec3f>("initial_cam_pos"));
+  camera.LookAt(cfg.Get<Vec3f>("initial_look_at"));
   camera.SetMoveSpeed(3.f);
 
   GDM_PROFILING_ENABLE();
@@ -132,6 +132,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     timer.Start();
     float dt = timer.GetLastDt();
     helpers::UpdateCamera(camera, input, dt);
+    helpers::UpdateLights(camera, input, scene.GetLights(), dt);
 
     api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
   

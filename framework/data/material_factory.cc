@@ -28,6 +28,12 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
   AbstractMaterial* mat = GMNew AbstractMaterial{};
   mat->index_ = s_index++;
 
+  mat->props_.emissive_ = Vec4f(&loader.GetMaterial<Vec4f>("emissive", mat_num)[0]);
+  mat->props_.ambient_ = Vec4f(&loader.GetMaterial<Vec4f>("ambient", mat_num)[0]);
+  mat->props_.diffuse_ = Vec4f(&loader.GetMaterial<Vec4f>("diffuse", mat_num)[0]);
+  mat->props_.specular_ = Vec4f(&loader.GetMaterial<Vec4f>("specular", mat_num)[0]);
+  mat->props_.specular_power_ = loader.GetMaterial<float>("specular_power", mat_num); 
+
   std::unordered_map<const char*, TextureHandle*> map_name_to_handle {
     {"diffuse_map", &(mat->diff_)},
     {"normal_map", &(mat->norm_)},
@@ -38,18 +44,26 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
   {
     std::string img_fname = loader.GetMaterial<std::string>(tex_name, mat_num);
     if (img_fname.empty())
+    {
       img_fname = std::string(ImageFactory::v_dummy_name) + tex_name;
-    if (TextureFactory::Has(img_fname.c_str()))
-      *tex_handle = TextureFactory::GetHandle(img_fname.c_str());
+      if (TextureFactory::Has(img_fname.c_str()))
+        *tex_handle = TextureFactory::GetHandle(img_fname.c_str());
+      else
+      {
+        if (strcmp(tex_name, "diffuse_map") == 0)
+          *tex_handle = TextureFactory::Create(img_fname.c_str(), {32,32,32}, {mat->props_.diffuse_.r, mat->props_.diffuse_.g, mat->props_.diffuse_.b});
+        else
+          *tex_handle = TextureFactory::Create(img_fname.c_str(), {32,32,32}, {0,0,0});
+      }
+    }
     else
-      *tex_handle = TextureFactory::Load(img_fname.c_str());
+    {
+      if (TextureFactory::Has(img_fname.c_str()))
+        *tex_handle = TextureFactory::GetHandle(img_fname.c_str());
+      else
+        *tex_handle = TextureFactory::Load(img_fname.c_str());
+    }
   }
-
-  mat->props_.emissive_ = Vec4f(&loader.GetMaterial<Vec4f>("emissive", mat_num)[0]);
-  mat->props_.ambient_ = Vec4f(&loader.GetMaterial<Vec4f>("ambient", mat_num)[0]);
-  mat->props_.diffuse_ = Vec4f(&loader.GetMaterial<Vec4f>("diffuse", mat_num)[0]);
-  mat->props_.specular_ = Vec4f(&loader.GetMaterial<Vec4f>("specular", mat_num)[0]);
-  mat->props_.specular_power_ = loader.GetMaterial<float>("specular_power", mat_num); 
 
   MaterialHandle handle = helpers::GenerateHandle(mat_name);
   resources_[handle] = mat;

@@ -22,10 +22,9 @@ struct Input
 struct Output
 {
   float3 pos_WS : TEXCOORD0;
-  float3 norm_WS : TEXCOORD1;
-  float2 texuv_TS : TEXCOORD2;
-  float3 view_pos_WS : TEXCOORD3;
-  float4 color : TEXCOORD4;
+  float2 texuv_TS : TEXCOORD1;
+  float3 view_pos_WS : TEXCOORD2;
+  float4 color : TEXCOORD3;
   float3 tg_WS : TANGENT;
   float3 bt_WS : BINORMAL;
   float3 nm_WS : NORMAL;
@@ -43,7 +42,6 @@ Output main(Input IN)
   
   Output OUT;
   OUT.pos_WS = mul(u_model, float4(IN.pos_MS, 1.f)).xyz;
-  OUT.norm_WS = mul(u_model, float4(IN.norm_MS, 0.f)).xyz;
   OUT.texuv_TS = IN.texuv_MS;
   OUT.view_pos_WS = u_cam_pos_WS;
   OUT.tg_WS = tg_WS;

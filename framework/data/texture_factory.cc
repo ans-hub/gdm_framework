@@ -47,6 +47,18 @@ gdm::TextureHandle gdm::TextureFactory::Load(const char* fpath)
   return tex_handle;
 }
 
+gdm::TextureHandle gdm::TextureFactory::Create(const char* fpath, const Vec3u& whd, const Vec3f& rgb)
+{
+  ASSERT(*fpath != '\000');
+  Handle img_handle;
+  if (ImageFactory::Has(fpath))
+    img_handle = ImageFactory::GetHandle(fpath);
+  else
+    img_handle = ImageFactory::Create(fpath, whd.w, whd.h, whd.d, rgb.r, rgb.g, rgb.b);
+  Handle tex_handle = Load(img_handle);
+  return tex_handle;
+}
+
 void gdm::TextureFactory::Release(TextureHandle handle)
 {
   ASSERTF(Has(handle), "Trying to release absent texture");

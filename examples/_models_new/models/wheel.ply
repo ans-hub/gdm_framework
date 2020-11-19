@@ -1,5 +1,6 @@
 ply
 format ascii 1.0
+custom material red_plastic.mat
 element vertex 1013
 property float x
 property float y

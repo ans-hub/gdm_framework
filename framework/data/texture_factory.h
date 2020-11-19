@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "memory/defines.h"
+#include "math/vector3.h"
 #include "math/vector4.h"
 
 #include "data_factory.h"
@@ -41,8 +42,9 @@ struct AbstractTexture
 
 struct TextureFactory : public DataFactory<AbstractTexture*>
 {
-  static auto Load(ImageHandle handle) -> TextureHandle;  // TODO: pass GpuDevice()???
-  static auto Load(const char* fpath) -> TextureHandle;   //       same?
+  static auto Load(ImageHandle handle) -> TextureHandle;
+  static auto Load(const char* fpath) -> TextureHandle;
+  static auto Create(const char* fpath, const Vec3u& whd, const Vec3f& rgb) -> TextureHandle;
   static void Release(TextureHandle handle); // TODO: Release what? only tex? or with chidlren? ref_cnt needed
 };
 

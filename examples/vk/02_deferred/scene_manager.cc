@@ -37,8 +37,12 @@ void gdm::SceneManager::SetModels(const std::vector<ModelInstance>& objs, const 
   for (auto instance : objs)
     models_.push_back(instance);
   for (auto instance : lamps)
+  {
     models_.push_back(instance);
-  lights_ = lamps;
+    lights_.push_back({});
+    lights_.back().instance_ = instance;
+    lights_.back().enabled_ = true;
+  }
 }
 
 void gdm::SceneManager::CopyGeometryToGpu(const std::vector<ModelHandle>& handles, uint vstg_index, uint istg_index, api::CommandList& cmd)
@@ -203,7 +207,7 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
 {
   ASSERT(!TextureFactory::Has(v_dummy_image));
   
-  ImageHandle image_handle = ImageFactory::Create(v_dummy_image, 1, 1, 32, 1, 0, 0);
+  ImageHandle image_handle = ImageFactory::Create(v_dummy_image, 1, 1, 32, 1, 1, 1);
   AbstractImage* dummy_image = ImageFactory::Get(image_handle);
   TextureHandle texture_handle = TextureFactory::Load(image_handle);
   AbstractTexture* dummy_texture = TextureFactory::Get(texture_handle);

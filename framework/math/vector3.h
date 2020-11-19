@@ -33,6 +33,7 @@ struct Vector3
     struct { T x, y, z; };
     struct { T r, g, b; };
     struct { T s, t, p; };
+    struct { T w, h, d; };
     struct { T data[3]; };
   };
 

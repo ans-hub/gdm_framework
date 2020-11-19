@@ -96,7 +96,7 @@ struct DeferredPass
   void CreatePipeline(const api::ImageViews& gbuffer_image_views_);
   
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
-  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelInstance>& lights);
+  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lights);
   void Draw(api::CommandList& cmd, uint frame_num);
 };
 

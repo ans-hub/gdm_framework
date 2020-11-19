@@ -39,6 +39,12 @@ struct ModelInstance
 
 }; // struct AbstractModelInstance
 
+struct ModelLight
+{
+  ModelInstance instance_;
+  bool enabled_;
+};
+
 struct ModelFactory : public DataFactory<AbstractModel*>
 {
   static auto Load(const char* fpath) -> ModelHandle;

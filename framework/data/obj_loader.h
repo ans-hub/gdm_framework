@@ -733,6 +733,9 @@ inline std::vector<T> helpers::LoadNormals(obj::Loader& obj, std::size_t mesh_nu
   assert(mesh_num < obj.GetShapes().size());
   assert(!obj.GetShapes()[mesh_num].mesh.indices.empty());
 
+  if (obj.GetAttrib().normals.empty())
+    return {};
+
   std::vector<T> result {};
   for (const auto& idx : obj.GetShapes()[mesh_num].mesh.indices)
 	{

@@ -44,7 +44,7 @@ struct SceneManager
   void SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps);
   auto GetRenderableInstances() -> const std::vector<ModelInstance>&;
   auto GetRenderableMaterials() -> const api::ImageViews&;
-  auto GetLights() -> const std::vector<ModelInstance>& { return lights_; }
+  auto GetLights() -> std::vector<ModelLight>& { return lights_; }
 
 public:
   constexpr static uint v_material_type_cnt = 3; // diff_map + norm_map + v_spec_map
@@ -65,7 +65,7 @@ private:
   api::Device& device_;
   api::Renderer& rdr_;
   std::vector<ModelInstance> models_;
-  std::vector<ModelInstance> lights_;
+  std::vector<ModelLight> lights_;
   api::ImageViews renderable_materials_;
   std::vector<api::Buffer*> staging_buffers_;
   api::ImageView* dummy_view_;

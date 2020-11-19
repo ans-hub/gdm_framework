@@ -60,7 +60,7 @@ float4 main(VSOutput input) : SV_TARGET
     {
       case DIR_LIGHT:
       {
-        float3 LD = normalize(g_lights_[i].dir_WS);
+        float3 LD = -normalize(g_lights_[i].dir_WS);
         float3 N = normalize(normal_WS.xyz);
         float3 R = normalize(reflect(-LD,N));
         float3 V = normalize(g_camera_pos_.xyz - pos_WS.xyz);
