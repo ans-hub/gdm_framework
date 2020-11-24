@@ -10,6 +10,7 @@
 #include "memory/defines.h"
 #include "render/api.h"
 #include "system/assert_utils.h"
+#include "desc/deferred_pass.h"
 
 namespace gdm::_private{
 
@@ -57,6 +58,25 @@ namespace gdm::_private{
 }
 
 // --public
+
+auto gdm::helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>
+{
+  static const bool registered = _private::RegisterFactoryPathes(cfg);
+
+  auto flashlight_path = cfg.GetAllVals<std::string>("flashlight_");
+  auto flashlight_colors = cfg.GetAllVals<Vec4f>("flashlight_col_");
+  ASSERT(flashlight_path.size() == flashlight_colors.size());
+
+  std::vector<ModelInstance> result = _private::LoadModelsByPathes(flashlight_path);
+
+  for (std::size_t i = 0; i < result.size(); ++i)
+  {
+    result[0].color_ = flashlight_colors[0];
+    result[0].color_.w = static_cast<float>(LightType::DIR);
+  }
+  
+  return result;
+}
 
 auto gdm::helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
 {
@@ -151,17 +171,23 @@ void gdm::helpers::UpdateCamera(CameraEul& cam, MainInput& input, float dt)
     cam.Move(-cam.GetTm().GetCol(1), dt);
 }
 
-void gdm::helpers::UpdateLights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lights, float dt)
+void gdm::helpers::UpdateLamps(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lamps, float dt)
 {
-  if (lights.size() > 0)  // TODO cam light separately
-   lights[0].instance_.tm_ = cam.GetTm();
+  if (input.IsKeyboardBtnPressed(DIK_1) && lamps.size() > 0)
+    lamps[0].enabled_ = !lamps[0].enabled_;
+  if (input.IsKeyboardBtnPressed(DIK_2) && lamps.size() > 1)
+    lamps[1].enabled_ = !lamps[1].enabled_;
+  if (input.IsKeyboardBtnPressed(DIK_3) && lamps.size() > 2)
+    lamps[2].enabled_ = !lamps[2].enabled_;
+  if (input.IsKeyboardBtnPressed(DIK_4) && lamps.size() > 3)
+    lamps[3].enabled_ = !lamps[3].enabled_;
+}
 
-  if (input.IsKeyboardBtnHold(DIK_0) && lights.size() > 0)
-    lights[0].enabled_ = !lights[0].enabled_;
-  if (input.IsKeyboardBtnHold(DIK_1) && lights.size() > 1)
-    lights[1].enabled_ = !lights[1].enabled_;
-  if (input.IsKeyboardBtnHold(DIK_2) && lights.size() > 2)
-    lights[2].enabled_ = !lights[2].enabled_;
-  if (input.IsKeyboardBtnHold(DIK_3) && lights.size() > 3)
-    lights[3].enabled_ = !lights[3].enabled_;
+void gdm::helpers::UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt)
+{
+  if (input.IsKeyboardBtnPressed(DIK_0) && flashlights.size() > 0)
+    flashlights[0].enabled_ = !flashlights[0].enabled_;
+
+  if (flashlights.size() > 0)
+    flashlights[0].instance_.tm_ = cam.GetTm();
 }

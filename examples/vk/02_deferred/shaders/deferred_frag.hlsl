@@ -1,7 +1,7 @@
 #define DIR_LIGHT 0
 #define POINT_LIGHT 1
 #define SPOT_LIGHT 2
-#define LIGHTS_COUNT 4
+#define lights_COUNT 4
 
 SamplerState sampler_gen : register(s1);
 Texture2D gbuffer_pos : register(t2);
@@ -27,7 +27,7 @@ cbuffer LightPropsBuffer : register(b0)
 {
   float4 g_global_ambient_;
   float4 g_camera_pos_;
-  LightProps g_lights_[LIGHTS_COUNT];
+  LightProps g_lights_[lights_COUNT];
 };
 
 struct VSOutput
@@ -48,7 +48,7 @@ float4 main(VSOutput input) : SV_TARGET
   float spec_pow_from_material = gbuffer_pos.Sample(sampler_gen, input.UV).w;
   float emissive_from_material = gbuffer_norm.Sample(sampler_gen, input.UV).w;
 
-  for(int i = 0; i < LIGHTS_COUNT; ++i)
+  for(int i = 0; i < lights_COUNT; ++i)
   {
     if (!g_lights_[i].enabled_)
       continue;

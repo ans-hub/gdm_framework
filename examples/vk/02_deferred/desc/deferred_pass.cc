@@ -153,10 +153,15 @@ void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
 }
 
-void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lights)
+void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights)
 {
   data_[curr_frame].pfcb_data_ps_.camera_pos_ = Vec4f(camera.GetPos(), 1.f);
   data_[curr_frame].pfcb_data_ps_.global_ambient_ = Vec4f(0.1f);
+
+  std::vector<ModelLight> lights;
+
+  std::copy(lamps.begin(), lamps.end(), std::back_inserter(lights));
+  std::copy(flashlights.begin(), flashlights.end(), std::back_inserter(lights));
 
   for(auto&& [i, light] : Enumerate(data_[curr_frame].pfcb_data_ps_.lights_))
   {
@@ -170,7 +175,7 @@ void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& cam
     light.color_ = lights[i].instance_.color_;
     light.enabled_ = lights[i].enabled_;
     light.type_ = static_cast<LightType>(lights[i].instance_.color_.w);
-  }  
+  }
 }
 
 void gdm::DeferredPass::Draw(api::CommandList& cmd, uint curr_frame)

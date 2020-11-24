@@ -19,7 +19,8 @@ gdm::SceneManager::SceneManager(api::Renderer& rdr)
   : device_{ rdr.GetDevice() }
   , rdr_{rdr}
   , models_{}
-  , lights_{}
+  , lamps_{}
+  , flashlights_{}
   , staging_buffers_{}
   , dummy_view_{}
   , renderable_materials_{}
@@ -32,16 +33,22 @@ auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
   return static_cast<uint>(staging_buffers_.size() - 1);
 }
 
-void gdm::SceneManager::SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps)
+void gdm::SceneManager::SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
 {
   for (auto instance : objs)
     models_.push_back(instance);
   for (auto instance : lamps)
   {
     models_.push_back(instance);
-    lights_.push_back({});
-    lights_.back().instance_ = instance;
-    lights_.back().enabled_ = true;
+    lamps_.push_back({});
+    lamps_.back().instance_ = instance;
+    lamps_.back().enabled_ = true;
+  }
+  for (auto instance : flashlights)
+  {
+    flashlights_.push_back({});
+    flashlights_.back().instance_ = instance;
+    flashlights_.back().enabled_ = true;
   }
 }
 

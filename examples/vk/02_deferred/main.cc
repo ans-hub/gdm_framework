@@ -67,7 +67,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   SceneManager scene(gfx);
   std::vector<ModelInstance> object_models = helpers::LoadObjects(cfg);
   std::vector<ModelInstance> lamp_models = helpers::LoadLights(cfg);
-  scene.SetModels(object_models, lamp_models);
+  std::vector<ModelInstance> flashlights = helpers::LoadFlashlights(cfg);
+  scene.SetModels(object_models, lamp_models, flashlights);
 
   uint vstg = scene.CreateStagingBuffer(MB(64));
   uint istg = scene.CreateStagingBuffer(MB(32));
@@ -132,7 +133,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     timer.Start();
     float dt = timer.GetLastDt();
     helpers::UpdateCamera(camera, input, dt);
-    helpers::UpdateLights(camera, input, scene.GetLights(), dt);
+    helpers::UpdateLamps(camera, input, scene.GetLamps(), dt);
+    helpers::UpdateFlashlights(camera, input, scene.GetFlashlights(), dt);
 
     api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
   
@@ -149,7 +151,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
     api::CommandList cmd_deferred = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
-    v_deferred_pass.UpdateUniformsData(curr_frame, camera, scene.GetLights());
+    v_deferred_pass.UpdateUniformsData(curr_frame, camera, scene.GetLamps(), scene.GetFlashlights());
     v_deferred_pass.UpdateUniforms(cmd_deferred, curr_frame);
     v_deferred_pass.Draw(cmd_deferred, curr_frame);
 

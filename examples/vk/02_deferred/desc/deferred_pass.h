@@ -47,13 +47,14 @@ struct Light
 }; // struct Light
 
 __declspec(align(64)) struct DeferredPs_PFCB
-{
-  alignas(16) Vec4f global_ambient_ = Vec4f(0.2f);
-  alignas(16) Vec4f camera_pos_ = Vec4f(0.f);
-  alignas(16) std::array<Light,4> lights_ = {};
-  
+{  
+  static const int v_lights_count = 16; 
   static const gfx::UboType v_type_ = gfx::EUboType::PER_FRAME; 
   static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::PX; 
+
+  alignas(16) Vec4f global_ambient_ = Vec4f(0.2f);
+  alignas(16) Vec4f camera_pos_ = Vec4f(0.f);
+  alignas(16) std::array<Light, v_lights_count> lights_ = {};
 
 }; // struct DeferredPs_PFCB
 
@@ -96,7 +97,7 @@ struct DeferredPass
   void CreatePipeline(const api::ImageViews& gbuffer_image_views_);
   
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
-  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lights);
+  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights);
   void Draw(api::CommandList& cmd, uint frame_num);
 };
 

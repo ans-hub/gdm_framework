@@ -27,9 +27,11 @@ namespace gdm::helpers {
 
 auto LoadObjects(const Config& cfg) -> std::vector<ModelInstance>;
 auto LoadLights(const Config& cfg) -> std::vector<ModelInstance>;
+auto LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>;
 auto GetUniqueModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps) -> std::vector<ModelHandle>;
 void UpdateCamera(CameraEul& cam, MainInput& input, float dt);
-void UpdateLights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lights, float dt);
+void UpdateLamps(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lamps, float dt);
+void UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt);
 
 } // namespace gdm::helpers
 
