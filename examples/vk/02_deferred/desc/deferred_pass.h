@@ -38,9 +38,9 @@ struct Light
   Vec4f color_ = color::Black;
   float spot_angle_ = 0.f;
   float attenuation_const_ = 1.f;
-  float attenuation_linear_ = 0.08f;
-  float attenuation_quadr_ = 0.0f;
-  LightType type_ = LightType::DIR;
+  float attenuation_linear_ = 0.09f;
+  float attenuation_quadr_ = 0.032f;
+  LightType type_ = LightType::POINT;
   bool  enabled_ = false;
   Vec2f padding1;
 

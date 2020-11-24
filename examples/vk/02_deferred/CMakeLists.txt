@@ -59,9 +59,6 @@ set(Vulkan_LIBRARY ${GDM_LIBVK_DIR}/Lib/vulkan-1.lib)
 set(Vulkan_INCLUDE_DIR ${GDM_LIBVK_DIR}/Include)
 find_package(Vulkan REQUIRED FATAL_ERROR)
 
-message(${Vulkan_LIBRARY})
-message(${Vulkan_INCLUDE_DIR})
-
 message("* App ${BIN}: adding subdirectories")
 add_subdirectory(${GDM_FRAMEWORK_DIR}/math/ static_libs/math)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/data/ static_libs/data)
