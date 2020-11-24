@@ -72,7 +72,7 @@ auto gdm::helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstan
   for (std::size_t i = 0; i < result.size(); ++i)
   {
     result[0].color_ = flashlight_colors[0];
-    result[0].color_.w = static_cast<float>(LightType::DIR);
+    result[0].color_.w = static_cast<float>(LightType::POINT);
   }
   
   return result;
