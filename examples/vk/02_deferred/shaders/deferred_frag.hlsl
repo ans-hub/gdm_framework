@@ -43,11 +43,12 @@ float4 main(VSOutput input) : SV_TARGET
 	float3 pos_WS = gbuffer_pos.Sample(sampler_gen, input.UV).xyz;
 	float3 normal_WS = gbuffer_norm.Sample(sampler_gen, input.UV).xyz;
 
-  float4 diff_total = {0,0,0,0};
-  float4 spec_total = {0,0,0,0};
-
   float spec_pow_from_material = gbuffer_diff.Sample(sampler_gen, input.UV).w;
   float emissive_from_material = gbuffer_norm.Sample(sampler_gen, input.UV).w;
+
+  float4 ambient_total = {0,0,0,0};
+  float4 diff_total = {0,0,0,0};
+  float4 spec_total = {0,0,0,0};
 
   for(int i = 0; i < LIGHTS_COUNT; ++i)
   {
@@ -78,12 +79,14 @@ float4 main(VSOutput input) : SV_TARGET
 
     diff_total += diff_curr;
     spec_total += spec_curr;
+    ambient_total += g_global_ambient_ * attenuation;
   }
 
+  ambient_total = saturate(ambient_total);
   diff_total = saturate(diff_total);
   spec_total = saturate(spec_total);
 
-  float4 ambient = g_global_ambient_;
+  float4 ambient = ambient_total;
   float4 diffuse = diff_total;
 	float4 specular = spec_total;
   float4 tex_color = float4(pixel_diff, 1.f);
