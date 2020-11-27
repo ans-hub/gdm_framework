@@ -1,8 +1,10 @@
 #define DIR_LIGHT 0
 #define POINT_LIGHT 1
 #define SPOT_LIGHT 2
-#define FLASH_LIGHT 3
 #define LIGHTS_COUNT 16
+
+#define CUTOFF 0.9781f 
+#define OUTERCUTOFF 0.9263f
 
 SamplerState sampler_gen : register(s1);
 Texture2D gbuffer_pos : register(t2);
@@ -77,8 +79,17 @@ float4 main(VSOutput input) : SV_TARGET
     float spec = pow(max(dot(V, R), 0.0), spec_pow_from_material);
     spec_curr = spec * float4(1,1,1,1) * attenuation;
 
-    diff_total += diff_curr;
-    spec_total += spec_curr;
+    float intensity = 1.f;
+
+    if (g_lights_[i].type_ == SPOT_LIGHT)
+    {
+      float theta = dot(NLD, normalize(-g_lights_[i].dir_WS)); 
+      float epsilon = (CUTOFF - OUTERCUTOFF);
+      intensity = clamp((theta - OUTERCUTOFF) / epsilon, 0.0, 1.0);
+    }
+
+    diff_total += diff_curr * intensity;
+    spec_total += spec_curr * intensity;
     ambient_total += g_global_ambient_ * attenuation;
   }
 
