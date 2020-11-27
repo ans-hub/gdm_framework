@@ -23,11 +23,11 @@ inline auto gdm::Shader::CreateCompiler() -> gdm::ShaderCompiler*
   {
     args.push_back(L"-Od");
     args.push_back(L"-Zi");
+    args.push_back(L"-Qembed_debug");
   }
   else
   {
     args.push_back(L"-O3");
-    args.push_back(L"-");
   }
   return GMNew ShaderCompiler(args);
 }
