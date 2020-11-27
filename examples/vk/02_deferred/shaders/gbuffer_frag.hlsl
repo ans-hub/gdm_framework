@@ -53,6 +53,8 @@ Output main(Input IN)
     output.diff = IN.color + Textures[diff_idx].Sample(Sampler, IN.texuv_TS) * IN.color;
     output.norm = float4(normalize(IN.nm_WS), 0.f);
 	  output.pos = float4(IN.pos_WS, 1.0);
+    output.diff.w = material_props_.specular_power_;
+    output.norm.w = material_props_.emissive_.x;
   }
   else
   {
@@ -73,7 +75,7 @@ Output main(Input IN)
   	output.pos = float4(IN.pos_WS, 1.0);
 
     output.diff.w = material_props_.specular_power_;
-    output.norm.w = material_props_.emissive_;
+    output.norm.w = material_props_.emissive_.x;
   }
 
   return output;

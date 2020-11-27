@@ -9,7 +9,11 @@
 
 #include "system/hash_utils.h"
 
+#ifndef NDEBUG
 #define MEMORY_TAG(name) ::gdm::MemoryTag<GDM_HASH(name)>{name}
+#else
+#define MEMORY_TAG(name) 0
+#endif
 
 namespace gdm {
 

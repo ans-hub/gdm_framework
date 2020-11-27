@@ -27,7 +27,7 @@ namespace gdm {
 
 enum LightType : int
 {
-  DIR, POINT 
+  DIR, POINT, FLASHLIGHT 
 };
 
 struct Light

@@ -34,6 +34,7 @@ auto gdm::vk::Device::GetQueue(gfx::QueueType type) -> VkQueue
     case gfx::PRESENTATION : return presentation_queue_;
     default : ASSERTF(false, "Queue doesn't implemented");
   }
+  return {};
 }
 
 // --private

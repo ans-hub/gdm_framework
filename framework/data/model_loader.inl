@@ -84,8 +84,8 @@ inline float gdm::ModelLoader::GetMaterial(const char* resource_name, std::size_
         return {};
 
       assert(mat_num < loader_obj_->GetMaterials().size());
-      if (resource_name == "specular_power")
-        return loader_obj_->GetMaterials()[mat_num].specular[0]; // todo:
+      if (strcmp(resource_name, "specular_power") == 0)
+        return loader_obj_->GetMaterials()[mat_num].shininess;
     }
   }
   return {};

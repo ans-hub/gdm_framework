@@ -175,6 +175,12 @@ void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& cam
     light.color_ = lights[i].instance_.color_;
     light.enabled_ = lights[i].enabled_;
     light.type_ = static_cast<LightType>(lights[i].instance_.color_.w);
+    if (light.type_ == LightType::DIR)
+    {
+      light.attenuation_const_ = 1.f;
+      light.attenuation_linear_ = 0.f;
+      light.attenuation_quadr_ = 0.f;
+    }
   }
 }
 

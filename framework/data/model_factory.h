@@ -37,7 +37,7 @@ struct ModelInstance
   Mat4f tm_;
   Vec4f color_;
 
-}; // struct AbstractModelInstance
+}; // struct ModelInstance
 
 struct ModelLight
 {

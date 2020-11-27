@@ -27,7 +27,7 @@ struct AbstractMaterial
     Vec4f ambient_ = Vec4f(0.1f);
     Vec4f diffuse_ = Vec4f(1.f);
     Vec4f specular_ = Vec4f(1.f);
-    float specular_power_ = 128.f;
+    float specular_power_ = 32.f;
     Vec3f padding_;
   
   }; // struct Props

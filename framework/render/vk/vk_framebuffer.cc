@@ -31,7 +31,7 @@ auto gdm::vk::Framebuffer::CreateClearValues() -> std::vector<VkClearValue>
     if (helpers::HasStencil(view->GetFormat()))
       clear_values.push_back(VkClearValue{ 1.f, 0.f });
     else
-      clear_values.push_back(VkClearValue{ 0.f, 0.f, 0.2f, 1.f });
+      clear_values.push_back(VkClearValue{ 0.f, 0.f, 0.0f, 0.f });
   }
   return clear_values;
 }

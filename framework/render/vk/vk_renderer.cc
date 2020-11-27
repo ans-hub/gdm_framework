@@ -396,6 +396,8 @@ auto gdm::vk::Renderer::CreateDescriptorPool(int max_sets, const std::vector<std
 
 auto gdm::vk::Renderer::CreateDebugCallback() -> VkDebugReportCallbackEXT
 {
+  static VkDebugReportCallbackEXT callback;
+  
   if constexpr (gfx::v_DebugBuild)
   {
       VkDebugReportCallbackCreateInfoEXT cb_create_info {};
@@ -411,12 +413,10 @@ auto gdm::vk::Renderer::CreateDebugCallback() -> VkDebugReportCallbackEXT
       PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
       CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance_, "vkCreateDebugReportCallbackEXT");
 
-      static VkDebugReportCallbackEXT callback;
       VkResult res = CreateDebugReportCallback(instance_, &cb_create_info, &allocator_, &callback);
       ASSERTF(res == VK_SUCCESS, "vkCreateDebugReportCallbackEXT error %d\n", res);
-
-      return callback;
   }
+  return callback;
 }
 
 auto gdm::vk::Renderer::FillInstanceLayersInfo() -> std::vector<const char*>
