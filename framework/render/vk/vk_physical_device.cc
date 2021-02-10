@@ -15,14 +15,20 @@ auto gdm::vk::helpers::EnumeratePhysicalDevices(VkInstance instance, VkSurfaceKH
   uint num = 0;
   VkResult res = vkEnumeratePhysicalDevices(instance, &num, nullptr);
   ASSERTF(res == VK_SUCCESS, "vkEnumeratePhysicalDevices error %d\n", res);
-  
+
+  std::vector<VkPhysicalDevice> devices(num);
   std::vector<PhysicalDevice> devices_db(num);
-  res = vkEnumeratePhysicalDevices(instance, &num, &devices_db[0].device_);
+  res = vkEnumeratePhysicalDevices(instance, &num, devices.data());
   ASSERTF(res == VK_SUCCESS, "vkEnumeratePhysicalDevices error %d\n", res);
 
   for (uint i = 0 ; i < num ; i++)
   {
-    VkPhysicalDevice device = devices_db[i].device_;
+    VkPhysicalDevice device = devices[i];
+    devices_db[i].device_ = device;
+
+    if (device == nullptr)
+      continue;
+
     vkGetPhysicalDeviceProperties(device, &devices_db[i].device_props_);
     vkGetPhysicalDeviceProperties2(device, &devices_db[i].device_props2_);
     vkGetPhysicalDeviceMemoryProperties(device, &devices_db[i].device_mem_props_);
