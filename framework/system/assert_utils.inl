@@ -9,21 +9,27 @@
 #include <sstream>
 #include <string>
 
+#include "debugging.h"
+
 # if !defined(NDEBUG)
 
-inline gdm::AssertionError::AssertionError(const char* msg)
-  : std::runtime_error(msg)
+namespace gdm::_private
 {
-  MessageBoxA(nullptr, msg, "Assertf", MB_OK);
+  struct AssertionError : public std::runtime_error
+  {
+    AssertionError(const char* msg) : std::runtime_error(msg)
+    {
+      MessageBoxA(nullptr, msg, "Assertf", MB_OK);
+    }
+  };
+} // namespace gdm::_private
+
+inline void gdm::AssertImpl(const char* msg)
+{
+  if (debug::IsDebuggerAttached())
+    debug::DebugBreak();
+
+  throw gdm::_private::AssertionError(msg);
 }
 
-inline void gdm::AssertImpl(bool condition, const char* expression, const char* file, const char* func, int line)
-{
-  if (condition)
-  {
-    std::stringstream ss;
-    ss << "Assert " << expression << " in " << file << ":" << line << " ( " << func << ") failed";
-    throw AssertionError(ss.str().c_str());
-  }
-}
 #endif
