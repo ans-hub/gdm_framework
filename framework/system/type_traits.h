@@ -6,7 +6,9 @@
 
 #ifndef AH_GDM_TYPE_TRAITS_H
 #define AH_GDM_TYPE_TRAITS_H
-	
+
+#include <string>
+
 #define RTTI_BOTH(self)\
   template <class T_>\
   auto As() -> T_& { return static_cast<T_&>(*this); }\
@@ -54,6 +56,9 @@ namespace gdm {
     static bool Of();
 
   }; // struct IsClass
+
+  template<class T, T& var>
+  std::string GetInstanceName();
 
 } // namespace gdm
 

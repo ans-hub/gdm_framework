@@ -47,10 +47,16 @@ template <class T>
 using HasOther = decltype(std::declval<T>().Other());
 
 template <class T>
-using HasAliasA = decltype((void)std::declval<T::AliasA>);
+using HasAlias = typename T::AliasA;
 
 template <class T>
-using HasAliasB = decltype((void)std::declval<T::AliasB>);
+using HasAliasA0 = decltype((void)std::declval<typename T::AliasA>);
+
+template <class T>
+using HasAliasA1 = decltype(std::declval<typename T::AliasA>());
+
+template <class T>
+using HasAliasB = decltype((void)std::declval<typename T::AliasB>);
 
 template <class T>
 using HasVar = decltype(std::declval<T>().var);
@@ -67,7 +73,9 @@ TEST_CASE("Type traits")
 	{
 		CHECK(gdm::v_IsDetected<HasSome, A>);
 		CHECK(!gdm::v_IsDetected<HasOther, A>);
-		CHECK(gdm::v_IsDetected<HasAliasA, A>);
+		CHECK(gdm::v_IsDetected<HasAlias, A>);
+		CHECK(gdm::v_IsDetected<HasAliasA0, A>);
+		CHECK(gdm::v_IsDetected<HasAliasA1, A>);
 		CHECK(!gdm::v_IsDetected<HasAliasB, A>);
 		CHECK(gdm::v_IsDetected<HasVar, A>);
 		CHECK(gdm::v_IsDetected<HasStaticVarA, A>);
@@ -101,6 +109,12 @@ TEST_CASE("Type traits")
 		CHECK(base->Is<DerivedB>());
 		CHECK(!any.Is<DerivedB>());
 		CHECK(base->As<DerivedB>().Who() == gdm::TypeId<DerivedB>());
+	}
+
+	SECTION("Variable name")
+	{
+		extern int var_1;
+		CHECK(gdm::GetInstanceName<decltype(var_1), var_1>() == "var_1");
 	}
 }
 

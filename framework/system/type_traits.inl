@@ -6,6 +6,10 @@
 
 #include "type_traits.h"
 
+#include <regex>
+
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+
 //-- private
 
 namespace gdm::_private
@@ -60,4 +64,15 @@ inline bool gdm::IsClass<Base>::Of()
     return B::Id() == D::Id() || IsClass<B>::Of<D::TBase>();
   else
     return B::Id() == D::Id();
+}
+
+template<class T, T& var>
+inline std::string gdm::GetInstanceName()
+{
+  std::string str(__PRETTY_FUNCTION__);
+  std::smatch match;
+  std::regex pattern("^\\*\\bGetInstanceName<int,(\\*)>\\(void\\)$");
+  std::regex_search(str, match, pattern);
+
+  return match.empty() ? str : match[1];
 }
