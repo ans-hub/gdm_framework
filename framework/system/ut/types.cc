@@ -7,6 +7,7 @@
 #include "3rdparty/catch/catch.hpp"
 
 #include <system/type_traits.h>
+#include <system/rtti.h>
 
 namespace gdm::test {
 
@@ -75,7 +76,7 @@ TEST_CASE("Type traits")
 		CHECK(!gdm::v_IsDetected<HasOther, A>);
 		CHECK(gdm::v_IsDetected<HasAlias, A>);
 		CHECK(gdm::v_IsDetected<HasAliasA0, A>);
-		CHECK(gdm::v_IsDetected<HasAliasA1, A>);
+		CHECK(gdm::v_IsDetected<HasAliasA1, A>);	
 		CHECK(!gdm::v_IsDetected<HasAliasB, A>);
 		CHECK(gdm::v_IsDetected<HasVar, A>);
 		CHECK(gdm::v_IsDetected<HasStaticVarA, A>);
@@ -112,7 +113,7 @@ TEST_CASE("Type traits")
 	}
 
 	SECTION("Variable name")
-	{
+	{		
 		extern int var_1;
 		CHECK(gdm::GetInstanceName<decltype(var_1), var_1>() == "var_1");
 	}

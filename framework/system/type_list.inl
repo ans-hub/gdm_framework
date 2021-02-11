@@ -1,11 +1,10 @@
 // *************************************************************
-// File:    system_ut.cc
-// Author:  Novoselov Anton @ 2018
+// File:    type_list.inl
+// Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "range.cc"
-#include "hash.cc"
-#include "strings.cc"
-#include "types.cc"
-#include "introspection.cc"
+#include "type_list.h"
+
+//--public
+

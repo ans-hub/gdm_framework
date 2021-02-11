@@ -6,10 +6,6 @@
 
 #include "type_traits.h"
 
-#include <regex>
-
-#define __PRETTY_FUNCTION__ __FUNCSIG__
-
 //-- private
 
 namespace gdm::_private
@@ -28,51 +24,4 @@ namespace gdm::_private
     using Type = Op<Args...>;
   };
 
-  template <class T>
-  using HasBase = decltype((void)std::declval<T::TBase>);
-
-  template <class T>
-  using HasId = decltype(std::declval<T>().Id());
-
-  static inline int v_static_time_counter = 0;
-
-  template <class T>
-  int GetCounterValue()
-  {
-    static int counter = v_static_time_counter++;
-    return counter;
-  }
-
 } // namespace gdm::_private 
-
-//-- public
-
-template<typename T>
-int gdm::TypeId<T>::index_ = _private::GetCounterValue<T>();
-
-template <class Base>
-template <class Derived>
-inline bool gdm::IsClass<Base>::Of()
-{
-  using B = std::decay_t<Base>;
-  using D = std::decay_t<Derived>;
-
-  static_assert(v_IsDetected<_private::HasId, B>, "Base is non rtti-friendly type");
-  static_assert(v_IsDetected<_private::HasId, D>, "Derived is non rtti-friendly type");
-
-  if constexpr (v_IsDetected<_private::HasBase, D>)
-    return B::Id() == D::Id() || IsClass<B>::Of<D::TBase>();
-  else
-    return B::Id() == D::Id();
-}
-
-template<class T, T& var>
-inline std::string gdm::GetInstanceName()
-{
-  std::string str(__PRETTY_FUNCTION__);
-  std::smatch match;
-  std::regex pattern("^\\*\\bGetInstanceName<int,(\\*)>\\(void\\)$");
-  std::regex_search(str, match, pattern);
-
-  return match.empty() ? str : match[1];
-}
