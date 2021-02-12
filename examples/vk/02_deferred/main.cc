@@ -134,6 +134,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     float dt = timer.GetLastDt();
     helpers::UpdateCamera(camera, input, dt);
     helpers::UpdateLamps(camera, input, scene.GetLamps(), dt);
+    helpers::UpdateObjects(scene.GetRenderableInstances(), dt);
     helpers::UpdateFlashlights(camera, input, scene.GetFlashlights(), dt);
 
     api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);

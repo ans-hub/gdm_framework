@@ -242,7 +242,7 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
   dummy_texture->SetApiImageView(api_img_view);
 }
 
-auto gdm::SceneManager::GetRenderableInstances() -> const std::vector<ModelInstance>&
+auto gdm::SceneManager::GetRenderableInstances() -> std::vector<ModelInstance>&
 {
   return models_;
 }

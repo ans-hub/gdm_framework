@@ -1,4 +1,0 @@
-s  name            red_plastic
-v4 diffuse         0.6 0.1 0.1 1.0
-v4 specular        1.0 0.2 0.2 1.0
-f  specular_power  32

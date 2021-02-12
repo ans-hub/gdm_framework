@@ -1,6 +1,0 @@
-s  name            sphere stone
-s  diffuse_map     model_dm.bmp
-v4 ambient         1.0 1.0 1.0 1.0
-v4 diffuse         1.0 1.0 0.878 1.0
-v4 specular        0.2 0.2 0.231 1.0
-f  specular_power  32

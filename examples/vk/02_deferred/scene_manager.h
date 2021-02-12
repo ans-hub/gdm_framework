@@ -42,7 +42,7 @@ struct SceneManager
   void CopyGeometryToGpu(const std::vector<ModelHandle>& models, uint vstg_index, uint istg_index, api::CommandList& list);
   void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
   void SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights);
-  auto GetRenderableInstances() -> const std::vector<ModelInstance>&;
+  auto GetRenderableInstances() -> std::vector<ModelInstance>&;
   auto GetRenderableMaterials() -> const api::ImageViews&;
   auto GetLamps() -> std::vector<ModelLight>& { return lamps_; }
   auto GetFlashlights() -> std::vector<ModelLight>& { return flashlights_; }

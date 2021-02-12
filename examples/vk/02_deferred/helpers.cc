@@ -131,7 +131,7 @@ auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
   {
     ModelInstance& instance = result[i];
     instance.tm_.SetCol(3, obj_poses[i].xyz());
-    Mat4f tm = matrix::MakeScale(obj_poses[i][3]) % instance.tm_;
+    Mat4f tm = instance.tm_ * matrix::MakeScale(obj_poses[i][3]);
     instance.tm_ = tm;
     instance.color_.w = -1.f;
   }
@@ -182,6 +182,9 @@ void gdm::helpers::UpdateLamps(CameraEul& cam, MainInput& input, std::vector<Mod
   if (input.IsKeyboardBtnPressed(DIK_4) && lamps.size() > 3)
     lamps[3].enabled_ = !lamps[3].enabled_;
 }
+
+void gdm::helpers::UpdateObjects(std::vector<ModelInstance>& models, float dt)
+{ }
 
 void gdm::helpers::UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt)
 {

@@ -88,9 +88,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   shaders.Create(GDM_HASH("FlatVx"), "shaders/flat_vert.hlsl", gfx::EShaderType::VX);
   shaders.Create(GDM_HASH("FlatPx"), "shaders/flat_frag.hlsl", gfx::EShaderType::PX);
 
-  ModelFactory::SetPath("../../_models_new/models/");
-  MaterialFactory::SetPath("../../_models_new/materials/");
-  TextureFactory::SetPath("../../_models_new/textures/");
+  ModelFactory::SetPath("../../_data/models/");
+  MaterialFactory::SetPath("../../_data/materials/");
+  TextureFactory::SetPath("../../_data/textures/");
   ImageFactory::SetPath("../../_models_new/textures/");
 
   ModelHandle cube_handle = ModelFactory::Load("cube_test.ply");
