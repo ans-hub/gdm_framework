@@ -8,6 +8,10 @@
 
 #include <system/diff_utils.h>
 
+#include <span>
+#include <array>
+#include <vector>
+
 using namespace gdm;
 
 TEST_CASE("Enumaration")
@@ -22,5 +26,40 @@ TEST_CASE("Enumaration")
 		CHECK(index == i);
 		CHECK(value == i + 32);
 		++i;
+	}
+}
+
+TEST_CASE("Zip span")
+{
+	SECTION("Mutable vector")
+	{
+		std::vector<int> v1 { 1,2,3 };
+		std::vector<int> v2 { 4,5,6 };
+
+		for (auto&& [val1, val2] : gdm::range::ZipSpan(v1, v2))
+		{
+			CHECK(val2 - val1 == 3);
+			val1 = 0;
+			val2 = 0;
+		}
+
+		for (auto&& [val1, val2] : gdm::range::ZipSpan(std::span(v1), std::span(v2)))
+		{
+			CHECK(val1 == 0);
+			CHECK(val2 == 0);
+		}
+	}
+  
+	SECTION("Immutable vector")
+	{
+		const std::vector<int> v1 { 1,2,3 };
+		const std::vector<int> v2 { 4,5,6 };
+
+		for (auto&& [val1, val2] : gdm::range::ZipSpan(v1, v2))
+		{
+			CHECK(std::is_const_v<std::remove_reference_t<decltype(val1)>>);
+			CHECK(std::is_const_v<std::remove_reference_t<decltype(val2)>>);
+			CHECK(val2 - val1 == 3);
+		}
 	}
 }
