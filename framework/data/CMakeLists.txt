@@ -7,7 +7,7 @@ set(BIN data)
 message("* Lib: ${BIN} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 include_directories(
     "data/"

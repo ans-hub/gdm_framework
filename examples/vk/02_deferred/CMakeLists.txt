@@ -5,6 +5,7 @@ project("gdm/framework/vk/deferred")
 set(BIN deferred)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 set(GDM_FRAMEWORK_DIR ${GDM_ROOT_DIR}/framework)
+set(GDM_CONFIGS_DIR ${GDM_ROOT_DIR}/examples/_configs/private)
 set(GDM_LIBVK_DIR ${GDM_ROOT_DIR}/3rdparty/vulkan_sdk/1.2.148.1)
 set(GDM_LIBDXC_DIR ${GDM_ROOT_DIR}/3rdparty/dxc)
 
@@ -14,13 +15,14 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 add_definitions(-DGFX_VK_API)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(VK_API 1)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(PROFILING_ENABLED 0)
 
 set(INCLUDE_DIRS
   "."
   ${GDM_ROOT_DIR}
   ${GDM_FRAMEWORK_DIR}
+  ${GDM_CONFIGS_DIR}
   ${GDM_LIBVK_DIR}/Include
   ${GDM_LIBDXC_DIR}/include)
 include_directories(${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -44,7 +46,8 @@ set(SRC main.cc
         desc/deferred_pass.cc
         desc/gbuffer_pass.cc
         helpers.cc
-        scene_manager.cc)
+        scene_manager.cc
+        ${GDM_CONFIGS_DIR}/dispatcher.cc)
 
 if (WIN32)
   set(CMAKE_CXX_FLAGS

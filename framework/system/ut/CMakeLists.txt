@@ -8,6 +8,7 @@ project("gdm/framework/system/system/ut")
 set(BIN system_ut)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 set(GDM_FRAMEWORK_DIR ${GDM_ROOT_DIR}/framework)
+set(GDM_CODEGEN_DIR ${GDM_FRAMEWORK_DIR}/codegen)
 set(GDM_LIBCATCH_DIR ${GDM_ROOT_DIR}/3rdparty/catch)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
@@ -15,7 +16,7 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
 # --
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # --
 
@@ -51,6 +52,12 @@ add_subdirectory(${GDM_LIBCATCH_DIR} gdm_libs/catch)
 
 message("* App ${BIN}: adding executable")
 add_executable(${BIN} ${SRC_FILES})
+
+# -- Codegen --
+
+add_custom_command(TARGET system_ut
+  COMMAND python ${GDM_CODEGEN_DIR}/parser.py
+  COMMENT "Codegen")
 
 # -- Link --
 

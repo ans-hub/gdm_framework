@@ -12,7 +12,7 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 add_definitions(-DGFX_DX_API)
 set(DX_API 1)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 set(INCLUDE_DIRS
   "."

@@ -9,7 +9,7 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
 # --
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # --
 

@@ -17,7 +17,7 @@ include_directories(
   ${INCLUDE_DIRS}
 )
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if ("${DX_API}")
   message("  ** using api: DX")

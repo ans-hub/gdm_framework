@@ -9,7 +9,7 @@ set(GDM_FRAMEWORK_DIR ${GDM_ROOT_DIR}/framework)
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   set(warnings "-ansi -pedantic -Wall -Wextra -Werror")
