@@ -30,8 +30,6 @@ namespace gdm {
   using MemoryTag = int;
 #endif
 
-using MemoryTagValue = int;
-
 } // namespace gdm
 
 #include "memory_tag.inl"

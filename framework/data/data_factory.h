@@ -27,7 +27,7 @@ struct DataFactory
   static bool Has(const char* fpath);
   static bool SetPath(const char* path) { strncpy(resources_path_, path, strlen(path)); return true; }
   static auto GetPath() -> const char* { return resources_path_; }
-  static uint GetCount() { static_cast<uint>(return resources_.size()); }
+  static uint GetCount() { return static_cast<uint>(resources_.size()); }
 
 protected:
   inline static char resources_path_[512] {""};

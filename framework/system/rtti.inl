@@ -40,7 +40,7 @@ inline bool gdm::IsClass<Base>::Of()
   static_assert(v_IsDetected<_private::HasId, D>, "Derived is non rtti-friendly type");
 
   if constexpr (v_IsDetected<_private::HasBase, D>)
-    return B::Id() == D::Id() || IsClass<B>::Of<D::TBase>();
+    return B::Id() == D::Id() || IsClass<B>::template Of<D::TBase>();
   else
     return B::Id() == D::Id();
 }

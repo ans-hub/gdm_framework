@@ -8,6 +8,7 @@
 
 #include <memory/defines.h>
 #include <memory/memory_manager.h>
+#include <memory/memory_tag.h>
 #include <memory/helpers.h>
 
 // --private

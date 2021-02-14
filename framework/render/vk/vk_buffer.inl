@@ -6,6 +6,8 @@
 
 #include "vk_buffer.h"
 
+#include "vk_device.h"
+
 #include "memory/helpers.h"
 #include "system/assert_utils.h"
 #include "system/bits_utils.h"

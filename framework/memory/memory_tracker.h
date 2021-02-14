@@ -10,7 +10,7 @@
 #include <array>
 #include <atomic>
 
-#include "memory_tag.h"
+#include "memory_tag_value.h"
 
 namespace gdm {
 

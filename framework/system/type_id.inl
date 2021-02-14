@@ -10,6 +10,8 @@
 
 namespace gdm::_private {
 
+	static inline int v_static_time_counter = 0;
+
   template <class T>
   int GetCounterValue()
   {
@@ -17,7 +19,6 @@ namespace gdm::_private {
     return counter;
   }
 	
-	static inline int v_static_time_counter = 0;
 
 } // namespace gdm::_private
 

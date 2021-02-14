@@ -6,6 +6,8 @@
 
 #include "mesh_factory.h"
 
+#include <system/array_utils.h>
+
 // --private
 
 template<class T>

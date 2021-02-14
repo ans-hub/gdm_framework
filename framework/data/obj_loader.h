@@ -707,7 +707,7 @@ inline std::vector<T> helpers::LoadIndicies(obj::Loader& obj, std::size_t mesh_n
 
   std::vector<T> result {};
   for (std::size_t idx = 0; idx < obj.GetShapes()[mesh_num].mesh.indices.size(); idx += 3)
-	  result.emplace_back(T{static_cast<uint>(idx), static_cast<uint>(idx+1), static_cast<uint>(idx+2)});
+	  result.emplace_back(T{static_cast<unsigned int>(idx), static_cast<unsigned int>(idx+1), static_cast<unsigned int>(idx+2)});
   return result;
 }
 
