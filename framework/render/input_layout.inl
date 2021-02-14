@@ -12,6 +12,8 @@
 #include "math/vector3.h"
 #include "math/vector4.h"
 
+#include "system/assert_utils.h"
+
 // --public
 
 inline gdm::InputLayout::InputLayout(const std::initializer_list<Element>& list, gfx::EPrimitiveType type)
@@ -41,7 +43,7 @@ inline auto gdm::helpers::GetLayoutElementFormatType() -> gfx::EFormatType
     return gfx::EFormatType::F3;
   else
   {
-    ASSERTF(false, "Unknown type format")
+    ASSERTF(false, "Unknown type format");
   }
 }
 
