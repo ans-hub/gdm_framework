@@ -6,11 +6,15 @@
 
 #include "cfg_loader.h"
 
+#include "system/string_utils.h"
+
 // --public
 
 gdm::Config::Config(const char* cfg_fname)
 {
   fname_ = cfg_fname;
+  sname_ = str::GetFileNameFromFpath(fname_);
+  str::Rtrim(sname_);
 
   std::ifstream fs {cfg_fname};
   if (!fs)
@@ -65,6 +69,11 @@ gdm::Config::Config(const char* cfg_fname)
 const std::string& gdm::Config::GetFname() const
 {
   return fname_;
+}
+
+const std::string& gdm::Config::GetSname() const
+{
+  return sname_;
 }
 
 bool gdm::Config::IsLoaded() const

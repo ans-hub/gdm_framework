@@ -7,6 +7,9 @@
 #include "string_utils.h"
 
 #include <filesystem>
+#include <algorithm> 
+#include <cctype>
+#include <locale>
 
 int gdm::str::Replace(std::string& str, const std::string& sub, const std::string& replace)
 {
@@ -140,3 +143,38 @@ std::wstring gdm::str::Ansi2Utf(const char* p, UINT codepage)
 }
 
 #endif
+
+// https://stackoverflow.com/questions/216823/whats-the-best-way-to-trim-stdstring
+
+void gdm::str::Ltrim(std::string &s)
+{
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }));
+}
+
+void gdm::str::Rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }).base(), s.end());
+}
+
+void gdm::str::Trim(std::string &s) {
+  Ltrim(s);
+  Rtrim(s);
+}
+
+std::string gdm::str::LtrimCopy(std::string s) {
+  Ltrim(s);
+  return s;
+}
+
+std::string gdm::str::RtrimCopy(std::string s) {
+  Rtrim(s);
+  return s;
+}
+
+std::string gdm::str::TrimCopy(std::string s) {
+  Trim(s);
+  return s;
+}

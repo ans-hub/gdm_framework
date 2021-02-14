@@ -41,6 +41,7 @@
 
 #include "scene_manager.h"
 #include "helpers.h"
+#include "dispatcher.h"
 
 using namespace gdm;
 
@@ -68,8 +69,11 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   std::vector<ModelInstance> object_models = helpers::LoadObjects(cfg);
   std::vector<ModelInstance> lamp_models = helpers::LoadLights(cfg);
   std::vector<ModelInstance> flashlights = helpers::LoadFlashlights(cfg);
-  scene.SetModels(object_models, lamp_models, flashlights);
+  scene.SetObjects(object_models, helpers::LoadObjectNames(cfg));
+  scene.SetLamps(lamp_models, flashlights);
 
+  cfg::Dispatcher logic(cfg, scene.GetSceneInstances(), scene.GetSceneInstancesNames());
+  
   uint vstg = scene.CreateStagingBuffer(MB(64));
   uint istg = scene.CreateStagingBuffer(MB(32));
   uint tstg = scene.CreateStagingBuffer(MB(96));
@@ -132,17 +136,21 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     win.ProcessInput(input);
     timer.Start();
     float dt = timer.GetLastDt();
+    
+    logic.Update(camera, input, dt);
+
     helpers::UpdateCamera(camera, input, dt);
     helpers::UpdateLamps(camera, input, scene.GetLamps(), dt);
-    helpers::UpdateObjects(scene.GetRenderableInstances(), dt);
     helpers::UpdateFlashlights(camera, input, scene.GetFlashlights(), dt);
 
     api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
   
-    v_gbuffer_pass.UpdateUniformsData(camera, scene.GetRenderableInstances());
+    std::vector<ModelInstance*> renderable_instances = scene.GetRenderableInstances();
+
+    v_gbuffer_pass.UpdateUniformsData(camera, renderable_instances);
     v_gbuffer_pass.UpdateUniforms(cmd_gbuffer, SceneManager::v_max_objects);
     v_gbuffer_pass.UpdateDescriptorSet(scene.GetRenderableMaterials());
-    v_gbuffer_pass.Draw(cmd_gbuffer, scene.GetRenderableInstances());
+    v_gbuffer_pass.Draw(cmd_gbuffer, renderable_instances);
 
     submit_fence.Reset();
     cmd_gbuffer.Finalize();

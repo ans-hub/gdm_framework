@@ -20,6 +20,8 @@
 #ifndef GFX_VK_SCENE_MGR
 #define GFX_VK_SCENE_MGR
 
+#include <string>
+
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
@@ -41,8 +43,11 @@ struct SceneManager
   auto GetStagingBuffer(uint index) -> api::Buffer& { return *staging_buffers_[index]; };
   void CopyGeometryToGpu(const std::vector<ModelHandle>& models, uint vstg_index, uint istg_index, api::CommandList& list);
   void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
-  void SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights);
-  auto GetRenderableInstances() -> std::vector<ModelInstance>&;
+  void SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names);
+  void SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights);
+  auto GetRenderableInstances() -> std::vector<ModelInstance*>;
+  auto GetSceneInstances() -> std::vector<ModelInstance*>;
+  auto GetSceneInstancesNames() -> std::vector<std::string>&;
   auto GetRenderableMaterials() -> const api::ImageViews&;
   auto GetLamps() -> std::vector<ModelLight>& { return lamps_; }
   auto GetFlashlights() -> std::vector<ModelLight>& { return flashlights_; }
@@ -66,6 +71,7 @@ private:
   api::Device& device_;
   api::Renderer& rdr_;
   std::vector<ModelInstance> models_;
+  std::vector<std::string> models_names_;
   std::vector<ModelLight> flashlights_;
   std::vector<ModelLight> lamps_;
   api::ImageViews renderable_materials_;

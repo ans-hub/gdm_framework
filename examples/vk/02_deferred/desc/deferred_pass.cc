@@ -23,7 +23,7 @@ void gdm::DeferredPass::CreateImages(api::CommandList& cmd)
 {
   auto present_images = rdr_->GetBackBufferImages();
 
-  for(auto& [i,data] : Enumerate(data_))
+  for(auto&& [i, data] : Enumerate(data_))
   {
     data.present_to_read_barrier_ = GMNew api::ImageBarrier();
     data.present_to_write_barrier_ = GMNew api::ImageBarrier();
@@ -156,7 +156,7 @@ void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
 void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights)
 {
   data_[curr_frame].pfcb_data_ps_.camera_pos_ = Vec4f(camera.GetPos(), 1.f);
-  data_[curr_frame].pfcb_data_ps_.global_ambient_ = Vec4f(0.1f);
+  data_[curr_frame].pfcb_data_ps_.global_ambient_ = Vec4f(0.4f);
 
   std::vector<ModelLight> lights;
 

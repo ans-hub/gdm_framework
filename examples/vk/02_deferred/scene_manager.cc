@@ -33,13 +33,22 @@ auto gdm::SceneManager::CreateStagingBuffer(uint bytes) -> uint
   return static_cast<uint>(staging_buffers_.size() - 1);
 }
 
-void gdm::SceneManager::SetModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
+void gdm::SceneManager::SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names)
 {
-  for (auto instance : objs)
+  for (auto [instance, name] : range::ZipSpan(objs, names))
+  {
     models_.push_back(instance);
+    models_names_.push_back(name);
+  }
+}
+
+void gdm::SceneManager::SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
+{
   for (auto instance : lamps)
   {
     models_.push_back(instance);
+    models_names_.push_back("Light");
+
     lamps_.push_back({});
     lamps_.back().instance_ = instance;
     lamps_.back().enabled_ = true;
@@ -242,9 +251,29 @@ void gdm::SceneManager::CreateDummyView(api::CommandList& cmd)
   dummy_texture->SetApiImageView(api_img_view);
 }
 
-auto gdm::SceneManager::GetRenderableInstances() -> std::vector<ModelInstance>&
+auto gdm::SceneManager::GetRenderableInstances() -> std::vector<ModelInstance*>
 {
-  return models_;
+  std::vector<ModelInstance*> renderables;
+ 
+  for (auto& instance : models_)
+    renderables.push_back(&instance);
+    
+  return renderables;
+}
+
+auto gdm::SceneManager::GetSceneInstances() -> std::vector<ModelInstance*>
+{
+  std::vector<ModelInstance*> scene_models;
+ 
+  for (auto& instance : models_)
+    scene_models.push_back(&instance);
+    
+  return scene_models;
+}
+
+auto gdm::SceneManager::GetSceneInstancesNames() -> std::vector<std::string>&
+{
+  return models_names_;
 }
 
 auto gdm::SceneManager::GetRenderableMaterials() -> const api::ImageViews&
@@ -259,10 +288,11 @@ auto gdm::SceneManager::GetRenderableMaterials() -> const api::ImageViews&
   renderable_materials_.clear();
   renderable_materials_.resize(v_max_materials * v_material_type_cnt, dummy_view_);
   
-  auto& renderable = GetRenderableInstances();
+  std::vector<ModelInstance*> renderable = GetRenderableInstances();
+
   for (auto [index,model_instance] : Enumerate(renderable))
   {
-    auto model = ModelFactory::Get(model_instance.handle_);
+    auto model = ModelFactory::Get(model_instance->handle_);
     for (auto mesh_handle : model->meshes_)
     {
       auto mesh = MeshFactory::Get(mesh_handle);

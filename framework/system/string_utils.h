@@ -35,6 +35,13 @@ namespace gdm::str {
   std::wstring ToWideStringF(const char* p);
 #endif
 
+  void Ltrim(std::string &s);
+  void Rtrim(std::string &s);
+  void Trim(std::string &s);
+  std::string LtrimCopy(std::string s);
+  std::string RtrimCopy(std::string s);
+  std::string TrimCopy(std::string s);
+
 } // namespace gdm::str
 
 #if defined (_WIN32)

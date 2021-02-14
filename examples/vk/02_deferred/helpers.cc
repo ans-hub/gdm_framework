@@ -10,6 +10,7 @@
 #include "memory/defines.h"
 #include "render/api.h"
 #include "system/assert_utils.h"
+#include "system/diff_utils.h"
 #include "desc/deferred_pass.h"
 
 namespace gdm::_private{
@@ -35,17 +36,19 @@ namespace gdm::_private{
     return true;
   }
 
+
   auto LoadModelsByPathes(const std::vector<std::string>& pathes) -> std::vector<ModelInstance>
   {
     std::vector<ModelInstance> result;
-    for (std::size_t i = 0; i < pathes.size(); ++i)
+    
+    for (const auto& path: pathes)
     {
-      const char* model_fpath = pathes[i].c_str();
       ModelHandle model_handle = {};
-      if (ModelFactory::Has(model_fpath))
-        model_handle = ModelFactory::GetHandle(model_fpath);
+
+      if (ModelFactory::Has(path.c_str()))
+        model_handle = ModelFactory::GetHandle(path.c_str());
       else
-        model_handle = ModelFactory::Load(model_fpath);
+        model_handle = ModelFactory::Load(path.c_str());
 
       ModelInstance instance;
       instance.handle_ = model_handle;
@@ -83,9 +86,11 @@ auto gdm::helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
   auto lamp_pathes = cfg.GetAllVals<std::string>("lamp_");
+  auto lamp_names = cfg.GetAllKeys<std::string>("lamp_");
   auto lamp_poses = cfg.GetAllVals<Vec4f>("lamp_pos_");
   auto lamp_colors = cfg.GetAllVals<Vec4f>("lamp_col_");
   auto lamp_dirs = cfg.GetAllVals<Vec4f>("lamp_dir_");
+
   ASSERT(lamp_pathes.size() == lamp_poses.size());
   ASSERT(lamp_pathes.size() == lamp_colors.size());
   ASSERT(lamp_pathes.size() == lamp_dirs.size());
@@ -121,21 +126,29 @@ auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
   auto obj_pathes = cfg.GetAllVals<std::string>("model_");
+  auto obj_names = cfg.GetAllKeys<std::string>("model_");
   auto obj_poses = cfg.GetAllVals<Vec4f>("model_pos_");
+
   ASSERT(obj_pathes.size() == obj_poses.size());
 
-  std::vector<ModelInstance> result = _private::LoadModelsByPathes(obj_pathes);
-  ASSERT(obj_pathes.size() == result.size());
+  std::vector<ModelInstance> models = _private::LoadModelsByPathes(obj_pathes);
+
+  ASSERT(obj_pathes.size() == models.size());
 
   for (std::size_t i = 0; i < obj_poses.size(); ++i)
   {
-    ModelInstance& instance = result[i];
+    ModelInstance& instance = models[i];
     instance.tm_.SetCol(3, obj_poses[i].xyz());
     Mat4f tm = instance.tm_ * matrix::MakeScale(obj_poses[i][3]);
     instance.tm_ = tm;
     instance.color_.w = -1.f;
   }
-  return result;
+  return models;
+}
+
+auto gdm::helpers::LoadObjectNames(const Config& cfg) -> std::vector<std::string>
+{
+  return cfg.GetAllKeys<std::string>("model_");
 }
 
 auto gdm::helpers::GetUniqueModels(const std::vector<ModelInstance>& objs, const std::vector<ModelInstance>& lamps) -> std::vector<gdm::ModelHandle>
@@ -182,9 +195,6 @@ void gdm::helpers::UpdateLamps(CameraEul& cam, MainInput& input, std::vector<Mod
   if (input.IsKeyboardBtnPressed(DIK_4) && lamps.size() > 3)
     lamps[3].enabled_ = !lamps[3].enabled_;
 }
-
-void gdm::helpers::UpdateObjects(std::vector<ModelInstance>& models, float dt)
-{ }
 
 void gdm::helpers::UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt)
 {

@@ -32,6 +32,7 @@ struct Config
   Config(const char* cfg_fname);
  
   auto GetFname() const -> const std::string&;
+  auto GetSname() const -> const std::string&;
   bool IsLoaded() const;
  
 public:
@@ -50,6 +51,7 @@ public:
 private:
   bool loaded_ = {};
   std::string fname_ = {};
+  std::string sname_ = {};
 
   std::map<std::string, int> ints_ = {};
   std::map<std::string, float> floats_ = {};
