@@ -131,6 +131,7 @@ namespace matrix {
   void  MakeIdentity(Mat4f& mx);
   void  MakeLookAt(Mat4f& mx, const Vec3f& look_at, Vec3f look_from, Vec3f up_dir);
   void  Orthonormalize(Mat4f& mx);
+  auto  DecomposeToScale(const Mat4f& mx) -> Vec3f;
   
   Mat4f ClearOrient(const Mat4f& mx);
   Mat4f MakeLHBasis();
@@ -785,6 +786,11 @@ inline void matrix::Orthonormalize(Mat4f& mx)
   mx.SetCol(0, right);
   mx.SetCol(1, up);
   mx.SetCol(2, fwd);
+}
+
+inline auto matrix::DecomposeToScale(const Mat4f& mx) -> Vec3f
+{
+  return Vec3f(mx[0], mx[5], mx[10]);
 }
 
 // Returns matrix contains basis for left handed system (right, up, fwd) 

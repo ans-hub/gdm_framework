@@ -100,7 +100,17 @@ struct Vector3
     lhs *= scalar;
     return lhs;
   }
+  friend inline Vector3 operator*(float scalar, Vector3 lhs)
+  {
+    lhs *= scalar;
+    return lhs;
+  }
   friend inline Vector3 operator/(Vector3 lhs, float scalar)
+  {
+    lhs /= scalar;
+    return lhs;
+  }
+  friend inline Vector3 operator/(float scalar, Vector3 lhs)
   {
     lhs /= scalar;
     return lhs;
@@ -144,9 +154,12 @@ namespace vec3 {
   inline float SqLength(const Vec3f& v) { return v.SqLength(); }
   inline Vec3f Normalize(Vec3f v) { v.Normalize(); return v; } 
   inline float DotProduct(const Vec3f& v1, const Vec3f& v2) { return v1*v2; }
+  inline float Dot(const Vec3f& v1, const Vec3f& v2) { return v1*v2; }
   inline Vec3f CrossProduct(const Vec3f& v1, const Vec3f& v2) { return v1%v2; }
+  inline Vec3f Cross(const Vec3f& v1, const Vec3f& v2) { return v1%v2; }
   inline Vec3f MakeX0Z(Vec3f v) { v.y = 0.f; return v; }
   inline Vec3f SwapXZ(Vec3f v) { std::swap(v.x, v.z); return v; }
+  inline Vec3f Reflect(Vec3f v, const Vec3f& n) { return v-2*n*(n*v); }
 
   template<class T>
   void InUpperBound(Vector3<T>&, float upper);
