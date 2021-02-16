@@ -29,7 +29,7 @@
 
 namespace gdm::_private
 {
-  static const Vec3f v_g (0.f, -2.f, 0.f);
+  static const Vec3f v_g (0.f, -3.f, 0.f);
   static const float v_ball_max_y = -3.f; 
 
   struct OBB
@@ -47,37 +47,51 @@ namespace gdm::_private
 
   struct Table
   {
-    Table(Mat4f& tm) : tm_{tm}, size_{1.f}
+    Table(Mat4f& tm)
+      : tm_{tm}
+      , size_{matrix::DecomposeToScale(tm).x}
     {
-      bounding_box_.half_size_.x = size_/2;
-      bounding_box_.half_size_.y = 0.001f;
-      bounding_box_.half_size_.z = size_/2;
+      bounding_box_.half_size_.x = size_/2.f;
+      bounding_box_.half_size_.y = size_/2.f;
+      bounding_box_.half_size_.z = size_/2.f;
       bounding_box_.tm_ = &tm_;
     }
 
-    const float linear_speed_ = 10.f;
+    const float linear_speed_ = 4.f;
     const float angle_speed_ = 45.f;
     Mat4f& tm_;
+    Vec3f vel_;
     float size_;
     OBB bounding_box_;
   };
 
   struct Ball
   {
-    Ball(Mat4f& tm) : tm_{tm}, vel_(0.f, -linear_speed_, 0.f)
+    Ball(Mat4f& tm)
+      : tm_{tm}
+      , vel_(0.f, -linear_speed_, 0.f)
+      , size_{matrix::DecomposeToScale(tm).x}
     {
-      bounding_sphere_.radius_ = 1.f;
+      bounding_sphere_.radius_ = size_/2.f;
       bounding_sphere_.tm_ = &tm_;
     }
 
     const float linear_speed_ = 1.f;
     Mat4f& tm_;
+    float size_;
     Vec3f vel_;
     Vec3f accel_;
     Sphere bounding_sphere_;
   };
 
-  Vec3f ClosestPoint(const OBB& obb, const Vec3f& point)
+  struct ColResource
+  {
+    Vec3f normal;
+    float penetration;
+    Vec3f contact_point;
+  };
+
+  Vec3f ClosestPoint(const OBB& obb, const Vec3f& point, Vec3f& collision_norm)
   {
   	Vec3f result = obb.tm_->GetCol(3);
   	Vec3f dir = point - result;
@@ -88,70 +102,38 @@ namespace gdm::_private
   		float distance = vec3::DotProduct(dir, axis);
 
   		if (distance > obb.half_size_[i])
+      {
+        collision_norm += axis;
   			distance = obb.half_size_[i];
-  		if (distance < -obb.half_size_[i])
+      }
+      else if (distance < -obb.half_size_[i])
+      {
+        collision_norm += -axis;
   			distance = -obb.half_size_[i];
-
+      }
+      collision_norm.Normalize();
   		result = result + (axis * distance);
   	}
 
   	return result;
   }
 
-  bool SphereOOBIntersection(const Sphere& sphere, const OBB& obb)
+  bool SphereOOBIntersection(const Sphere& sphere, const OBB& obb, ColResource& col)
   {
     Vec3f sphere_world_pos = sphere.tm_->GetCol(3);
-    Vec3f closest_point = ClosestPoint(obb, sphere_world_pos);
+    Vec3f closest_point = ClosestPoint(obb, sphere_world_pos, col.normal);
 
     float dist_sq = vec3::SqLength(sphere_world_pos - closest_point);
     float radius_sq = sphere.radius_ * sphere.radius_;
 
-    return dist_sq < radius_sq;
-  }
-
-  static bool IsCollided(Ball& ball, Table& table)
-  {
-    return SphereOOBIntersection(ball.bounding_sphere_, table.bounding_box_);
-  }
-
-  static void UpdateTable(Table& table, MainInput& input, float dt)
-  {
-    Vec3f fwd = table.tm_.GetCol(2);
-    float vel_sign = 0.f;
-    
-    if (input.IsKeyboardBtnHold(DIK_UP))
-      vel_sign = 1.f;
-    else if (input.IsKeyboardBtnHold(DIK_DOWN))
-      vel_sign = -1.f;
-    
-    Vec3f vel = vec3::Normalize(fwd) * table.linear_speed_ * dt * vel_sign;
-    Vec3f pos = table.tm_.GetCol(3);
-    pos += vel;
-    table.tm_.SetCol(3, pos);
-
-    float angle_y = 0.f;
-    float angle_z = 0.f;
-
-    if (input.IsKeyboardBtnHold(DIK_LEFT))
-      if (input.IsKeyboardBtnHold(DIK_LSHIFT))
-        angle_z = -1.f * table.angle_speed_ * dt;
-      else
-        angle_y = -1.f * table.angle_speed_ * dt;
-    else if (input.IsKeyboardBtnHold(DIK_RIGHT))
-      if (input.IsKeyboardBtnHold(DIK_LSHIFT))
-        angle_z = 1.f * table.angle_speed_ * dt;
-      else
-        angle_y = 1.f * table.angle_speed_ * dt;
-
-    Mat4f roty (1.f);
-    Mat4f rotz (1.f);
-    
-    if (std::abs(angle_y) > math::kEpsilon)
-      roty = matrix::MakeRotateY(angle_y);
-    if (std::abs(angle_z) > math::kEpsilon)
-      rotz = matrix::MakeRotateZ(angle_z);
-
-    table.tm_ = table.tm_ * roty * rotz;
+    if (dist_sq < radius_sq)
+    {
+      float dist = vec3::Length(sphere_world_pos - closest_point) - sphere.radius_;
+      col.penetration = dist / 2;
+      col.contact_point = closest_point;
+      return true;
+    }
+    return false;
   }
 
   static bool ResetBall(Ball& ball)
@@ -175,24 +157,72 @@ namespace gdm::_private
     if (ball.tm_.GetCol(3).y < v_ball_max_y)
       ResetBall(ball);
 
-    if (IsCollided(ball, table))
-    {
-      // r=d−2(d⋅n)n
-      // v1' = v1 - 2(a1 - a2) * n
-      // a1 = v1 . n and a2 = v2 . n.
-      // a2 = 0
-      Vec3f n = table.tm_.GetCol(1);
-      Vec3f v1 = ball.vel_;
-      Vec3f new_vel = v1 - (n * (2.f * (v1 * n)));
+    ColResource col {};
 
-      ball.vel_ = new_vel;
+    if (SphereOOBIntersection(ball.bounding_sphere_, table.bounding_box_, col))
+    {
+      Vec3f pen_dir = vec3::Normalize(col.contact_point - ball.tm_.GetCol(3));
+      Vec3f corr_pos = ball.tm_.GetCol(3);
+      corr_pos += (pen_dir * col.penetration * 2);
+      ball.tm_.SetCol(3, corr_pos);
+      ball.vel_ = vec3::Reflect(ball.vel_, col.normal);
+      ball.vel_ += table.vel_;
+      Vec3f ball_pos = ball.tm_.GetCol(3);
+      ball_pos += ball.vel_ * dt;
+      ball.tm_.SetCol(3, ball_pos);
+    }
+    else
+    {
+      Vec3f curr_vel = ball.vel_ * dt;
+      ball.vel_ += ball.accel_ * dt;
+      Vec3f ball_pos = ball.tm_.GetCol(3);
+      ball_pos += curr_vel;
+      ball.tm_.SetCol(3, ball_pos);
+    }
+  }
+
+  static void UpdateTable(Table& table, MainInput& input, float dt)
+  {
+    Vec3f fwd = table.tm_.GetCol(2);
+    float vel_sign = 0.f;
+    
+    if (input.IsKeyboardBtnHold(DIK_UP))
+      vel_sign = 1.f;
+    else if (input.IsKeyboardBtnHold(DIK_DOWN))
+      vel_sign = -1.f;
+    
+    table.vel_ = vec3::Normalize(fwd) * table.linear_speed_ * dt * vel_sign;
+    Vec3f pos = table.tm_.GetCol(3);
+    pos += table.vel_;
+    table.tm_.SetCol(3, pos);
+
+    float angle_y = 0.f;
+    float angle_z = 0.f;
+
+    if (input.IsKeyboardBtnHold(DIK_LEFT))
+    {
+      if (input.IsKeyboardBtnHold(DIK_LSHIFT))
+        angle_z = -1.f * table.angle_speed_ * dt;
+      else
+        angle_y = -1.f * table.angle_speed_ * dt;
+    }
+    else if (input.IsKeyboardBtnHold(DIK_RIGHT))
+    {
+      if (input.IsKeyboardBtnHold(DIK_LSHIFT))
+        angle_z = 1.f * table.angle_speed_ * dt;
+      else
+        angle_y = 1.f * table.angle_speed_ * dt;
     }
 
-    Vec3f curr_vel = ball.vel_ * dt;
-    ball.vel_ += ball.accel_ * dt;
-    Vec3f pos = ball.tm_.GetCol(3);
-    pos += curr_vel;
-    ball.tm_.SetCol(3, pos);
+    Mat4f roty (1.f);
+    Mat4f rotz (1.f);
+    
+    if (std::abs(angle_y) > math::kEpsilon)
+      roty = matrix::MakeRotateY(angle_y);
+    if (std::abs(angle_z) > math::kEpsilon)
+      rotz = matrix::MakeRotateZ(angle_z);
+
+    table.tm_ = table.tm_ * roty * rotz;
   }
 
   static void UpdateTennis(std::unordered_map<std::string, ModelInstance*>& models, CameraEul& cam, MainInput& input, float dt)
