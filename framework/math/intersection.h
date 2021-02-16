@@ -7,14 +7,24 @@
 #ifndef AH_GDM_INTERSECTION_H
 #define AH_GDM_INTERSECTION_H
 
+#include <vector>
+
 #include <math/vector3.h>
-
+#include <math/obb.h>
 #include <math/sphere.h>
-#include <math/bounding_box.h>
 
-namespace gdm::math {
+namespace gdm::phys {
 
+  struct CollisionManifold
+  {
+    Vec3f normal;
+    float penetration;
+    std::vector<Vec3f> contact_points;
+  };
 
-} // namespace gdm::math
+  auto FindClosestPoint(const OBB& obb, const Vec3f& point) -> Vec3f;
+  bool IsIntersects(const Sphere& sphere, const OBB& obb, CollisionManifold& col);
+
+} // namespace gdm::phys
 
 #endif  // AH_GDM_INTERSECTION_H

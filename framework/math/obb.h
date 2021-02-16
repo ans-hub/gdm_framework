@@ -1,24 +1,24 @@
 // *************************************************************
-// File:    sphere.h
+// File:    obb.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#ifndef AH_GDM_SPHERE_H
-#define AH_GDM_SPHERE_H
+#ifndef AH_GDM_OBB_H
+#define AH_GDM_OBB_H
 
 #include <math/vector3.h>
 #include <math/matrix.h>
 
 namespace gdm {
 
-struct Sphere
+struct OBB
 {
-  float radius_;
-	const Vec3f& world_pos_;
+	Vec3f half_size_;
+	const Mat4f& tm_;
 
-}; // struct Sphere
+}; // struct OBB
 
-} // namespace gdm
+} // namespace gdm::phys
 
-#endif  // AH_GDM_SPHERE_H
+#endif  // AH_GDM_OBB_H

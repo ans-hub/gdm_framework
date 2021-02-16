@@ -60,11 +60,13 @@ public:
   Matrix(Matrix&&) =default;
   Matrix& operator=(Matrix&&) =default;
 
-  std::size_t Size() const { return data_.count(); }
-  Container& Data() { return data_; }
-  const Container& Data() const { return data_; }
+  auto Size() const -> std::size_t { return data_.count(); }
+  auto Data() -> Container&{ return data_; }
+  auto Data() const -> const Container&{ return data_; }
 
-  Vec3f GetCol(std::size_t col) const;
+  auto GetCol(std::size_t col) const -> Vec3f;
+  auto GetColRef(std::size_t col) -> Vec3f&;
+  auto GetColRef(std::size_t col) const -> const Vec3f&;
   void SetCol(std::size_t col, const Vec3f&);
 
   Vec3f operator*(const Vec3f&);
@@ -235,6 +237,22 @@ inline Vec3f Mat4f::GetCol(std::size_t c) const
   assert(c < 4);
   return Vec3f(
     data_[r_*c+0], data_[r_*c+1], data_[r_*c+2]);
+}
+
+template<>
+inline Vec3f& Mat4f::GetColRef(std::size_t c)
+{
+  const std::size_t r_ {4};
+  assert(c < 4);
+  return reinterpret_cast<Vec3f&>(data_[r_*c+0]);
+}
+
+template<>
+inline const Vec3f& Mat4f::GetColRef(std::size_t c) const
+{
+  const std::size_t r_ {4};
+  assert(c < 4);
+  return reinterpret_cast<const Vec3f&>(data_[r_*c+0]);
 }
 
 template<>
