@@ -49,6 +49,8 @@ namespace gdm::trig {
 
   constexpr float Deg2rad(float deg) { return deg * 3.1415926535f / 180.0f; }
   constexpr float Rad2deg(float rad) { return rad * 180.0f / 3.1415926535f; }
+  constexpr float Deg2rad(int deg) { return Deg2rad(static_cast<float>(deg)); }
+  constexpr float Rad2deg(int rad) { return Rad2deg(static_cast<float>(rad)); }
   float CalcOppositeCatet(float adjanced_catet, float theta);
 
 } // namespace gdm::trig

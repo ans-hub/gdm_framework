@@ -17,9 +17,10 @@ namespace gdm::phys {
 
   struct CollisionManifold
   {
-    Vec3f normal;
-    float penetration;
-    std::vector<Vec3f> contact_points;
+    Vec3f normal = {};
+    float penetration = 0.f;
+    Vec3f closest_point = {};
+    std::vector<Vec3f> contact_points = {};
   };
 
   auto FindClosestPoint(const OBB& obb, const Vec3f& point) -> Vec3f;

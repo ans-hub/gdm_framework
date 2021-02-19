@@ -1,24 +1,24 @@
 // *************************************************************
-// File:    obb.h
+// File:    aabb.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#ifndef AH_GDM_OBB_H
-#define AH_GDM_OBB_H
+#ifndef AH_GDM_AABB_H
+#define AH_GDM_AABB_H
 
 #include <math/vector3.h>
 #include <math/matrix.h>
 
 namespace gdm {
 
-struct OBB
+struct AABB
 {
-	Vec3f half_sizes_;
-	const Mat4f& tm_;
+	Vec3f min_;
+	Vec3f max_;
 
-}; // struct OBB
+}; // struct AABB
 
 } // namespace gdm::phys
 
-#endif  // AH_GDM_OBB_H
+#endif  // AH_GDM_AABB_H

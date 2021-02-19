@@ -137,6 +137,7 @@ namespace matrix {
   
   Mat4f ClearOrient(const Mat4f& mx);
   Mat4f MakeLHBasis();
+  Mat4f MakeRHBasis();
   Mat4f SwapForwardRight(Mat4f mx);
 
   // Other helpers
@@ -819,6 +820,18 @@ inline Mat4f matrix::MakeLHBasis()
   m.SetCol(0, {1.f, 0.f, 0.f});
   m.SetCol(1, {0.f, 1.f, 0.f});
   m.SetCol(2, {0.f, 0.f, 1.f});
+  m.SetCol(3, {0.f, 0.f, 0.f});
+  return m;
+}
+
+// Returns matrix contains basis for right handed system (right, up, fwd) 
+
+inline Mat4f matrix::MakeRHBasis()
+{
+  Mat4f m {};
+  m.SetCol(0, {1.f, 0.f, 0.f});
+  m.SetCol(1, {0.f, 1.f, 0.f});
+  m.SetCol(2, {0.f, 0.f, -1.f});
   m.SetCol(3, {0.f, 0.f, 0.f});
   return m;
 }
