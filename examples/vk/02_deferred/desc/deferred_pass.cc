@@ -62,18 +62,6 @@ void gdm::DeferredPass::CreateImages(api::CommandList& cmd)
   }
 }
 
-void gdm::DeferredPass::CreateFramebuffer()
-{
-  uint height = rdr_->GetSurfaceHeight();
-  uint width = rdr_->GetSurfaceWidth();
-
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
-  {
-    api::ImageViews image_views { rdr_->GetBackBufferViews()[i], data_[i].depth_image_view_};
-    data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
-  }
-}
-
 void gdm::DeferredPass::CreateRenderPass()
 {
   pass_ = GMNew api::RenderPass(*device_);
@@ -83,7 +71,8 @@ void gdm::DeferredPass::CreateRenderPass()
     .AddFormat(rdr_->GetSurfaceFormat())
     .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-    .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+    .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+    .AddStoreOp(gfx::EAttachmentStoreOp::STORE_OP);
   
   uint depth_idx = 1;
   pass_->AddAttachmentDescription(depth_idx)
@@ -96,6 +85,18 @@ void gdm::DeferredPass::CreateRenderPass()
   pass_->AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
   pass_->AddSubpassDepthAttachments(subpass_idx, api::Attachment{depth_idx});
   pass_->Finalize();
+}
+
+void gdm::DeferredPass::CreateFramebuffer()
+{
+  uint height = rdr_->GetSurfaceHeight();
+  uint width = rdr_->GetSurfaceWidth();
+
+  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  {
+    api::ImageViews image_views { rdr_->GetBackBufferViews()[i], data_[i].depth_image_view_};
+    data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
+  }
 }
 
 void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_views)

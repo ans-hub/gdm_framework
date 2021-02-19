@@ -65,6 +65,7 @@ endif()
 
 set(SRC_FILES
   ${SRC_FILES}
+  debug_draw.cc
   camera_eul.cc)
 
 if ("${VK_API}")

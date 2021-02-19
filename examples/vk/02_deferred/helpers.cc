@@ -204,3 +204,8 @@ void gdm::helpers::UpdateFlashlights(CameraEul& cam, MainInput& input, std::vect
   if (flashlights.size() > 0)
     flashlights[0].instance_.tm_ = cam.GetTm();
 }
+
+void gdm::helpers::UpdateLogic(CameraEul& cam, MainInput& input, cfg::Dispatcher& logic, DebugDraw& debug, float dt)
+{
+  logic.Update(cam, input, debug, dt);
+}

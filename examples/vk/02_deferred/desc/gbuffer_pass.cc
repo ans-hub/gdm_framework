@@ -171,6 +171,7 @@ void gdm::GbufferPass::CreatePipeline()
 
   float width = static_cast<float>(rdr_->GetSurfaceWidth());
   float height = static_cast<float>(rdr_->GetSurfaceHeight());
+  
   ViewportDesc vp{0, height, width, -height, 0, 1};
 
   pipeline_ = GMNew api::Pipeline(*device_);
@@ -181,7 +182,9 @@ void gdm::GbufferPass::CreatePipeline()
   pipeline_->SetInputLayout(StdInputLayout{});
   pipeline_->SetRenderPass(*pass_);
   pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*data_.descriptor_set_layout_});
+
   const int depth_attachments_cnt = 1;
+
   pipeline_->SetBlendAttachmentsCount(pass_->GetPassAttachmentsCount() - depth_attachments_cnt);
   pipeline_->Compile();
 }

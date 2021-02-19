@@ -41,6 +41,8 @@ inline auto gdm::helpers::GetLayoutElementFormatType() -> gfx::EFormatType
     return gfx::EFormatType::F2;
   else if constexpr (std::is_same_v<T, Vec3f>)
     return gfx::EFormatType::F3;
+  else if constexpr (std::is_same_v<T, Vec4f>)
+    return gfx::EFormatType::F4;
   else
   {
     ASSERTF(false, "Unknown type format");

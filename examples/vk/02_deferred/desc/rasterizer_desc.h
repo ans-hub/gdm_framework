@@ -30,6 +30,15 @@ struct ReverseRasterizerDesc : public RasterizerDesc
   { }
 };
 
+struct WireRasterizerDesc : public RasterizerDesc
+{
+  WireRasterizerDesc() : RasterizerDesc({
+    gfx::ECullMode::NONE,
+    gfx::EFillMode::WIREFRAME,
+    gfx::EFrontFace::CLOCKWISE})
+  { }
+};
+
 } // namespace gdm
 
 #endif // SH_STD_RAST_DESC_H

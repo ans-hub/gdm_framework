@@ -43,8 +43,9 @@ else()
 endif()
 
 set(SRC main.cc
-        desc/deferred_pass.cc
         desc/gbuffer_pass.cc
+        desc/deferred_pass.cc
+        desc/debug_pass.cc
         helpers.cc
         scene_manager.cc
         ${GDM_CONFIGS_DIR}/dispatcher.cc)

@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    config_dispatcher.cc
+// File:    tennis.cfg.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -10,6 +10,7 @@
 
 #include <data/model_factory.h>
 #include <render/camera_eul.h>
+#include <render/debug_draw.h>
 #include <window/main_input.h>
 #include <system/diff_utils.h>
 #include <math/vector3.h>
@@ -17,6 +18,8 @@
 #include <math/obb.h>
 #include <math/intersection.h>
 #include <math/sphere.h>
+
+#include "private/types.h"
 
 //--private
 
@@ -73,7 +76,7 @@ namespace gdm::_private
     return true;
   }
 
-  static void UpdateBall(Ball& ball, Table& table, float dt)
+  static void UpdateBall(Ball& ball, Table& table, DebugDraw& debug, float dt)
   {
     if (dt < math::kEpsilon)
       return;
@@ -103,9 +106,12 @@ namespace gdm::_private
       ball_pos += curr_vel;
       ball.tm_.SetCol(3, ball_pos);
     }
+
+    debug.DrawSphere(ball.tm_.GetColRef(3), ball.bounding_sphere_.radius_, color::LightGray);
+    debug.DrawCross(col.closest_point, 0.05f, color::LightGray);
   }
 
-  static void UpdateTable(Table& table, MainInput& input, float dt)
+  static void UpdateTable(Table& table, MainInput& input, DebugDraw& debug, float dt)
   {
     Vec3f fwd = table.tm_.GetCol(2);
     float vel_sign = 0.f;
@@ -147,9 +153,11 @@ namespace gdm::_private
       rotz = matrix::MakeRotateZ(angle_z);
 
     table.tm_ = table.tm_ * roty * rotz;
+
+    debug.DrawBox(table.tm_.GetColRef(3), table.bounding_box_.half_sizes_, color::LightYellow);
   }
 
-  static void UpdateTennis(std::unordered_map<std::string, ModelInstance*>& models, CameraEul& cam, MainInput& input, float dt)
+  static void UpdateTennis(cfg::Models& models, CameraEul& cam, MainInput& input, DebugDraw& debug, float dt)
   {
     static ModelInstance& ball_instance = *models["model_ball"];
     static ModelInstance& table_instance = *models["model_table"];
@@ -159,7 +167,10 @@ namespace gdm::_private
 
     static bool ball_inited = ResetBall(ball);
 
-    UpdateTable(table, input, dt);
-    UpdateBall(ball, table, dt);
+    UpdateTable(table, input, debug, dt);
+    UpdateBall(ball, table, debug, dt);
+
+    debug.DrawBasis(ball.tm_, 1.f);
+    debug.DrawBasis(table.tm_, 1.f);
   }
 }

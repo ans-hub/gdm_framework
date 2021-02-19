@@ -23,6 +23,15 @@ struct StdInputLayout : public InputLayout
   { }
 };
 
+struct WireInputLayout : public InputLayout
+{
+  WireInputLayout() : InputLayout({
+    helpers::MakeLayoutElement<Vec3f>("COORD"),
+    helpers::MakeLayoutElement<Vec4f>("COLOR")},
+    gfx::EPrimitiveType::LINE_LIST)
+  { }
+};
+
 struct EmptyInputLayout : public InputLayout
 {
   EmptyInputLayout() : InputLayout({}, gfx::EPrimitiveType::TRIANGLE_LIST)

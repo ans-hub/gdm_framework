@@ -80,7 +80,11 @@ struct DeferredPassData
 
 struct DeferredPass
 {
-  DeferredPass(int frame_num, api::Renderer& rdr) : rdr_{&rdr}, device_{&rdr.GetDevice()}, data_(frame_num, rdr) { }
+  DeferredPass(int frame_count, api::Renderer& rdr)
+    : rdr_{&rdr}
+    , device_{&rdr.GetDevice()}
+    , data_(frame_count, rdr)
+  { }
   
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;

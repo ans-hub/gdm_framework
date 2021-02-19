@@ -17,6 +17,7 @@
 #include "render/colors.h"
 #include "render/shader.h"
 #include "render/camera_eul.h"
+#include "render/debug_draw.h"
 
 #include "memory/defines.h"
 
@@ -31,6 +32,7 @@
 #include "system/array_utils.h"
 #include "system/timer.h"
 #include "system/diff_utils.h"
+#include "system/literals.h"
 #include "system/profiler.h"
 
 #include "desc/rasterizer_desc.h"
@@ -38,6 +40,7 @@
 #include "desc/sampler_desc.h"
 #include "desc/deferred_pass.h"
 #include "desc/gbuffer_pass.h"
+#include "desc/debug_pass.h"
 
 #include "scene_manager.h"
 #include "helpers.h"
@@ -83,13 +86,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   scene.CopyTexturesToGpu(unique_models, tstg, setup_list);
   scene.CreateDummyView(setup_list);
 
+  const api::ImageViews& rmat = scene.GetRenderableMaterials();
+ 
   GbufferPass v_gbuffer_pass(gfx);
   v_gbuffer_pass.CreateUniforms(setup_list, SceneManager::v_max_objects);
   v_gbuffer_pass.CreateImages(setup_list);
   v_gbuffer_pass.CreateRenderPass();
   v_gbuffer_pass.CreateFramebuffer();
-
-  const api::ImageViews& rmat = scene.GetRenderableMaterials();
   v_gbuffer_pass.CreateDescriptorSet(rmat);
   v_gbuffer_pass.CreatePipeline();
 
@@ -101,10 +104,22 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   v_deferred_pass.CreateFramebuffer();
   v_deferred_pass.CreatePipeline(v_gbuffer_pass.data_.image_views_);
 
+  DebugPass v_debug_pass(gfx::v_num_images, gfx);
+  for (uint i = 0; i < gfx::v_num_images; ++i)
+  {
+    v_debug_pass.CreateUniforms(setup_list, i);
+    v_debug_pass.CreateBuffer(setup_list, i, 4096_Kb);
+  }
+  v_debug_pass.CreateImages(setup_list);
+  v_debug_pass.CreateRenderPass();
+  v_debug_pass.CreateFramebuffer();
+  v_debug_pass.CreatePipeline();
+
   submit_fence.Reset();
   api::Semaphore spresent_done(device);
   api::Semaphore sgbuffer_done(device);
   api::Semaphore sdeferred_done(device);
+  api::Semaphore sdebug_done(device);
 
   setup_list.Finalize();
   gfx.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
@@ -137,15 +152,16 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     timer.Start();
     float dt = timer.GetLastDt();
     
-    logic.Update(camera, input, dt);
+    DebugDraw debug_draw {};
 
+    helpers::UpdateLogic(camera, input, logic, debug_draw, dt);
     helpers::UpdateCamera(camera, input, dt);
     helpers::UpdateLamps(camera, input, scene.GetLamps(), dt);
     helpers::UpdateFlashlights(camera, input, scene.GetFlashlights(), dt);
 
-    api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
-  
     std::vector<ModelInstance*> renderable_instances = scene.GetRenderableInstances();
+
+    api::CommandList cmd_gbuffer = gfx.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
 
     v_gbuffer_pass.UpdateUniformsData(camera, renderable_instances);
     v_gbuffer_pass.UpdateUniforms(cmd_gbuffer, SceneManager::v_max_objects);
@@ -158,6 +174,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     submit_fence.WaitSignalFromGpu();
 
     uint curr_frame = gfx.AcquireNextFrame(spresent_done, api::Fence::null);
+    
     api::CommandList cmd_deferred = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
     v_deferred_pass.UpdateUniformsData(curr_frame, camera, scene.GetLamps(), scene.GetFlashlights());
@@ -167,9 +184,30 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     submit_fence.Reset();
     cmd_deferred.Finalize();
 
-    gfx.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence);
-    gfx.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
-    submit_fence.WaitSignalFromGpu();
+    if (!logic.IsDebugMode())
+    {
+      gfx.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence);
+      gfx.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
+      submit_fence.WaitSignalFromGpu();
+    }
+    else
+    {
+      gfx.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence);
+      submit_fence.WaitSignalFromGpu();
+    
+      api::CommandList cmd_debug = gfx.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
+
+      v_debug_pass.UpdateUniformsData(curr_frame, camera);
+      v_debug_pass.UpdateUniforms(cmd_debug, curr_frame);
+      v_debug_pass.UpdateVertexData(cmd_debug, curr_frame, debug_draw.GetData());
+      v_debug_pass.Draw(cmd_debug, curr_frame);
+      submit_fence.Reset();
+      cmd_debug.Finalize();
+
+      gfx.SubmitCommandLists(api::CommandLists{cmd_debug}, api::Semaphores{sdeferred_done}, api::Semaphores{sdebug_done}, submit_fence);
+      gfx.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdebug_done});
+      submit_fence.WaitSignalFromGpu();
+    }
 
     timer.End();
     timer.Wait();  

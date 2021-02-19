@@ -11,12 +11,13 @@
 #include "system/diff_utils.h"
 
 #include "../tennis.cfg.cc"
+#include "../wire.cfg.cc"
 
 //--private
 
 namespace gdm::_private
 {
-  static void UpdateDummy(std::unordered_map<std::string, ModelInstance*>&, CameraEul&, MainInput&, float) { }
+  static void UpdateDummy(cfg::Models&, CameraEul&, MainInput&, DebugDraw&, float) { }
 }
 
 //--public
@@ -24,18 +25,18 @@ namespace gdm::_private
 gdm::cfg::Dispatcher::Dispatcher(Config& cfg, std::vector<ModelInstance*> models, const std::vector<std::string>& names)
   : cfg_{cfg}
   , logic_{gdm::_private::UpdateDummy}
+  , debug_on_{false}
 {
   for (auto&& [model, name] : range::ZipSpan(models, names))
     models_[name] = model;
-
-  std::string s1 = cfg.GetSname();
-  std::string s2 = std::string("tennis.cfg");
 
   if (cfg.GetSname() == std::string("tennis.cfg"))
     logic_ = &gdm::_private::UpdateTennis;
 }
 
-void gdm::cfg::Dispatcher::Update(CameraEul& cam, MainInput& input, float dt)
+void gdm::cfg::Dispatcher::Update(CameraEul& cam, MainInput& input, DebugDraw& debug, float dt)
 {
-  logic_(models_, cam, input, dt);
+  debug_on_ ^= input.IsKeyboardBtnPressed(DIK_TAB);
+
+  return logic_(models_, cam, input, debug, dt);
 }
