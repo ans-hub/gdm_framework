@@ -73,6 +73,11 @@ auto gdm::vk::Device::CreateLogicalDevice(VkPhysicalDevice phys_device, int queu
   
   VkPhysicalDeviceFeatures device_features = {};
   device_features.shaderClipDistance = true;
+#ifndef _NDEBUG
+  device_features.fillModeNonSolid = true;
+#else
+  device_features.fillModeNonSolid = false;
+#endif
 
   // todo: validate device features using info_.device_features_
 

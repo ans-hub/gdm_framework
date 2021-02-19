@@ -43,6 +43,7 @@ struct CommandList
   void BindIndexBuffer(VkBuffer idx_buffer);
   void BindDescriptorSetGraphics(const vk::DescriptorSets& descriptor_sets, Pipeline& pipeline, const std::vector<uint>& offsets);
   void DrawIndexed(const std::vector<Vec3u>& data);
+  void Draw(size_t vertex_count);
   void DrawDummy();
 
   bool IsFinalized() const { return explicitly_finalized_; }

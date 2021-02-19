@@ -20,6 +20,7 @@
 #endif
 
 using uint = unsigned int;
+using uint64 = unsigned long long;
 using std::size_t;
 
 namespace gdm::gfx {
@@ -180,6 +181,23 @@ using FenceFlags = uint;
 
 using ESemaphoreFlags = EFenceFlags;
 using SemaphoreFlags = uint;
+
+enum EAttachmentLoadOp : uint
+{
+  LOAD_OP = VK_ATTACHMENT_LOAD_OP_LOAD,
+  LOAD_CLEAR = VK_ATTACHMENT_LOAD_OP_CLEAR,
+  LOAD_DONT_CARE = VK_ATTACHMENT_LOAD_OP_DONT_CARE
+};
+
+using AttachmentLoadOp = uint;
+
+enum EAttachmentStoreOp : uint
+{
+  STORE_OP = VK_ATTACHMENT_STORE_OP_STORE,
+  STORE_DONT_CARE = VK_ATTACHMENT_STORE_OP_DONT_CARE
+};
+
+using AttachmentStoreOp = uint;
 
 enum EImageLayout : uint  // OPTIMAL - non transparent optimal layout for particular hw, LINEAR - linear
 {

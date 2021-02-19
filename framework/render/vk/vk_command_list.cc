@@ -193,6 +193,11 @@ void gdm::vk::CommandList::DrawIndexed(const std::vector<Vec3u>& data)
   vkCmdDrawIndexed(command_buffer_, static_cast<uint32_t>(data.size() * 3), 1, 0, 0, 0);
 }
 
+void gdm::vk::CommandList::Draw(size_t vertex_count)
+{
+  vkCmdDraw(command_buffer_, static_cast<uint32_t>(vertex_count), 1, 0, 0);
+}
+
 void gdm::vk::CommandList::DrawDummy()
 {
   vkCmdDraw(command_buffer_, 3, 1, 0, 0);

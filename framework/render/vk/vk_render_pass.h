@@ -27,6 +27,8 @@ struct AttachmentDescription
   self AddInitLayout(gfx::EImageLayout layout) { desc_.initialLayout = VkImageLayout(layout); return *this; }
   self AddFinalLayout(gfx::EImageLayout layout) { desc_.finalLayout = VkImageLayout(layout); return *this; }
   self AddRefLayout(gfx::EImageLayout layout) { ref_.layout = VkImageLayout(layout); return *this; }
+  self AddLoadOp(gfx::EAttachmentLoadOp load_op) { desc_.loadOp = VkAttachmentLoadOp(load_op); return *this; }
+  self AddStoreOp(gfx::EAttachmentStoreOp store_op) { desc_.storeOp = VkAttachmentStoreOp(store_op); return *this; }
 
 private:
   VkAttachmentDescription& desc_;
