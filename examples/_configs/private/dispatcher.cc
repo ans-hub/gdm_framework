@@ -11,7 +11,6 @@
 #include "system/diff_utils.h"
 
 #include "../tennis.cfg.cc"
-#include "../wire.cfg.cc"
 
 //--private
 

@@ -150,7 +150,7 @@ void gdm::GbufferPass::CreateDescriptorSet(const api::ImageViews& materials)
   dsl->AddBinding(4, static_cast<uint>(materials.size()), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
   dsl->Finalize();
 
-  data_.sampler_ = GMNew api::Sampler(*device_, StdSamplerState{});
+  data_.sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
 
   auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
   descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_.pfcb_uniform_vs_);

@@ -8,8 +8,8 @@
 #define GM_VK_PIPELINE_H
 
 #include "render/defines.h"
-#include "render/viewport_desc.h"
-#include "render/rasterizer_desc.h"
+#include "render/desc/viewport_desc.h"
+#include "render/desc/rasterizer_desc.h"
 #include "render/input_layout.h"
 #include "render/vk/vk_descriptor_set.h"
 

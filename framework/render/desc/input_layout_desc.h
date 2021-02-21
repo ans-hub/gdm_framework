@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    desc/input_layout.h
+// File:    desc/input_layout_desc.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************

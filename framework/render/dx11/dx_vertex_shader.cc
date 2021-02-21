@@ -34,7 +34,7 @@ dx::VertexShader::~VertexShader()
 void dx::VertexShader::LoadCompiledShader(ID3DBlob* sb, ID3D11Device* device)
 {
   HRESULT hr = device->CreateVertexShader(sb->GetBufferPointer(), sb->GetBufferSize(), nullptr,
-               &(static_cast<ID3D11VertexShader*>(ptr_)));
+               &(ptr_));
   ASSERTF(hr == 0, "Failed to create compiled vertex shader from file - %d", hr);
 }
 

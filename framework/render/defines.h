@@ -69,27 +69,6 @@ namespace gdm::gfx {
 
   using ShaderType = uint;
 
-  enum EResourceType : uint
-  {
-    UNIFORM_BUFFER = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-    UNIFORM_DYNAMIC = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-    SAMPLED_IMAGE = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-    SAMPLER = VK_DESCRIPTOR_TYPE_SAMPLER,
-    COMBINED_SAMPLER = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-
-  }; // enum EResourceType
-
-  using ResourceType = uint;
-
-  enum EShaderStage : uint
-  {
-    VERTEX_STAGE = VK_SHADER_STAGE_VERTEX_BIT,
-    FRAGMENT_STAGE = VK_SHADER_STAGE_FRAGMENT_BIT
-
-  }; // enum EShaderStage
-
-  using ShaderStage = uint;
-
   enum EDeviceProps : uint
   {
     VSYNC = 1 << 1,
@@ -108,21 +87,6 @@ namespace gdm::gfx {
   }; // enum EState
 
   using State = uint;
-
-  // todo: remove
-  enum EPassFlags : uint
-  {
-    RS_STATE = 1 << 1,
-    RS_VIEWPORT = 1 << 2,
-    CLEAR_SHADER_RES = 1 << 3,
-    NULL_VBUFF = 1 << 4,
-    NULL_IBUFF = 1 << 5,
-    DONT_CLEAR_RTV = 1 << 6,
-    DONT_CLEAR_DSV = 1 << 7
-
-  }; // enum EPassFlags
-
-  using PassFlags = uint;
 
 } // namespace gdm::gfx
 

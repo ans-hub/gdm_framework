@@ -12,7 +12,7 @@ namespace gdm {
   
 // --public
 
-dx::PixelShader::PixelShader(const char* fname, const SamplerState& sampler, ID3D11Device* device, void*)
+dx::PixelShader::PixelShader(const char* fname, const SamplerDesc& sampler, ID3D11Device* device, void*)
 {
   DxShaderLoader loader(fname, device, gfx::EShaderType::PX);
   ID3DBlob* sb = loader.GetBlob();
@@ -32,11 +32,11 @@ dx::PixelShader::~PixelShader()
 void dx::PixelShader::LoadCompiledShader(ID3DBlob* sb, ID3D11Device* device)
 {
   HRESULT hr = device->CreatePixelShader(sb->GetBufferPointer(), sb->GetBufferSize(), nullptr,
-               &(static_cast<ID3D11PixelShader*>(ptr_)));
+               &(ptr_));
   ASSERTF(hr == 0, "Failed to create compiled pixes shader from file - %d", hr);
 }
 
-void gdm::dx::PixelShader::CreateSamplerState(ID3DBlob* sb, const SamplerState& sampler, ID3D11Device* device)
+void gdm::dx::PixelShader::CreateSamplerState(ID3DBlob* sb, const SamplerDesc& sampler, ID3D11Device* device)
 {
   D3D11_SAMPLER_DESC sampler_desc;
 

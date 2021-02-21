@@ -37,18 +37,17 @@
 #include <render/dx11/dx_vertex_shader.h>
 #include <render/dx11/dx_pixel_shader.h>
 
-#include "render/input_layout.h"
+#include <render/desc/rasterizer_desc.h>
+#include <render/desc/input_layout_desc.h>
+#include <render/desc/sampler_desc.h>
 #include <render/vertex_shader.h>
 #include <render/pixel_shader.h>
-#include <render/rasterizer_desc.h>
 #include <render/camera_eul.h>
 #include <render/colors.h>
 
 #include "shaders/flat_vert.h"
 #include "shaders/nmap_vert.h"
 #include "shaders/nmap_frag.h"
-#include "shaders/desc/input_layout.h"
-#include "shaders/desc/sampler_state.h"
 
 using namespace gdm;
 
@@ -61,7 +60,7 @@ enum class ShaderType
 struct Shaders
 {
   InputLayout layout_std_;
-  SamplerState sampler_std_;
+  SamplerDesc sampler_std_;
   VertexShader flat_sh_vx_;
   PixelShader flat_sh_px_;
   PixelShader affn_sh_px_;
@@ -70,7 +69,7 @@ struct Shaders
 
   Shaders(Renderer& d3d)
     : layout_std_{ StdInputLayout{} }
-    , sampler_std_{ StdSamplerState{} }
+    , sampler_std_{ StdSamplerDesc{} }
     , flat_sh_vx_{"shaders/flat_vert.hlsl", layout_std_, d3d}
     , flat_sh_px_{"shaders/flat_frag.hlsl", sampler_std_, d3d}
     , affn_sh_px_{"shaders/affine_frag.hlsl", sampler_std_, d3d}
@@ -134,7 +133,7 @@ struct Scene
   {
     std::vector<std::string> obj_names = cfg_.GetAllKeys<std::string>("model_");
     std::vector<std::string> obj_pathes = cfg_.GetAllVals<std::string>("model_");
-    std::vector<std::array<float,4>> obj_poses = cfg_.GetAllVals<std::array<float,4>>("model_pos_");
+    std::vector<Vec4f> obj_poses = cfg_.GetAllVals<Vec4f>("model_pos_");
 
     ASSERT(obj_names.size() == obj_pathes.size());
     ASSERT(obj_names.size() == obj_poses.size());
@@ -153,8 +152,8 @@ struct Scene
   {
     std::vector<std::string> lamp_names = cfg_.GetAllKeys<std::string>("lamp_");
     std::vector<std::string> lamp_pathes = cfg_.GetAllVals<std::string>("lamp_");
-    std::vector<std::array<float,4>> lamp_poses = cfg_.GetAllVals<std::array<float,4>>("lamp_pos_");
-    std::vector<std::array<float,4>> lamp_cols = cfg_.GetAllVals<std::array<float,4>>("lamp_col_");
+    std::vector<Vec4f> lamp_poses = cfg_.GetAllVals<Vec4f>("lamp_pos_");
+    std::vector<Vec4f> lamp_cols = cfg_.GetAllVals<Vec4f>("lamp_col_");
 
     ASSERT(lamp_names.size() == lamp_pathes.size());
     ASSERT(lamp_names.size() == lamp_poses.size());
@@ -192,7 +191,7 @@ struct Scene
     for (auto& lamp : lamps_)
     {
       Vec4f& col = lamp.second.color_;
-      Vec3f& pos = lamp.second.object_.GetPos();
+      Vec3f pos = lamp.second.object_.GetPos();
       if (col.w == 0)
       {
         ASSERT(i < cb->lights_.size());
@@ -356,12 +355,12 @@ struct Logic
 
   void SetupCamera(Scene& scene)
   {
-    Vec3f cam_pos (&scene.cfg_.Get<std::array<float,3>>("initial_cam_pos")[0]);
+    Vec3f cam_pos (&scene.cfg_.Get<Vec3f>("initial_cam_pos")[0]);
     scene.camera_.SetPos(cam_pos);
     scene.camera_.SetMoveSpeed(2.f);
   }
 
-  void Logic::UpdateCamera(Scene& scene, DxInput& input, float dt)
+  void UpdateCamera(Scene& scene, DxInput& input, float dt)
   {
     CameraEul& cam = scene.camera_;
 
@@ -383,7 +382,7 @@ struct Logic
       cam.Move(-cam.GetTm().GetCol(1), dt);
   }
 
-  void Logic::UpdateInput(Scene& scene, Buffers& buffers, DxInput& input, float dt)
+  void UpdateInput(Scene& scene, Buffers& buffers, DxInput& input, float dt)
   {
     if (input.IsKeyboardBtnPressed(DIK_9))
       shader_type_ = ShaderType::FLAT;
@@ -404,7 +403,7 @@ struct Logic
       lb->lights_[3].enabled_ = !lb->lights_[3].enabled_;
   }
 
-  void Logic::UpdateObjects(Scene& scene, Buffers& buffers, DxInput& input, float dt)
+  void UpdateObjects(Scene& scene, Buffers& buffers, DxInput& input, float dt)
   {
     DxObject* sub = scene.GetObject("model_smar");
     if (sub)
@@ -412,7 +411,7 @@ struct Logic
       scene.global_ambient_ = Vec4f(0.1f);
       Vec3f subm_vel (0.f, 0.f, 2.f);
       float max_cam_dist = 40.f;
-      Vec3f initial_cam_pos (&scene.cfg_.Get<std::array<float,3>>("initial_cam_pos")[0]);
+      Vec3f initial_cam_pos (&scene.cfg_.Get<Vec3f>("initial_cam_pos")[0]);
       if (vec3::SqLength(scene.camera_.GetPos()) == 0.f)
         scene.camera_.SetPos(initial_cam_pos);
       Vec3f current_cam_pos (scene.camera_.GetPos());
@@ -426,7 +425,7 @@ struct Logic
       // light.enabled_ = true;
       light.type_ = LightType::POINT;
       light.pos_ = Vec4f(scene.camera_.GetPos(), 1.f);
-      Vec3f col (&scene.cfg_.Get<std::array<float,3>>("flashlight_color")[0]);
+      Vec3f col (&scene.cfg_.Get<Vec3f>("flashlight_color")[0]);
       light.color_ = Vec4f(col,1);
     }
 
@@ -443,7 +442,7 @@ struct Logic
       // light.enabled_ = true;
       light.type_ = LightType::POINT;
       light.pos_ = Vec4f(scene.camera_.GetPos(), 1.f);
-      Vec3f col (&scene.cfg_.Get<std::array<float,3>>("flashlight_color")[0]);
+      Vec3f col (&scene.cfg_.Get<Vec3f>("flashlight_color")[0]);
       light.color_ = Vec4f(col,1);
     }
 

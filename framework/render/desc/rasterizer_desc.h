@@ -8,9 +8,17 @@
 #define SH_STD_RAST_DESC_H
 
 #include <render/defines.h>
-#include <render/rasterizer_desc.h>
+#include <render/desc/rasterizer_desc.h>
 
 namespace gdm {
+
+struct RasterizerDesc
+{
+  gfx::ECullMode cull_ = gfx::BACK_FACE;
+  gfx::EFillMode fill_ = gfx::SOLID;
+  gfx::EFrontFace front_face_ = gfx::CLOCKWISE;
+
+}; // struct RasterizerDesc
 
 struct StdRasterizerDesc : public RasterizerDesc
 {

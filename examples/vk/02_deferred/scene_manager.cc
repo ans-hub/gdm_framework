@@ -9,9 +9,9 @@
 #include "system/diff_utils.h"
 #include "render/shader.h"
 
-#include "desc/sampler_desc.h"
-#include "desc/input_layout.h"
-#include "desc/rasterizer_desc.h"
+#include "render/desc/sampler_desc.h"
+#include "render/desc/input_layout_desc.h"
+#include "render/desc/rasterizer_desc.h"
 
 // --public
 

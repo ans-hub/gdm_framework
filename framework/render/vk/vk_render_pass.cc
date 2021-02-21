@@ -11,8 +11,8 @@
 #include "system/array_utils.h"
 #include "render/vk/vk_pipeline.h"
 
-#include "render/viewport_desc.h"
-#include "render/scissor_desc.h"
+#include "render/desc/viewport_desc.h"
+#include "render/desc/scissor_desc.h"
 
 // --public AttachmentDescription
 

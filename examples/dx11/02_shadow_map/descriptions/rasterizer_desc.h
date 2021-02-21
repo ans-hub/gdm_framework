@@ -8,7 +8,7 @@
 #define SH_RASTERIZER_DESC_H
 
 #include <render/defines.h>
-#include <render/rasterizer_desc.h>
+#include <render/desc/rasterizer_desc.h>
 
 namespace gdm {
 struct RasterizerMain : public RasterizerDesc

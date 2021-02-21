@@ -21,9 +21,9 @@
 #include "data/model_factory.h"
 #include "data/material_factory.h"
 
-#include "desc/sampler_desc.h"
-#include "desc/rasterizer_desc.h"
-#include "desc/input_layout.h"
+#include "render/desc/sampler_desc.h"
+#include "render/desc/rasterizer_desc.h"
+#include "render/desc/input_layout_desc.h"
 
 namespace gdm {
 

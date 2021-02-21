@@ -6,6 +6,7 @@
 
 #include "dx_texture.h"
 
+#include <render/defines.h>
 #include <system/bits_utils.h>
 
 // --public
@@ -105,7 +106,7 @@ void gdm::DxTexture::CreateTexture(ID3D11Device* device, AbstractImage& img, con
   ENSUREF(img.GetDepth() != 24, "DirectX not support %d bit tex images", img.GetDepth());
 
   D3D11_SUBRESOURCE_DATA init_data;
-  init_data.pSysMem = img.GetRaw();
+  init_data.pSysMem = img.GetRaw().data();
   init_data.SysMemPitch = static_cast<UINT>((img.GetWidth() * img.GetDepth() + 7) / 8);
   init_data.SysMemSlicePitch = static_cast<UINT>(init_data.SysMemPitch * img.GetHeight());  // just for 3d texs?
 

@@ -24,6 +24,11 @@ namespace gdm {
 
 using ModelHandle = Handle;
 
+enum LightType : int
+{
+  DIR, POINT, SPOTLIGHT
+};
+
 struct AbstractModel
 {
   std::vector<MaterialHandle> materials_;

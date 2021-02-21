@@ -11,7 +11,7 @@
 
 // --public
 
-gdm::vk::Sampler::Sampler(VkDevice device, const SamplerState& sampler_state)
+gdm::vk::Sampler::Sampler(VkDevice device, const SamplerDesc& sampler_state)
   : device_{ device }
   , sampler_state_{ sampler_state }
   , sampler_{ CreateSampler() }

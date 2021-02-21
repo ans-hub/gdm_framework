@@ -13,7 +13,8 @@
 
 #include "defines.h"
 #include "renderer.h"
-#include "sampler_state.h"
+
+#include <render/desc/sampler_desc.h>
 
 #if defined (GFX_DX_API)
 #include "dx11/dx_pixel_shader.h"
@@ -27,14 +28,14 @@ namespace gdm {
 
 struct PixelShader
 {
-  PixelShader(const char* fname, const SamplerState& sampler, Renderer& rdr)
+  PixelShader(const char* fname, const SamplerDesc& sampler, Renderer& rdr)
     : sampler_state_{sampler}
     , impl_{fname, sampler, rdr.GetDevice(), rdr.GetCompiler()}
   { }
   auto GetImpl() -> api::PixelShader& { return impl_; }
 
 private:
-  SamplerState sampler_state_;
+  SamplerDesc sampler_state_;
   api::PixelShader impl_;
 
 }; // struct PixelShader

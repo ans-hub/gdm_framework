@@ -8,13 +8,13 @@
 #define GM_VK_SAMPLER_H
 
 #include "render/defines.h"
-#include "render/sampler_state.h"
+#include "render/desc/sampler_desc.h"
 
 namespace gdm::vk {
 
 struct Sampler
 {
-  Sampler(VkDevice device, const SamplerState& sampler);
+  Sampler(VkDevice device, const SamplerDesc& sampler);
   ~Sampler();
   operator VkSampler() const { return sampler_; }
 
@@ -23,7 +23,7 @@ private:
 
 private:
   VkDevice device_;
-  SamplerState sampler_state_;
+  SamplerDesc sampler_state_;
   VkSampler sampler_;
 
 }; // struct Sampler

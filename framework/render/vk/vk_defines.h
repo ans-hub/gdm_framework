@@ -49,6 +49,27 @@ constexpr const bool v_Windows = false;
 
 constexpr inline static uint v_num_images = 2;
 
+enum EResourceType : uint
+{
+  UNIFORM_BUFFER = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+  UNIFORM_DYNAMIC = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+  SAMPLED_IMAGE = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+  SAMPLER = VK_DESCRIPTOR_TYPE_SAMPLER,
+  COMBINED_SAMPLER = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+
+}; // enum EResourceType
+
+using ResourceType = uint;
+
+enum EShaderStage : uint
+{
+  VERTEX_STAGE = VK_SHADER_STAGE_VERTEX_BIT,
+  FRAGMENT_STAGE = VK_SHADER_STAGE_FRAGMENT_BIT
+
+}; // enum EShaderStage
+
+using ShaderStage = uint;
+
 enum EFormatType : uint
 {
   F1 = VK_FORMAT_R32_SFLOAT,
@@ -126,7 +147,7 @@ enum EFillMode : uint
 
 }; // enum EFillMode
 
-using CullMode = uint;
+using FillMode = uint;
 
 enum ECommandListFlags : uint
 {

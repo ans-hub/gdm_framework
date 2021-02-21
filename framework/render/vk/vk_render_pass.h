@@ -8,8 +8,8 @@
 #define GM_VK_RENDER_PASS_H
 
 #include <render/defines.h>
-#include <render/viewport_desc.h>
-#include <render/scissor_desc.h>
+#include <render/desc/viewport_desc.h>
+#include <render/desc/scissor_desc.h>
 
 #include "render/vk/vk_barrier.h"
 

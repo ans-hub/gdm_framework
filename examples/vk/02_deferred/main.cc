@@ -26,6 +26,7 @@
 
 #include "data/data_storage.h"
 #include "data/model_factory.h"
+#include "data/model_helpers.h"
 
 #include "system/fps_counter.h"
 #include "system/hash_utils.h"
@@ -35,9 +36,9 @@
 #include "system/literals.h"
 #include "system/profiler.h"
 
-#include "desc/rasterizer_desc.h"
-#include "desc/input_layout.h"
-#include "desc/sampler_desc.h"
+#include "render/desc/rasterizer_desc.h"
+#include "render/desc/input_layout_desc.h"
+#include "render/desc/sampler_desc.h"
 #include "desc/deferred_pass.h"
 #include "desc/gbuffer_pass.h"
 #include "desc/debug_pass.h"
@@ -108,7 +109,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   for (uint i = 0; i < gfx::v_num_images; ++i)
   {
     v_debug_pass.CreateUniforms(setup_list, i);
-    v_debug_pass.CreateBuffer(setup_list, i, 4096_Kb);
+    v_debug_pass.CreateBuffer(setup_list, i, 128_Kb);
   }
   v_debug_pass.CreateImages(setup_list);
   v_debug_pass.CreateRenderPass();

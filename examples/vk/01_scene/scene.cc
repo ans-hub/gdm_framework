@@ -16,8 +16,8 @@
 
 #include "render/input_layout.h"
 #include "render/sampler_state.h"
-#include "render/rasterizer_desc.h"
-#include "render/viewport_desc.h"
+#include "render/desc/rasterizer_desc.h"
+#include "render/desc/viewport_desc.h"
 #include "render/colors.h"
 #include "render/shader.h"
 #include "render/camera_eul.h"

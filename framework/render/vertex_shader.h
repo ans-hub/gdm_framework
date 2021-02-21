@@ -10,8 +10,9 @@
 #include <vector>
 
 #include "defines.h"
-#include "input_layout.h"
 #include "renderer.h"
+
+#include <render/input_layout.h>
 
 #if defined (GFX_DX_API)
 #include "dx11/dx_vertex_shader.h"

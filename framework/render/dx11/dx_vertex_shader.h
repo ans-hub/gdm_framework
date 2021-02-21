@@ -18,7 +18,7 @@
 #include <system/assert_utils.h>
 #include <system/string_utils.h>
 #include <math/vector4.h>
-#include <render/input_layout.h>
+#include <render/desc/input_layout_desc.h>
 
 namespace gdm::dx {
 

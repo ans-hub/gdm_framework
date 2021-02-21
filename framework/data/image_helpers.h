@@ -1,11 +1,11 @@
 // *************************************************************
-// File:    helpers.h
+// File:    image_helpers.h
 // Author:  Novoselov Anton @ 2018
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#ifndef AH_GDM_DATA_HELPERS_H
-#define AH_GDM_DATA_HELPERS_H
+#ifndef AH_GDM_IMAGE_HELPERS_H
+#define AH_GDM_IMAGE_HELPERS_H
 
 #include <vector>
 #include <array>
@@ -23,4 +23,4 @@ namespace gdm::helpers {
 
 } // namespace gdm::helpers
 
-#endif // AH_GDM_DATA_HELPERS_H
+#endif // AH_GDM_IMAGE_HELPERS_H

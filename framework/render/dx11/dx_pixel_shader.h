@@ -17,8 +17,8 @@
 
 #include <system/assert_utils.h>
 #include <system/string_utils.h>
-#include "render/sampler_state.h"
-#include "math/vector4.h"
+#include <render/desc/sampler_desc.h>
+#include <math/vector4.h>
 
 #define DEBUG_LEVEL 1
 
@@ -26,12 +26,12 @@ namespace gdm::dx {
 
 struct PixelShader
 {
-  PixelShader(const char* fname, const SamplerState& sampler, ID3D11Device* device, void* /*compiler_dummy*/);
+  PixelShader(const char* fname, const SamplerDesc& sampler, ID3D11Device* device, void* /*compiler_dummy*/);
   ~PixelShader();
 
 public:
   void LoadCompiledShader(ID3DBlob* sb, ID3D11Device* device);
-  void CreateSamplerState(ID3DBlob* sb, const SamplerState& sampler, ID3D11Device* device);
+  void CreateSamplerState(ID3DBlob* sb, const SamplerDesc& sampler, ID3D11Device* device);
 
 public:
   ID3D11PixelShader* ptr_;

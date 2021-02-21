@@ -113,7 +113,7 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
   uint gbuff_norm  = dsl->AddBinding(4, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
   dsl->Finalize();
 
-  sampler_ = GMNew api::Sampler(*device_, StdSamplerState{});
+  sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
 
   for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
   {

@@ -34,7 +34,7 @@
 #include "render/input_layout.h"
 #include <render/vertex_shader.h>
 #include <render/pixel_shader.h>
-#include <render/rasterizer_desc.h>
+#include <render/desc/rasterizer_desc.h>
 #include <render/camera_eul.h>
 #include <render/colors.h>
 

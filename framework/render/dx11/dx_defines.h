@@ -13,6 +13,15 @@ using uint = unsigned int;
 
 namespace gdm::gfx {
 
+enum EFrontFace : uint
+{
+  CLOCKWISE = 0,
+  COUNTER_CLOCKWISE = 1
+
+}; // enum EFrontFace
+
+using FrontFace = uint;
+
 enum ETextureAddressMode : uint
 { 
   WRAP = D3D11_TEXTURE_ADDRESS_WRAP,
@@ -109,6 +118,20 @@ enum EPrimitiveType : uint
 }; // enum PrimitiveType
 
 using PrimitiveType = uint;
+
+enum EPassFlags : uint
+{
+  RS_STATE = 1 << 1,
+  RS_VIEWPORT = 1 << 2,
+  CLEAR_SHADER_RES = 1 << 3,
+  NULL_VBUFF = 1 << 4,
+  NULL_IBUFF = 1 << 5,
+  DONT_CLEAR_RTV = 1 << 6,
+  DONT_CLEAR_DSV = 1 << 7
+
+}; // enum EPassFlags
+
+using PassFlags = uint;
 
 } // namespace gdm::gfx
 

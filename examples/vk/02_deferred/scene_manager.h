@@ -25,7 +25,7 @@
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
-#include "render/viewport_desc.h"
+#include "render/desc/viewport_desc.h"
 
 #include "data/model_factory.h"
 

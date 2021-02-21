@@ -1,11 +1,12 @@
 // *************************************************************
-// File:    helpers.cc
+// File:    image_helpers.cc
 // Author:  Novoselov Anton @ 2018
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "helpers.h"
+#include "image_helpers.h"
 
+#include <set>
 #include <filesystem>
 
 #include "memory/defines.h"

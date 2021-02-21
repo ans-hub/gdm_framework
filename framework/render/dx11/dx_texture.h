@@ -14,7 +14,7 @@
 #include <system/assert_utils.h>
 #include <data/abstract_image.h>
 
-#include <render/texture_desc.h>
+#include <render/desc/texture_desc.h>
 
 namespace gdm {
 

@@ -13,9 +13,10 @@
 #include "math/vector4.h"
 
 #include "texture_factory.h"
-#include "model_loader.h"
 
 namespace gdm {
+
+struct ModelLoader;
 
 using MaterialHandle = Handle;
 
