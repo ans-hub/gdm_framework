@@ -19,15 +19,19 @@ namespace gdm::_private
   {
     AssertionError(const char* msg) : std::runtime_error(msg)
     {
+#if not defined(GDM_UNIT_TEST)
       MessageBoxA(nullptr, msg, "Assertf", MB_OK);
+#endif
     }
   };
 } // namespace gdm::_private
 
 inline void gdm::AssertImpl(const char* msg)
 {
+#if not defined(GDM_UNIT_TEST)
   if (debug::IsDebuggerAttached())
     debug::DebugBreak();
+#endif
 
   throw gdm::_private::AssertionError(msg);
 }

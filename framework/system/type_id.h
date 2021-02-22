@@ -7,20 +7,27 @@
 #ifndef AH_GDM_TYPE_ID_H
 #define AH_GDM_TYPE_ID_H
 
+#include <type_traits>
+
 namespace gdm {
 
-	template<typename T>
+	auto GetCounterGlobal() -> int&;
+
+	namespace _private
+	{
+		template<class T>
+		struct TypeId
+		{
+	    operator int() const { static int v = ++GetCounterGlobal(); return v; }	
+		};
+	}
+
+	template<class T>
 	struct TypeId
 	{
-    operator int() { return index_; }
-    operator int() const { return index_; }
-
-	private:
-		static int index_;
+		operator int() const { static int v = gdm::_private::TypeId<std::decay_t<T>>(); return v; }
 	};
 
 } // namespace gdm
-
-#include "type_id.inl"
 
 #endif // AH_GDM_TYPE_ID_H

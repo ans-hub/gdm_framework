@@ -4,6 +4,7 @@ cmake_minimum_required (VERSION 3.10)
 # -- Project initials --
 
 project("gdm/framework/system/system/ut")
+add_definitions(-DGDM_UNIT_TEST)
 
 set(BIN system_ut)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)

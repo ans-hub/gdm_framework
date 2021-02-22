@@ -25,6 +25,7 @@ set(SRC_FILES
     timer.cc
     mesh_utils.cc
     debugging.cc
+    type_id.cc
     logger.cc)
 
 if ("${PROFILING_ENABLED}")

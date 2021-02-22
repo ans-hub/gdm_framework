@@ -9,3 +9,4 @@
 #include "strings.cc"
 #include "types.cc"
 #include "introspection.cc"
+#include "templates.cc"
