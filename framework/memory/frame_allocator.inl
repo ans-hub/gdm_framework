@@ -8,6 +8,7 @@
 
 #include "math/general.h"
 #include "system/assert_utils.h"
+#include "memory/helpers.h"
 
 // --private
 
@@ -34,6 +35,7 @@ template <class T>
 void* gdm::FrameAllocator<Size>::Allocate(size_t count, size_t alignment)
 {
   ASSERTF(math::IsPowerOfTwo(alignment), "Alignment %zu is not power of 2", alignment);
+  
 
   size_t size = sizeof(T) * count;
   void* raw = &buffer_[offset_];
@@ -86,7 +88,7 @@ auto gdm::FrameAllocatorTyped<T, Size>::allocate(size_t num)
 {
   // TODO: what about shared states, interchangable and so on?
 
-  void* ptr = BaseAllocator::Allocate<T>(sizeof(T) * num);
+  void* ptr = BaseAllocator::template Allocate<T>(sizeof(T) * num);
   uintptr_t uptr = mem::PtrToUptr(ptr);
   return static_cast<T*>(ptr);
 }

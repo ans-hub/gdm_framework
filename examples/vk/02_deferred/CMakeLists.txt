@@ -5,7 +5,7 @@ project("gdm/framework/vk/deferred")
 set(BIN deferred)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 set(GDM_FRAMEWORK_DIR ${GDM_ROOT_DIR}/framework)
-set(GDM_CONFIGS_DIR ${GDM_ROOT_DIR}/examples/_configs/private)
+set(GDM_PRIVATE_DIR ${GDM_ROOT_DIR}/examples/_private)
 set(GDM_LIBVK_DIR ${GDM_ROOT_DIR}/3rdparty/vulkan_sdk/1.2.148.1)
 set(GDM_LIBDXC_DIR ${GDM_ROOT_DIR}/3rdparty/dxc)
 
@@ -22,7 +22,7 @@ set(INCLUDE_DIRS
   "."
   ${GDM_ROOT_DIR}
   ${GDM_FRAMEWORK_DIR}
-  ${GDM_CONFIGS_DIR}
+  ${GDM_PRIVATE_DIR}
   ${GDM_LIBVK_DIR}/Include
   ${GDM_LIBDXC_DIR}/include)
 include_directories(${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -48,7 +48,8 @@ set(SRC main.cc
         desc/debug_pass.cc
         helpers.cc
         scene_manager.cc
-        ${GDM_CONFIGS_DIR}/dispatcher.cc)
+        ${GDM_PRIVATE_DIR}/dispatcher.cc
+        ${GDM_PRIVATE_DIR}/model_helpers.cc)
 
 if (WIN32)
   set(CMAKE_CXX_FLAGS

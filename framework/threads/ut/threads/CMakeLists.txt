@@ -3,6 +3,8 @@ cmake_minimum_required (VERSION 3.10)
 # --
 
 project("gdm/framework/threads_test: test")
+add_definitions(-DGDM_UNIT_TEST)
+
 set(BIN job_manager_test)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")

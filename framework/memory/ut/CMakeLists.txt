@@ -3,6 +3,7 @@ cmake_minimum_required (VERSION 3.10)
 # -- Project initials --
 
 project("gdm/framework/memory/ut")
+add_definitions(-DGDM_UNIT_TEST)
 
 set(BIN memory_ut)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)

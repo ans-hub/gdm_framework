@@ -5,7 +5,6 @@
 // *************************************************************
 
 #include "3rdparty/catch/catch.hpp"
-
 #include <vector>
 
 #include <memory/aligned_allocator.h>

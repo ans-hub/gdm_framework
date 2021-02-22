@@ -23,7 +23,6 @@ set(SRC_FILES
     texture_factory.cc
     model_factory.cc
     image_helpers.cc
-    model_helpers.cc
     cfg_loader.cc
     abstract_image.cc
     bmp_loader.cc
