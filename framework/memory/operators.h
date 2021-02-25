@@ -15,6 +15,9 @@ void operator delete(void* ptr, std::size_t size, gdm::MemoryTagValue tag) noexc
 namespace gdm {
 
   template <class T>
+  void DeletePlaced(T* mem) noexcept;
+
+  template <class T>
   void DeleteTracked(T* mem, gdm::MemoryTagValue tag) noexcept;
 
 } // namespace gdm

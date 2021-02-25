@@ -120,22 +120,21 @@ TEST_CASE("Memory")
   SECTION("Frame allocator - direct allocate")
   {
     const int big_count = 2;
-    void* ptr_big = FrameAllocator<16384>::Allocate<int>(big_count);
+    void* ptr_big = FrameAllocator<16384>::Allocate<Big>(big_count);
     CHECK(ptr_big != nullptr);
     CHECK(mem::IsAligned(ptr_big, 16));
 
     const int small_count = 2;
-    void* ptr_small = FrameAllocator<16384>::Allocate<float>(small_count, 32);
+    void* ptr_small = FrameAllocator<16384>::Allocate<Small>(small_count, 32);
     CHECK(ptr_small != nullptr);
     CHECK(mem::IsAligned(ptr_small, 32));
-
-    Big* big1 = new(ptr_big) Big{42};
+    Big* big1 = GMNewPlaced(ptr_big) Big(42);
     ptr_big = (char*)ptr_big + sizeof(Big);
-    Big* big2 = new(ptr_big) Big{43};
+    Big* big2 = GMNewPlaced(ptr_big) Big{43};
 
-    Small* small1 = new(ptr_small) Small{};
+    Small* small1 = GMNewPlaced(ptr_small) Small{};
     ptr_small = (char*)ptr_small + sizeof(Small);
-    Small* small2 = new(ptr_small) Small{};
+    Small* small2 = GMNewPlaced(ptr_small) Small{};
 
     CHECK(big1->value == 42);
     CHECK(big2->value == 43);

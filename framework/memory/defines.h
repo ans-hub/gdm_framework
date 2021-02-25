@@ -24,5 +24,7 @@ using uint = unsigned int;
 #define GMDelete(ptr) delete(ptr)
 #define GMNewTracked(tag) new(tag)
 #define GMDeleteTracked(tag, ptr) gdm::DeleteTracked(ptr, tag)
+#define GMNewPlaced(ptr) new(ptr)
+#define GMDeletePlaced(ptr) gdm::DeletePlaced(ptr)
 
 #endif // AH_GDM_MEM_DEFINES_H

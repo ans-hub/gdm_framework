@@ -7,6 +7,15 @@
 #include "memory/operators.h"
 
 template <class T>
+void gdm::DeletePlaced(T* mem) noexcept
+{
+  if (!mem)
+    return;
+  mem->~T();
+  ::operator delete(mem, sizeof(T));
+}
+
+template <class T>
 void gdm::DeleteTracked(T* mem, gdm::MemoryTagValue tag) noexcept
 {
   if (!mem)

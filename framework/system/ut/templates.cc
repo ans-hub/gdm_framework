@@ -80,7 +80,7 @@ struct Registrator
 	static bool RegisterOps(Args&&...args)
 	{
 		int runtime_id = gdm::TypeId<T>();
-		IOps* ops = new Ops<T>(std::forward<Args>(args...));
+		IOps* ops = new Ops<T>(std::forward<Args...>(args...));
 		ops_[runtime_id] = ops;
 	
 		return true;

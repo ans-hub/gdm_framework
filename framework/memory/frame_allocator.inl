@@ -6,6 +6,8 @@
 
 #include "frame_allocator.h"
 
+#include <type_traits>
+
 #include "math/general.h"
 #include "system/assert_utils.h"
 #include "memory/helpers.h"
@@ -34,8 +36,11 @@ template <size_t Size>
 template <class T>
 void* gdm::FrameAllocator<Size>::Allocate(size_t count, size_t alignment)
 {
+  static_assert(std::is_trivially_destructible_v<T>);
+  static_assert(std::is_trivially_copyable_v<T>);
+  static_assert(std::is_standard_layout_v<T>);
+
   ASSERTF(math::IsPowerOfTwo(alignment), "Alignment %zu is not power of 2", alignment);
-  
 
   size_t size = sizeof(T) * count;
   void* raw = &buffer_[offset_];

@@ -29,6 +29,7 @@ namespace gdm::math {
   constexpr bool FNotZero(float n) { return !(math::Abs(n) < kEpsilon); }
   constexpr bool FLessZero(float n) { return n < -kEpsilon; }
   constexpr bool FEq(float n1, float n2) { return math::Abs(n1-n2) < kEpsilon; }
+  constexpr bool IsNan(float v) { return v == v; }
   constexpr bool IsAbsFactorOfTwo(int);
   constexpr int Clamp(int, int, int);
   float Clamp(float, float, float);
