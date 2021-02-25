@@ -65,7 +65,10 @@ auto gdm::Timer::GetEndTime() const -> gdm::Timer::slong
 
 float gdm::Timer::GetLastDt() const
 {
-  return last_dt_ / 1000.f;
+  if (last_dt_ < 1000)
+    return last_dt_ / 1000.f;
+  else
+    return static_cast<float>(ms_wait_);
 }
 
 auto gdm::Timer::GetCurrentClock() const -> gdm::Timer::slong
