@@ -31,7 +31,7 @@ namespace gdm::_private {
 
 template <class Base>
 template <class Derived>
-inline bool gdm::IsClass<Base>::Of()
+inline bool gdm::IsClass<Base>::BaseTo()
 {
   using B = std::decay_t<Base>;
   using D = std::decay_t<Derived>;
@@ -40,7 +40,7 @@ inline bool gdm::IsClass<Base>::Of()
   static_assert(v_IsDetected<_private::HasId, D>, "Derived is non rtti-friendly type");
 
   if constexpr (v_IsDetected<_private::HasBase, D>)
-    return B::Id() == D::Id() || IsClass<B>::template Of<D::TBase>();
+    return B::Id() == D::Id() || IsClass<B>::template BaseTo<D::TBase>();
   else
     return B::Id() == D::Id();
 }

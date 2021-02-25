@@ -85,20 +85,25 @@ TEST_CASE("Type traits")
 
 	SECTION("RTTI check types")
 	{
-		CHECK(gdm::IsClass<gdm::test::Base>::Of<gdm::test::DerivedA>());
-		CHECK(gdm::IsClass<gdm::test::Base>::Of<gdm::test::DerivedB>());
-		CHECK(!gdm::IsClass<gdm::test::DerivedA>::Of<gdm::test::Base>());
-		CHECK(!gdm::IsClass<gdm::test::Base>::Of<gdm::test::Any>());
+		CHECK(gdm::IsClass<gdm::test::Base>::BaseTo<gdm::test::DerivedA>());
+		CHECK(gdm::IsClass<gdm::test::Base>::BaseTo<gdm::test::DerivedB>());
+		CHECK(!gdm::IsClass<gdm::test::DerivedA>::BaseTo<gdm::test::Base>());
+		CHECK(!gdm::IsClass<gdm::test::Base>::BaseTo<gdm::test::Any>());
 	}
 
 	SECTION("RTTI check instantiations (using template recursion)")
 	{
-		DerivedB derived;
-		Base* base = &derived;
+		DerivedA derivedA;
+		DerivedB derivedB;
+		DerivedA* baseA = &derivedB;
+		Base* base = &derivedB;
 		Any any;
 
-		CHECK(gdm::IsClass(*base).Of<DerivedB>());
-		CHECK(!gdm::IsClass(any).Of<DerivedB>());
+		CHECK(gdm::IsClass(*base).BaseTo<DerivedB>());
+		CHECK(!gdm::IsClass(any).BaseTo<DerivedB>());
+		CHECK(gdm::IsClass(*baseA).BaseTo<DerivedB>());
+		CHECK(gdm::IsClass(derivedB).BaseTo<DerivedB>());
+		CHECK(!gdm::IsClass(derivedA).BaseTo<Base>());
 	}
 
 	SECTION("RTTI check instantiations (using virtual methods)")

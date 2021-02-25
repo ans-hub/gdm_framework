@@ -41,7 +41,7 @@ namespace gdm {
     IsClass(const Base& instance) { }
 
     template <class Derived>
-    static bool Of();
+    static bool BaseTo();
 
   }; // struct IsClass
 
