@@ -6,10 +6,10 @@
 
 #include "bits_utils.h"
 
-inline bool gdm::bits::IsBigEndian()
+inline bool gdm::bits::IsLittleEndian()
 {
   unsigned int v = 0x01;
-  return (1 != reinterpret_cast<char*>(&v)[0]);
+  return (reinterpret_cast<char*>(&v)[0] == 0x01);
 }
 
 inline auto gdm::bits::Flip(const unsigned short& v) -> unsigned short

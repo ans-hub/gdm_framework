@@ -9,7 +9,7 @@
 
 namespace gdm::bits {
 
-  bool IsBigEndian();
+  bool IsLittleEndian();
   auto Flip(const unsigned short& v) -> unsigned short;
   auto Flip(const unsigned int& v) -> unsigned int;
 
