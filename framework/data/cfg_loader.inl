@@ -10,7 +10,7 @@
  
 template<>
 inline int gdm::Config::Get<int>(const std::string& name) const
-{ 
+{
   return ints_.at(name);
 }
 

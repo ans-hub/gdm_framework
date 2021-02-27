@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    dispatcher.h
+// File:    cfg_dispatcher.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -25,12 +25,10 @@ struct Dispatcher
   Dispatcher(Config& cfg, std::vector<ModelInstance*> models, const std::vector<std::string>& names);
 
   void Update(CameraEul& cam, MainInput& input, DebugDraw& debug, float dt);
-  bool IsDebugMode() const { return debug_on_; }
 
 private:
   Callback logic_;  
   Models models_;
-  bool debug_on_;
 
 }; // struct Dispatcher
 

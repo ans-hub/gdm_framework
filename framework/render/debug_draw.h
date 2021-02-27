@@ -38,8 +38,12 @@ struct DebugDraw
   auto GetData() const -> std::vector<DebugData> { return data_; } 
   void Clear() { data_.clear(); }
 
+  bool IsActive() const { return is_active_; }
+  void ToggleActive() { is_active_ ^= true; }
+
 private:
-  std::vector<DebugData> data_;
+  std::vector<DebugData> data_ = {};
+  bool is_active_ = false;
 
 }; // struct DebugDraw
 

@@ -108,7 +108,7 @@ void gdm::DeferredRenderer::Update(Scene& scene)
   submit_fence_.Reset();
   cmd_deferred.Finalize();
 
-  if (!scene.IsDebugMode())
+  if (!debug_draw_.IsActive())
   {
     gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
     gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
@@ -125,6 +125,7 @@ void gdm::DeferredRenderer::Update(Scene& scene)
     debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
     debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetData());
     debug_pass_.Draw(cmd_debug, curr_frame);
+    debug_draw_.Clear();
     submit_fence_.Reset();
     cmd_debug.Finalize();
 

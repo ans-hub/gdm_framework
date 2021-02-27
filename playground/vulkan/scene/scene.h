@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    scene_manager.h
+// File:    scene.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -26,16 +26,18 @@ struct Scene
 {  
   Scene(Config& cfg, MainWindow& win);
   void Update(MainInput& input, DebugDraw& debug_draw, float dt);
+
+public:
   void SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names);
   void SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights);
-  auto GetRenderableInstances() -> std::vector<ModelInstance*>;
+
   auto GetSceneInstances() -> std::vector<ModelInstance*>;
   auto GetSceneInstancesNames() const -> const std::vector<std::string>&;
+  auto GetRenderableInstances() -> std::vector<ModelInstance*>;
   auto GetRenderableMaterials() -> const api::ImageViews&;
   auto GetLamps() -> std::vector<ModelLight>& { return lamps_; }
   auto GetFlashlights() -> std::vector<ModelLight>& { return flashlights_; }
-  auto GetCamera() const -> const CameraEul& { return camera_; } 
-  bool IsDebugMode() const { return cfg_dispatcher_.IsDebugMode(); }
+  auto GetCamera() const -> const CameraEul& { return camera_; }
 
 private:
   constexpr static float v_znear = 0.1f;
@@ -57,7 +59,6 @@ private:
   api::ImageViews renderable_materials_;
   api::ImageView* dummy_view_;
   cfg::Dispatcher cfg_dispatcher_;
-  bool is_debug_mode_;
 
 };  // struct Scene
 

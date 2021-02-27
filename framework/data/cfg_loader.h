@@ -74,10 +74,3 @@ struct CfgExcept : std::runtime_error
 #include "cfg_loader.inl"
 
 #endif // AH_GDM_CFG_LOADER_H
-
-// TODO: load all data in structs like: type str, elems cnt, words count
-//       and store it sequentally, ie: some_type name bla0 bla1 bla2
-//
-//       cfg.RegisterType("v3", Vec3f);
-//       struct Bla { float a; int b; const char* c; }  // std layout
-//       cfg.Get<> 

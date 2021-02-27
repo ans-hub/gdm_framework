@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    scene_manager.cc
+// File:    scene.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -27,7 +27,6 @@ gdm::Scene::Scene(Config& cfg, MainWindow& win)
   , renderable_materials_{}
   , dummy_view_{}
   , cfg_dispatcher_{}
-  , is_debug_mode_{false}
 {
   camera_.SetPos(cfg.Get<Vec3f>("initial_cam_pos"));  // default value?
   camera_.LookAt(cfg.Get<Vec3f>("initial_look_at"));
