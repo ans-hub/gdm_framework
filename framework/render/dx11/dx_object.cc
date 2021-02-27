@@ -13,19 +13,17 @@
 
 namespace gdm {
 
-DxObject::DxObject(DxRenderer& d3d, const char* model_fpath)
+DxObject::DxObject(DxRenderer& d3d, const std::string& model_fpath, const std::string& mat_path, const std::string& img_path)
   : tm_(1.f)
   , meshes_{}
   , materials_{}
   , name_{}
 {
-  ASSERT(model_fpath);
-  std::string mat_fpath = str::GetPathFromFullPath(model_fpath);
-  ModelLoader model(model_fpath, mat_fpath.c_str());
+  ModelLoader model(model_fpath.c_str(), mat_path.c_str());
 
   for (std::size_t i = 0; i < model.GetMaterialsCount(); ++i)
   {
-    DxMaterial material(model, d3d.GetDevice(), i);
+    DxMaterial material(model, d3d.GetDevice(), img_path, i);
     materials_.push_back(std::move(material));
   }
   for (std::size_t i = 0; i < model.GetMeshesCount(); ++i)

@@ -7,6 +7,8 @@
 #ifndef AH_GDM_HASH_UTILS_H
 #define AH_GDM_HASH_UTILS_H
 
+#pragma warning(disable: 4244)
+
 #include <stdint.h>
 
 #define GDM_HASH(x) ::gdm::hash::Djb2CompileTime(x)

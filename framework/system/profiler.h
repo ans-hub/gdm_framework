@@ -79,12 +79,12 @@ namespace core {
 #define CPU_PROFILE_LEAVE() MICROPROFILE_LEAVE()
 #define CPU_PROFILE_GUARD(name) core::CpuProfilerScopeGuard GDM_CONCAT(cpu_guard,name) {}
 
-#define GPU_PROFILE_ENTER(group, name, color)
+#define GPU_PROFILE_ENTER(...)
 #define GPU_PROFILE_LEAVE()
-#define GPU_PROFILE_GUARD(name) core::GpuProfilerScopeGuard GDM_CONCAT(gpu_guard,name) {}
+#define GPU_PROFILE_GUARD(...)
 
 inline core::CpuProfilerScopeGuard::~CpuProfilerScopeGuard() { CPU_PROFILE_LEAVE(); }
-inline core::GpuProfilerScopeGuard::~GpuProfilerScopeGuard() { GPU_PROFILE_LEAVE(); }
+// inline core::GpuProfilerScopeGuard::~GpuProfilerScopeGuard() { GPU_PROFILE_LEAVE(); }
 
 #else	// !GDM_PROFILER_ENABLED
 

@@ -2,10 +2,10 @@ cmake_minimum_required (VERSION 3.10)
 
 # --
 
-project("gdm/framework/job_manager: test")
+project("gdm/framework/threads/ut/job_manager")
 add_definitions(-DGDM_UNIT_TEST)
 
-set(BIN job_manager_test)
+set(BIN job_manager_ut)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
@@ -13,8 +13,9 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 # --
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(PROFILING_ENABLED 1)
+set(DISABLE_GPU_PROFILING 1)
 
 # --
 
@@ -50,7 +51,7 @@ include_directories(${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
 find_package(Threads)
 
 message("* App ${BIN}: adding subdirectories")
-add_subdirectory(../../../../framework/profile/ static_libs/system)
+add_subdirectory(../../../../framework/system/ static_libs/system)
 add_subdirectory(../../../../framework/threads/ static_libs/threads)
 
 message("* App ${BIN}: adding executable")
@@ -59,7 +60,7 @@ add_executable(${BIN} ${SRC_FILES} job_manager_test.cc)
 # --
 
 message("* App ${BIN}: linking 3rd libraries")
-target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} profile system)
+target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} threads system)
 if(WIN32)
   target_link_libraries(${BIN} wsock32 ws2_32)
 endif()

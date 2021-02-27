@@ -14,7 +14,7 @@
 #include <system/array_utils.h>
 #include <system/mesh_utils.h>
 
-#include "helpers.h"
+#include "image_helpers.h"
 #include "model_loader.h"
 #include "abstract_image.h"
 

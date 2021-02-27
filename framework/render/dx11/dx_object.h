@@ -26,7 +26,7 @@ struct DxRenderer;
 struct DxObject
 {
   DxObject() =default;
-  DxObject(DxRenderer& d3d, const char* model_fpath);
+  DxObject(DxRenderer& d3d, const std::string& model_fpath, const std::string& mat_path, const std::string& img_path);
 
   Mat4f& GetTm() { return tm_; } 
   Mat4f GetItm() { return matrix::InverseTransform(matrix::SwapForwardRight(tm_)); }

@@ -48,7 +48,7 @@ bool gdm::Thread::SetAffinity(dword_t mask)
 #if defined(_WIN32) || defined(_WIN64) 
   SYSTEM_INFO system_info;
   ::GetSystemInfo(&system_info);
-  ::SetThreadAffinityMask(thread_.native_handle(), mask);
+  ::SetThreadAffinityMask(thread_.native_handle(), static_cast<DWORD_PTR>(mask));
   return true;
 #elif defined(__unix__)
   cpu_set_t cpuset;

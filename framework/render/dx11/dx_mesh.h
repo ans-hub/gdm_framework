@@ -11,7 +11,7 @@
 #include <vector>
 #include <string>
 
-#include <data/helpers.h>
+#include <data/image_helpers.h>
 #include <data/model_loader.h>
 #include <data/abstract_image.h>
 #include <system/array_utils.h>

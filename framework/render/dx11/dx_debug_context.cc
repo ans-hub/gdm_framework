@@ -50,13 +50,13 @@ void gdm::DebugContext::AddLine(const Vec3f& v0, const Vec3f& v1, const Vec4f& c
 {
   for (unsigned int i = 0; i < 3; ++i)
     vertices_.push_back(v0[i]);
-  for (unsigned int i = 0; i < 3; ++i)
+  for (unsigned int i = 0; i < 4; ++i)
     vertices_.push_back(color[i]);
   ++vertices_count_;
 
   for (unsigned int i = 0; i < 3; ++i)
     vertices_.push_back(v1[i]);
-  for (unsigned int i = 0; i < 3; ++i)
+  for (unsigned int i = 0; i < 4; ++i)
     vertices_.push_back(color[i]);
   ++vertices_count_;
 }
@@ -69,7 +69,7 @@ void gdm::DebugContext::Clear(unsigned int type)
 
 void gdm::render_dbg::AddLinesFromTm(DebugContext& ctx, const Mat4f& tm, float length)
 {
-  ctx.AddLine(tm.GetCol(3), tm.GetCol(3) + tm.GetCol(0) * length, Vec4f(1,0,0,1));
-  ctx.AddLine(tm.GetCol(3), tm.GetCol(3) + tm.GetCol(1) * length, Vec4f(0,1,0,1));
-  ctx.AddLine(tm.GetCol(3), tm.GetCol(3) + tm.GetCol(2) * length, Vec4f(0,0,1,1));
+  ctx.AddLine(tm.GetCol(3), tm.GetCol(3) + tm.GetCol(0).Normalize() * length, Vec4f(1,0,0,1));
+  ctx.AddLine(tm.GetCol(3), tm.GetCol(3) + tm.GetCol(1).Normalize() * length, Vec4f(0,1,0,1));
+  ctx.AddLine(tm.GetCol(3), tm.GetCol(3) + tm.GetCol(2).Normalize() * length, Vec4f(0,0,1,1));
 }

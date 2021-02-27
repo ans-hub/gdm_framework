@@ -14,8 +14,6 @@
 #include <system/mesh_utils.h>
 #include <system/string_utils.h>
 
-#include "helpers.h"
-
 // --public
 
 gdm::Handle gdm::helpers::GenerateHandle(const char* fpath)

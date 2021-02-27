@@ -49,7 +49,7 @@ public:
   auto GetAllVals(const std::string& name) const -> std::vector<T>;
 
 private:
-  bool loaded_ = {};
+  bool loaded_ = false;
   std::string fname_ = {};
   std::string sname_ = {};
 

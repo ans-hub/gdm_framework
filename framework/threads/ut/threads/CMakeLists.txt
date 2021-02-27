@@ -2,10 +2,10 @@ cmake_minimum_required (VERSION 3.10)
 
 # --
 
-project("gdm/framework/threads_test: test")
+project("gdm/framework/threads/threads/ut")
 add_definitions(-DGDM_UNIT_TEST)
 
-set(BIN job_manager_test)
+set(BIN threads_ut)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
@@ -53,7 +53,7 @@ message("* App ${BIN}: adding subdirectories")
 add_subdirectory(../../../../framework/threads/ static_libs/threads)
 
 message("* App ${BIN}: adding executable")
-add_executable(${BIN} ${SRC_FILES} thread_test.cc)
+add_executable(${BIN} ${SRC_FILES} threads_ut.cc)
 
 # --
 

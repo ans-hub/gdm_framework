@@ -36,7 +36,7 @@ gdm::DxMaterial::DxMaterial()
   , props_{}
 { }
 
-gdm::DxMaterial::DxMaterial(ModelLoader& model, ID3D11Device* device, std::size_t mat_num)
+gdm::DxMaterial::DxMaterial(ModelLoader& model, ID3D11Device* device, const std::string& img_path, std::size_t mat_num)
   : name_{model.GetMaterialName(mat_num)}
   , diffuse_map_{}
   , normal_map_{}
@@ -48,18 +48,18 @@ gdm::DxMaterial::DxMaterial(ModelLoader& model, ID3D11Device* device, std::size_
   fs::path model_path {model.GetFilePath()};
  
   std::string img_fname = model.GetMaterial<std::string>("diffuse_map", mat_num);
-  fs::path img_path = model_path.parent_path().concat("/" + img_fname);
-  AbstractImage* img = helpers::MakeImage(img_path.string().c_str(), {1,1,1});
+  std::string img_fpath = img_path + img_fname;
+  AbstractImage* img = helpers::MakeImage(img_fpath.c_str(), {1,1,1});
   diffuse_map_ = std::move(DxTexture(device, *img, _private::TextureDescImpl{}));
 
   img_fname = model.GetMaterial<std::string>("normal_map", mat_num);
-  img_path = model_path.parent_path().concat("/" + img_fname);
-  img = helpers::MakeImage(img_path.string().c_str(), {1,1,1});  // convient with ps as not normals
+  img_fpath = img_path + img_fname;
+  img = helpers::MakeImage(img_fpath.c_str(), {1,1,1});  // convient with ps as not normals
   normal_map_ = std::move(DxTexture(device, *img, _private::TextureDescImpl{}));
 
   img_fname = model.GetMaterial<std::string>("specular_map", mat_num);
-  img_path = model_path.parent_path().concat("/" + img_fname);
-  img = helpers::MakeImage(img_path.string().c_str());
+  img_fpath = img_path + img_fname;
+  img = helpers::MakeImage(img_fpath.c_str());
   specular_map_ = std::move(DxTexture(device, *img, _private::TextureDescImpl{}));
 
   props_.emissive_ = Vec4f(&model.GetMaterial<Vec4f>("emissive", mat_num)[0]);

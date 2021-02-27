@@ -14,7 +14,7 @@
 #include <system/assert_utils.h>
 #include <data/model_loader.h>
 #include <data/cfg_loader.h>
-#include <data/helpers.h>
+#include <data/image_helpers.h>
 
 #include "dx_texture.h"
 
@@ -34,7 +34,7 @@ struct DxMaterial
 
 public:
   DxMaterial();
-  DxMaterial(ModelLoader& model, ID3D11Device* device, std::size_t mat_num);
+  DxMaterial(ModelLoader& model, ID3D11Device* device, const std::string& img_path, std::size_t mat_num);
 
   DxMaterial(const DxMaterial& mat) =delete;
   DxMaterial& operator=(const DxMaterial& mat) =delete;

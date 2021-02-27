@@ -102,7 +102,7 @@ int case_1_diff_jobs_semantic()
   auto func_2 = [&some_runtime_class](){ some_runtime_class.DoIt(9); };
   
   {
-    CPU_PROFILE_SCOPE("ThreadMain", "ex_1", core::COLOR_AUTO);
+    CPU_PROFILE_SCOPE("ThreadMain", "ex_1", gdm::core::COLOR_AUTO);
     gdm::JobQueue& queue = g_mgr->GetJobQueue();
 
     queue.PushJobTS(func_1);
@@ -130,7 +130,7 @@ int case_2_batch_jobs_semantic()
   int total_summ = DATA_SUM(g_cases_array);
 
   {
-    CPU_PROFILE_SCOPE("ThreadMain", "ex_2", core::COLOR_AUTO);
+    CPU_PROFILE_SCOPE("ThreadMain", "ex_2", gdm::core::COLOR_AUTO);
     gdm::JobQueue& queue = g_mgr->GetJobQueue();
     queue.PushBatchTS(func_rotate, g_test_settings.batch_size, g_cases_array.size());
     g_mgr->WaitOnBarrierTS();
@@ -164,7 +164,7 @@ int case_3_jobs_with_deps()
   int total_summ = DATA_SUM(g_cases_array);
 
   {
-    CPU_PROFILE_SCOPE("ThreadMain", "ex_3", core::COLOR_AUTO);
+    CPU_PROFILE_SCOPE("ThreadMain", "ex_3", gdm::core::COLOR_AUTO);
     gdm::JobQueue& queue = g_mgr->GetJobQueue();
     std::unique_lock<std::timed_mutex> lock(queue.GetMutex());
 
@@ -211,7 +211,7 @@ int case_4_simulate_post_from_diff_sources()
   int total_summ = DATA_SUM(array);
 
   {
-    CPU_PROFILE_SCOPE("ThreadMain", "ex_4", core::COLOR_AUTO);
+    CPU_PROFILE_SCOPE("ThreadMain", "ex_4", gdm::core::COLOR_AUTO);
     gdm::JobQueue& queue = g_mgr->GetJobQueue();
     std::unique_lock<std::timed_mutex> lock(queue.GetMutex());
 
@@ -293,7 +293,7 @@ int main(int argc, const char** argv)
   int i = 0;
   for (; i < g_test_settings.iterations_count; ++i)
   {
-    CPU_PROFILE_SCOPE("ThreadMain", "loop", core::COLOR_DARKORANGE);
+    CPU_PROFILE_SCOPE("ThreadMain", "loop", gdm::core::COLOR_DARKORANGE);
 
     dt += TIME_NOW() - last_time;
     last_time = TIME_NOW();

@@ -75,7 +75,6 @@ THE SOFTWARE.
 #include <cstdlib>
 
 #include "system/string_utils.h"
-#include "helpers.h"
 
 namespace gdm::obj {
 

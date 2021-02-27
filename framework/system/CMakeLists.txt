@@ -4,6 +4,7 @@ cmake_minimum_required (VERSION 3.10)
 # --
 
 project("gdm/framework/system")
+
 set(BIN system)
 
 message("* Lib: ${BIN} (${CMAKE_BUILD_TYPE})")
@@ -11,11 +12,11 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
 # --
 
-set(INCLUDE_DIRS
-  "."
-  "../../"  # root
+include_directories(
+    "system/"
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${INCLUDE_DIRS}
 )
-include_directories(${INCLUDE_DIRS})
 
 # --
 
@@ -40,13 +41,25 @@ endif()
 add_library(${BIN} STATIC ${SRC_FILES})
 
 if ("${PROFILING_ENABLED}")
-  target_compile_definitions(${BIN} PUBLIC
-                  -DMICROPROFILE_GPU_TIMERS=1
-                  -DMICROPROFILE_WEBSERVER=1
-                  -DGDM_PROFILER_ENABLED=1
-                  -DGDM_LOGGER_ENABLED=1
-                  -DMICROPROFILE_LOCALE_INDEPENDENT_FLOAT=1
-                  -DMICROPROFILE_GPU_TIMERS_VULKAN=1)
+  set(PROFILING_DEFINITIONS
+    -DMICROPROFILE_WEBSERVER=1
+    -DGDM_PROFILER_ENABLED=1
+    -DGDM_LOGGER_ENABLED=1)
+
+  if (NOT "${DISABLE_GPU_PROFILING}")
+    set(PROFILING_DEFINITIONS
+      ${PROFILING_DEFINITIONS}
+      -DMICROPROFILE_GPU_TIMERS=1
+      -DMICROPROFILE_LOCALE_INDEPENDENT_FLOAT=1
+      -DMICROPROFILE_GPU_TIMERS_VULKAN=1)
+  else()
+    set(PROFILING_DEFINITIONS
+      ${PROFILING_DEFINITIONS}
+      -DMICROPROFILE_GPU_TIMERS=0)
+  endif()
+  
+  target_compile_definitions(${BIN} PUBLIC ${PROFILING_DEFINITIONS})
+
 #  if (${VK_API} EQUAL "1")
 #  target_compile_definitions(${BIN} PUBLIC
 #  endif()

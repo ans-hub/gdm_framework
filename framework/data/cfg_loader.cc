@@ -17,6 +17,7 @@ gdm::Config::Config(const char* cfg_fname)
   str::Rtrim(sname_);
 
   std::ifstream fs {cfg_fname};
+
   if (!fs)
     return;
 
