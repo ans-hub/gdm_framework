@@ -29,4 +29,6 @@ echo Building
 
 cmake --build %_build_tree_% --config %_config_%
 
+EXIT /B %errorlevel%
+
 endlocal
