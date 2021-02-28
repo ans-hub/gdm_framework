@@ -1,0 +1,125 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {
+      "type": "pickString",
+      "id": "cfgName",
+      "description": "Config file name",
+      "options": [
+        "simple.cfg",
+        "tennis.cfg",
+        "sponza.cfg",
+        "spaceship.cfg",
+        "spatial.cfg"
+      ],
+      "default": "simple.cfg"
+    }
+  ],
+  "configurations": [
+    {
+      "name": "Vulkan (debug)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build_debug_vulkan",
+      "program": "${workspaceFolder}\\playground\\vulkan\\.build\\Debug\\vulkan.exe",
+      "cwd": "${workspaceFolder}",
+      "args": ["assets/configs/${input:cfgName}"],
+      "stopAtEntry": false,
+      "environment": [
+        {
+            "name": "VK_LOADER_DEBUG",
+            "value": "err"
+        }
+      ],
+    },
+    {
+      "name": "DX11 normal_map (debug)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build_dx11_normal_map",
+      "program": "${workspaceFolder}\\playground\\dx11\\normal_map\\.build\\Debug\\normal_map.exe",
+      "cwd": "${workspaceFolder}",
+      "args": ["assets/configs/${input:cfgName}"],
+      "stopAtEntry": false,
+      "environment": [
+        {
+            "name": "VK_LOADER_DEBUG",
+            "value": "err"
+        }
+        ],
+    },
+    {
+      "name": "DX11 shadow_map (debug)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build_dx11_shadow_map",
+      "program": "${workspaceFolder}\\playground\\dx11\\shadow_map\\.build\\Debug\\shadow_map.exe",
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "environment": [
+        {
+            "name": "VK_LOADER_DEBUG",
+            "value": "err"
+        }
+        ],
+    },
+    {
+      "name": "UT System",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "externalTerminal",
+      "preLaunchTask": "build_system_ut",
+      "program": "${workspaceFolder}\\framework\\system\\ut\\.build\\Debug\\system_ut.exe",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}\\framework\\system\\ut\\.build\\Debug\\/",
+      "environment": [],
+    },
+    {
+      "name": "UT Memory",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "externalTerminal",
+      "preLaunchTask": "build_memory_ut",
+      "program": "${workspaceFolder}\\framework\\memory\\ut\\.build\\Debug\\memory_ut.exe",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}\\framework\\memory\\ut\\.build\\Debug\\/",
+      "environment": [],
+    },
+    {
+      "name": "UT Threads",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "externalTerminal",
+      "preLaunchTask": "build_threads_ut",
+      "program": "${workspaceFolder}\\framework\\threads\\ut\\threads\\.build\\Debug\\threads_ut.exe",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}\\framework\\threads\\ut\\threads\\.build\\Debug\\",
+      "environment": [],
+    },
+    {
+      "name": "UT Primitives",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "externalTerminal",
+      "preLaunchTask": "build_primitives_ut",
+      "program": "${workspaceFolder}\\framework\\threads\\ut\\primitives\\.build\\Debug\\primitives_ut.exe",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}\\framework\\threads\\ut\\primitives\\.build\\Debug\\",
+      "environment": [],
+    },
+    {
+      "name": "UT Job manager",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "console": "externalTerminal",
+      "preLaunchTask": "build_job_manager_ut",
+      "program": "${workspaceFolder}\\framework\\threads\\ut\\job_manager\\.build\\Debug\\job_manager_ut.exe",
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}\\framework\\threads\\ut\\job_manager\\.build\\Debug\\",
+      "environment": [],
+    },
+  ],
+}

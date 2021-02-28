@@ -1,0 +1,85 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "build_debug_vulkan",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\playground\\vulkan\\",
+                "_build_tree_", "${workspaceFolder}\\playground\\vulkan\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_dx11_normal_map",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\playground\\dx11\\normal_map\\",
+                "_build_tree_", "${workspaceFolder}\\playground\\dx11\\normal_map\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_dx11_shadow_map",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\playground\\dx11\\shadow_map\\",
+                "_build_tree_", "${workspaceFolder}\\playground\\dx11\\shadow_map\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_system_ut",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\framework\\system\\ut\\",
+                "_build_tree_", "${workspaceFolder}\\framework\\system\\ut\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_memory_ut",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\framework\\memory\\ut\\",
+                "_build_tree_", "${workspaceFolder}\\framework\\memory\\ut\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_threads_ut",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\framework\\threads\\ut\\threads\\",
+                "_build_tree_", "${workspaceFolder}\\framework\\threads\\ut\\threads\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_primitives_ut",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\framework\\threads\\ut\\primitives\\",
+                "_build_tree_", "${workspaceFolder}\\framework\\threads\\ut\\primitives\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+        {
+            "type": "shell",
+            "label": "build_job_manager_ut",
+            "command": "${workspaceFolder}\\tools\\build\\build_playground_app.bat",
+            "args": [
+                "_source_tree_", "${workspaceFolder}\\framework\\threads\\ut\\job_manager\\",
+                "_build_tree_", "${workspaceFolder}\\framework\\threads\\ut\\job_manager\\.build\\",
+                "_config_", "Debug"
+            ],
+        },
+    ]
+}
