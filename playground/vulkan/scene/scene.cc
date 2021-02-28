@@ -14,12 +14,14 @@
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/rasterizer_desc.h"
 
-#include "helpers.h"
+#include "input_helpers.h"
+#include "data_helpers.h"
+#include "defines.h"
 
 // --public
 
 gdm::Scene::Scene(Config& cfg, MainWindow& win)
-  : camera_{v_fov, win.GetAspectRatio(), v_znear, v_zfar}
+  : camera_{cfg::v_fov, win.GetAspectRatio(), cfg::v_znear, cfg::v_zfar}
   , models_{}
   , models_names_{}
   , flashlights_{}
@@ -42,7 +44,7 @@ gdm::Scene::Scene(Config& cfg, MainWindow& win)
   cfg_dispatcher_ = cfg::Dispatcher(cfg, GetSceneInstances(), GetSceneInstancesNames());
 }
 
-void gdm::Scene::Update(MainInput& input, DebugDraw& debug_draw, float dt)
+void gdm::Scene::Update(float dt, MainInput& input, DebugDraw& debug_draw)
 {
   helpers::UpdateCamera(camera_, input, dt);
   helpers::UpdateLamps(camera_, input, GetLamps(), dt);
@@ -108,13 +110,13 @@ auto gdm::Scene::GetRenderableMaterials() -> const api::ImageViews&
 {
   if (!dummy_view_)
   {
-    TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(v_dummy_image);
+    TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(cfg::v_dummy_image);
     AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
     dummy_view_ = dummy_texture->GetApiImageView<api::ImageView>();
   }
 
   renderable_materials_.clear();
-  renderable_materials_.resize(v_max_materials * v_material_type_cnt, dummy_view_);
+  renderable_materials_.resize(cfg::v_max_materials * cfg::v_material_type_cnt, dummy_view_);
   
   std::vector<ModelInstance*> renderable = GetRenderableInstances();
 
@@ -129,9 +131,9 @@ auto gdm::Scene::GetRenderableMaterials() -> const api::ImageViews&
       auto normal_texture = TextureFactory::Get(material->norm_);
       auto specular_texture = TextureFactory::Get(material->spec_);
       
-      renderable_materials_[material->index_ * 3 + v_diff_offset] = diffuse_texture->GetApiImageView<api::ImageView>();
-      renderable_materials_[material->index_ * 3 + v_norm_offset] = normal_texture->GetApiImageView<api::ImageView>();
-      renderable_materials_[material->index_ * 3 + v_spec_offset] = specular_texture->GetApiImageView<api::ImageView>();
+      renderable_materials_[material->index_ * 3 + cfg::v_diff_offset] = diffuse_texture->GetApiImageView<api::ImageView>();
+      renderable_materials_[material->index_ * 3 + cfg::v_norm_offset] = normal_texture->GetApiImageView<api::ImageView>();
+      renderable_materials_[material->index_ * 3 + cfg::v_spec_offset] = specular_texture->GetApiImageView<api::ImageView>();
     }
   }
   return renderable_materials_;

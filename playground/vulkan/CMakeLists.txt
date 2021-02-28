@@ -45,8 +45,10 @@ set(SRC main.cc
         passes/gbuffer_pass.cc
         passes/deferred_pass.cc
         passes/debug_pass.cc
-        scene/deferred_renderer.cc
-        scene/helpers.cc
+        scene/gpu_streamer.cc
+        scene/scene_renderer.cc
+        scene/data_helpers.cc
+        scene/input_helpers.cc
         scene/scene.cc
         scene/cfg_dispatcher.cc)
 

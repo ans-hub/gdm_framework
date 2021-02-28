@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    deferred.cc
+// File:    main.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -36,9 +36,10 @@
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/sampler_desc.h"
 
-#include <scene/deferred_renderer.h>
+#include <scene/scene_renderer.h>
+#include <scene/gpu_streamer.h>
 #include <scene/cfg_dispatcher.h>
-#include <scene/helpers.h>
+#include <scene/data_helpers.h>
 
 using namespace gdm;
 
@@ -46,21 +47,25 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 {
   uint width = 800;
   uint height = 600;
-  MainWindow win (width, height, "Vulkan scenes", MainWindow::CENTERED);
-  MainInput input (win.GetHandle(), hInstance);
+
+  auto win = MainWindow(width, height, "Vulkan scenes", MainWindow::CENTERED);
+  auto input = MainInput(win.GetHandle(), hInstance);
+  auto api_renderer = api::Renderer(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);
+  auto scene_renderer = SceneRenderer(api_renderer);
+  auto gpu_streamer = GpuStreamer(api_renderer);
 
   ENSUREF(wcslen(cmdLine) != 0, "Config file name is empty");
 
   std::string cfg_name = str::Utf2Ansi(cmdLine);
-
   Config cfg(cfg_name.c_str());
 
   if (!cfg.IsLoaded())
     return 1;
 
-  Scene scene(cfg, win);
-  DeferredRenderer renderer(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);  
-  renderer.Setup(scene);
+  auto scene = Scene(cfg, win);
+  auto unique_models = helpers::GetUniqueModels(scene.GetSceneInstances());  
+  
+  gpu_streamer.CopyModelsToGpu(unique_models);
 
   MSG msg {0};
   Timer timer {60};
@@ -83,9 +88,17 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     win.ProcessInput(input);
     timer.Start();
     float dt = timer.GetLastDt();
+
+    scene.Update(dt,
+      input,
+      scene_renderer.GetDebugDraw());
     
-    scene.Update(input, renderer.GetDebugDraw(), dt);
-    renderer.Update(scene);
+    scene_renderer.Update(dt,
+      scene.GetCamera(),
+      scene.GetRenderableInstances(),
+      scene.GetRenderableMaterials(),
+      scene.GetLamps(),
+      scene.GetFlashlights());
 
     timer.End();
     timer.Wait();  

@@ -25,7 +25,7 @@ namespace gdm {
 struct Scene
 {  
   Scene(Config& cfg, MainWindow& win);
-  void Update(MainInput& input, DebugDraw& debug_draw, float dt);
+  void Update(float dt, MainInput& input, DebugDraw& debug_draw);
 
 public:
   void SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names);
@@ -38,17 +38,6 @@ public:
   auto GetLamps() -> std::vector<ModelLight>& { return lamps_; }
   auto GetFlashlights() -> std::vector<ModelLight>& { return flashlights_; }
   auto GetCamera() const -> const CameraEul& { return camera_; }
-
-private:
-  constexpr static float v_znear = 0.1f;
-  constexpr static float v_zfar = 100.f;
-  constexpr static float v_fov = 75.f;
-  constexpr static uint v_material_type_cnt = 3; // diff_map + norm_map + v_spec_map
-  constexpr static uint v_max_materials = 32;
-  constexpr static uint v_diff_offset = 0;
-  constexpr static uint v_norm_offset = 1;
-  constexpr static uint v_spec_offset = 2;
-  constexpr static const char* v_dummy_image = "dummy_handle";
 
 private:
   CameraEul camera_;

@@ -1,10 +1,11 @@
 // *************************************************************
-// File:    deferred_renderer.h
+// File:    scene_renderer.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-/*
+/* Deferred renderer
+
                     VS        PS        OUT
 #1 pass gbuffer    PFUBO   tex_diff   out_gpos
         mrt        POUBO   tex_norm   out_gnorm
@@ -33,37 +34,26 @@
 #include "data/cfg_loader.h"
 
 #include "scene.h"
+#include "gpu_streamer.h"
 
 namespace gdm {
 
-struct DeferredRenderer
+struct SceneRenderer
 {
-  DeferredRenderer(HWND window_handle, gfx::DeviceProps flags = 0);
-  void Setup(Scene& scene);
-  void Update(Scene& scene);
+  SceneRenderer(api::Renderer& gfx);
+
+  void Update(float dt,
+              const CameraEul& camera,
+              const std::vector<ModelInstance*>& models,
+              const api::ImageViews& materials,
+              std::vector<ModelLight>& lamps,
+              std::vector<ModelLight>& flashlights);
   auto GetDebugDraw() -> DebugDraw& { return debug_draw_; }
 
 private:
-  uint CreateStagingBuffer(uint bytes);
-  auto GetStagingBuffer(uint index) -> api::Buffer& { return *staging_buffers_[index]; };
-  void CopyGeometryToGpu(const std::vector<ModelHandle>& models, uint vstg_index, uint istg_index, api::CommandList& list);
-  void CopyTexturesToGpu(const std::vector<ModelHandle>& models, uint tstg_index, api::CommandList& list);
-  void CreateDummyView(api::CommandList& cmd);
-
-private:
-  auto GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>;
-  uint CopyTextureToStagingBuffer(AbstractTexture* texture, api::Buffer& stg, uint curr_offset);
-  void CopyTextureFromStagingBuffer(api::CommandList& cmd, AbstractTexture* texture, api::Buffer& stg, uint curr_offset);
-
-private:
-  constexpr static uint v_max_objects = 512;
-  constexpr static const char* v_dummy_image = "dummy_handle";
-
-private:
-  api::Renderer gfx_;
+  api::Renderer& gfx_;
   api::Device& device_;
   api::Fence submit_fence_;
-  std::vector<api::Buffer*> staging_buffers_;
 
   GbufferPass gbuffer_pass_;
   DeferredPass deferred_pass_;
@@ -71,7 +61,7 @@ private:
 
   DebugDraw debug_draw_;
 
-};  // struct DeferredRenderer
+};  // struct Renderer
 
 } // namespace gdm::scene
 

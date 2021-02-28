@@ -1,11 +1,11 @@
 // *************************************************************
-// File:    helpers.h
+// File:    data_helpers.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#ifndef GFX_VK_SCENE_HELPERS
-#define GFX_VK_SCENE_HELPERS
+#ifndef GDM_VK_SCENE_DATA_HELPERS_H
+#define GDM_VK_SCENE_DATA_HELPERS_H
 
 #include <set>
 #include <unordered_map>
@@ -24,20 +24,17 @@
 #include "data/material_factory.h"
 #include "data/texture_factory.h"
 #include "data/image_factory.h"
-
-#include "cfg_dispatcher.h"
+#include "data/cfg_loader.h"
 
 namespace gdm::helpers {
 
-  void UpdateCamera(CameraEul& cam, MainInput& input, float dt);
-  void UpdateLamps(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lamps, float dt);
-  void UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt);
   auto LoadObjects(const Config& cfg) -> std::vector<ModelInstance>;
   auto LoadObjectNames(const Config& cfg) -> std::vector<std::string>;
   auto LoadLights(const Config& cfg) -> std::vector<ModelInstance>;
   auto LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>;
   auto GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<ModelHandle>;
+  auto GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>;
 
 } // namespace gdm::helpers
 
-#endif // GFX_VK_SCENE_HELPERS
+#endif // GDM_VK_SCENE_DATA_HELPERS_H

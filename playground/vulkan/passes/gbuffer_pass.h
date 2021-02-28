@@ -102,7 +102,7 @@ struct GbufferPass
   void CreateImages(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();
-  void CreateDescriptorSet(const api::ImageViews& materials);
+  void CreateDescriptorSet(size_t materials_cnt);
   void CreatePipeline();
   
   void UpdateUniforms(api::CommandList& cmd, uint max_objects);

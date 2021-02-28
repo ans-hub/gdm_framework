@@ -139,7 +139,7 @@ void gdm::GbufferPass::CreateRenderPass()
   pass_->Finalize();
 }
 
-void gdm::GbufferPass::CreateDescriptorSet(const api::ImageViews& materials)
+void gdm::GbufferPass::CreateDescriptorSet(size_t materials_cnt)
 {
   auto* dsl = GMNew api::DescriptorSetLayout(*device_);
 
@@ -147,7 +147,7 @@ void gdm::GbufferPass::CreateDescriptorSet(const api::ImageViews& materials)
   dsl->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
   dsl->AddBinding(2, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::FRAGMENT_STAGE);
   dsl->AddBinding(3, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  dsl->AddBinding(4, static_cast<uint>(materials.size()), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
+  dsl->AddBinding(4, static_cast<uint>(materials_cnt), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
   dsl->Finalize();
 
   data_.sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
@@ -157,7 +157,6 @@ void gdm::GbufferPass::CreateDescriptorSet(const api::ImageViews& materials)
   descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, *data_.pocb_uniform_vs_);
   descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, *data_.pocb_uniform_ps_);
   descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(3, *data_.sampler_);
-  descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(4, materials);
   descriptor_set->Finalize();
   
   data_.descriptor_set_layout_ = dsl;

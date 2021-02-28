@@ -19,7 +19,7 @@
 #include <math/intersection.h>
 #include <math/sphere.h>
 
-#include "scene/types.h"
+#include "scene/defines.h"
 
 //--private
 
