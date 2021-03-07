@@ -11,6 +11,8 @@
 #include <cctype>
 #include <locale>
 
+#include <direct.h>
+
 int gdm::str::Replace(std::string& str, const std::string& sub, const std::string& replace)
 {
   int cnt {0};
@@ -114,6 +116,16 @@ std::string gdm::str::GetPathFromFullPath(const char* fpath)
     return full_path_str.substr(0, last_slash_idx) + '/'; 
 
   return {""};
+}
+
+std::string gdm::str::GetCwd()
+{
+  char cwd[512];
+  
+  if (_getcwd(cwd, sizeof(cwd)) != nullptr)
+    return std::string{cwd};
+  else
+    return {};
 }
 
 #ifdef _WIN32

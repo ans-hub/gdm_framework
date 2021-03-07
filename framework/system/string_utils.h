@@ -28,6 +28,7 @@ namespace gdm::str {
   auto GetFileNameFromFpath(const std::string& str) -> std::string;
   auto GetExtensionFromFpath(const char* fpath) -> std::string;
   auto GetPathFromFullPath(const char* fpath) -> std::string;
+  auto GetCwd() -> std::string;
 
 #ifdef _WIN32
   std::string Utf2Ansi(LPCWSTR pw, UINT codepage = CP_UTF8);

@@ -7,6 +7,8 @@
 #ifndef AH_GDM_FONT_H
 #define AH_GDM_FONT_H
 
+#include <string>
+
 #include "ft2build.h"
 #include "freetype/freetype.h"
 
@@ -21,8 +23,8 @@ struct Font
     Vec2i bearing_;
     unsigned advance_;
   };
-  
-  Font(const char* font_name, int font_size);
+
+  Font(const std::string& font_name, int font_size);
 };
 
 } // namespace gdm

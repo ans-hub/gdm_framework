@@ -74,7 +74,7 @@
       "preLaunchTask": "build_system_ut",
       "program": "${workspaceFolder}\\framework\\system\\ut\\.build\\Debug\\system_ut.exe",
       "stopAtEntry": false,
-      "cwd": "${workspaceFolder}\\framework\\system\\ut\\.build\\Debug\\/",
+      "cwd": "${workspaceFolder}",
       "environment": [],
     },
     {

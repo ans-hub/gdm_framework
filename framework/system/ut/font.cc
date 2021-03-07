@@ -12,7 +12,10 @@ namespace gdm::test {
 
 TEST_CASE("Font loading")
 {
-	Font arial("fonts/arial.ttf", 14);
+	SECTION("Regular test")
+	{
+		Font arial("/assets/fonts/arial.ttf", 14);
+	}
 }
 
 } // namespace gdm::test
