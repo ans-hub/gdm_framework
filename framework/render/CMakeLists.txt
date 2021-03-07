@@ -3,7 +3,6 @@ cmake_minimum_required (VERSION 3.10)
 project("gdm/framework/render")
 
 set(BIN render)
-set(GDM_LIBDXC_DIR ${GDM_ROOT_DIR}/3rdparty/dxc)
 
 message("* Lib: ${BIN} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
@@ -13,7 +12,6 @@ include_directories(
   ${GDM_FRAMEWORK_DIR}/render/dx11/
   ${GDM_FRAMEWORK_DIR}/render/ogl/
   ${GDM_FRAMEWORK_DIR}/render/vk/
-  ${GDM_LIBDXC_DIR}/include/
   ${INCLUDE_DIRS}
 )
 
@@ -74,3 +72,5 @@ if ("${VK_API}")
 endif()
 
 add_library(${BIN} STATIC ${SRC_FILES})
+
+message("* App ${BIN}: copy dlls")

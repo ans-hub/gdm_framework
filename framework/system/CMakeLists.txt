@@ -7,16 +7,14 @@ project("gdm/framework/system")
 
 set(BIN system)
 
+include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype.cmake)
+
 message("* Lib: ${BIN} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
 # --
 
-include_directories(
-    "system/"
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${INCLUDE_DIRS}
-)
+include_directories(".")
 
 # --
 
@@ -27,7 +25,8 @@ set(SRC_FILES
     mesh_utils.cc
     debugging.cc
     type_id.cc
-    logger.cc)
+    logger.cc
+    font.cc)
 
 if ("${PROFILING_ENABLED}")
   message("  ** using microprofiler")

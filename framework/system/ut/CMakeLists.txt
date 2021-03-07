@@ -8,7 +8,9 @@ add_definitions(-DGDM_UNIT_TEST)
 
 set(BIN system_ut)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
-set(GDM_FRAMEWORK_DIR ${GDM_ROOT_DIR}/framework)
+
+include(${GDM_ROOT_DIR}/tools/cmake_includes/framework.cmake)
+
 set(GDM_CODEGEN_DIR ${GDM_FRAMEWORK_DIR}/codegen)
 set(GDM_LIBCATCH_DIR ${GDM_ROOT_DIR}/3rdparty/catch)
 
