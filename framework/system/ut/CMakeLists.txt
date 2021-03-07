@@ -10,6 +10,7 @@ set(BIN system_ut)
 set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../..)
 
 include(${GDM_ROOT_DIR}/tools/cmake_includes/framework.cmake)
+include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype.cmake)
 
 set(GDM_CODEGEN_DIR ${GDM_FRAMEWORK_DIR}/codegen)
 set(GDM_LIBCATCH_DIR ${GDM_ROOT_DIR}/3rdparty/catch)
@@ -33,12 +34,7 @@ endif()
 
 # -- Include
 
-set(INCLUDE_DIRS
-  "."
-  ${GDM_FRAMEWORK_DIR}
-  ${GDM_ROOT_DIR}
-)
-include_directories(${INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR})
+include_directories("." ${GDM_ROOT_DIR} ${GDM_LIBFREETYPE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 
 # -- Sources
 
@@ -65,4 +61,6 @@ add_custom_command(TARGET system_ut
 # -- Link --
 
 message("* App ${BIN}: linking 3rd libraries")
-target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} system catch)
+target_link_libraries(${BIN} system catch)
+
+include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype_post.cmake)

@@ -31,6 +31,7 @@
 #include "system/diff_utils.h"
 #include "system/literals.h"
 #include "system/profiler.h"
+#include "system/font.h"
 
 #include "render/desc/rasterizer_desc.h"
 #include "render/desc/input_layout_desc.h"
@@ -66,6 +67,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   auto unique_models = helpers::GetUniqueModels(scene.GetSceneInstances());  
   
   gpu_streamer.CopyModelsToGpu(unique_models);
+
+  Font arial{"arial.ttf", 14};
 
   MSG msg {0};
   Timer timer {60};

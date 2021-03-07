@@ -10,3 +10,4 @@
 #include "types.cc"
 #include "introspection.cc"
 #include "templates.cc"
+#include "font.cc"

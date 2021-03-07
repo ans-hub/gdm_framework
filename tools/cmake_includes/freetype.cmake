@@ -8,6 +8,6 @@ include_directories(
   ${GDM_LIBFREETYPE_DIR}/include
 )
 
-set(FREETYPE_LIBRARY ${GDM_LIBFREETYPE_DIR}/release_static/win64)
+set(FREETYPE_LIBRARY ${GDM_LIBFREETYPE_DIR}/release_static/win64/freetype.lib)
 set(FREETYPE_INCLUDE_DIRS ${GDM_LIBFREETYPE_DIR}/include)
-find_package(Freetype REQUIRED)
+find_package(Freetype REQUIRED FATAL_ERROR)
