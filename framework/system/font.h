@@ -10,28 +10,48 @@
 #include <string>
 #include <vector>
 
-#include "ft2build.h"
-#include "freetype/freetype.h"
-
 #include "math/vector2.h"
+#include "math/vector4.h"
 
 namespace gdm {
 
 struct Font
 {
-  struct Character {
-    Vec2i size_;
+  struct Character
+  {
+    Vec4i coords_;
     Vec2i bearing_;
-    unsigned advance_;
+    int advance_;
   };
 
-  Font(const std::string& font_name, int font_size);
+  struct Metrics
+  {
+    int font_height_;
+    int texture_width_;
+    int texture_height_;
+  };
+
+  struct Ops
+  { };
+
+  Font(const std::string& font_name, int size_pt, Ops ops = {});
+
+  void Dump(const std::string& png_name);
+  auto operator[](int i) const -> const Character& { return characters_[i]; }
 
 private:
   constexpr static const int v_chars_cnt_ = 128;
 
+  struct NativeFont;
+
+private:
+  void FillMetrics(NativeFont& nf);
+  void LoadChar(NativeFont& ft, unsigned char ch);
+
 private:
   std::vector<Character> characters_;
+  Metrics metrics_;
+  std::vector<unsigned char> atlas_data_;
 
 }; // struct Font
 

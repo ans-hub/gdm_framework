@@ -6,7 +6,7 @@
 
 #include "3rdparty/catch/catch.hpp"
 
-#include "system/font.h"
+#include <system/font.h>
 
 namespace gdm::test {
 
@@ -14,7 +14,7 @@ TEST_CASE("Font loading")
 {
 	SECTION("Regular test")
 	{
-		Font arial("/assets/fonts/arial.ttf", 14);
+		Font arial("assets/fonts/arial.ttf", 14);
 	}
 }
 
