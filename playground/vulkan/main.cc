@@ -14,7 +14,6 @@
 #include "render/colors.h"
 #include "render/shader.h"
 #include "render/camera_eul.h"
-#include "render/debug_draw.h"
 
 #include "memory/defines.h"
 
@@ -41,6 +40,7 @@
 #include <scene/gpu_streamer.h>
 #include <scene/cfg_dispatcher.h>
 #include <scene/data_helpers.h>
+#include <scene/debug_draw.h>
 
 using namespace gdm;
 
@@ -52,8 +52,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   auto win = MainWindow(width, height, "Vulkan scenes", MainWindow::CENTERED);
   auto input = MainInput(win.GetHandle(), hInstance);
   auto api_renderer = api::Renderer(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);
-  auto scene_renderer = SceneRenderer(api_renderer);
   auto gpu_streamer = GpuStreamer(api_renderer);
+  auto scene_renderer = SceneRenderer(api_renderer, gpu_streamer);
 
   ENSUREF(wcslen(cmdLine) != 0, "Config file name is empty");
 
@@ -67,8 +67,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   auto unique_models = helpers::GetUniqueModels(scene.GetSceneInstances());  
   
   gpu_streamer.CopyModelsToGpu(unique_models);
-
-  Font arial{"arial.ttf", 14};
 
   MSG msg {0};
   Timer timer {60};

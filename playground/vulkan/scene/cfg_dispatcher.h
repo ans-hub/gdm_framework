@@ -10,11 +10,11 @@
 #include <functional>
 
 #include "render/camera_eul.h"
-#include "render/debug_draw.h"
 #include "window/main_input.h"
 #include "data/model_factory.h"
 #include "data/cfg_loader.h"
 
+#include "debug_draw.h"
 #include "defines.h"
 
 namespace gdm::cfg {

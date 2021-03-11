@@ -89,6 +89,8 @@ struct DeferredPass
   
   std::vector<DeferredPassData> data_;
 
+  auto GetFramebuffer(uint frame_num) -> api::Framebuffer* { return data_[frame_num].fb_; }
+
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateImages(api::CommandList& cmd);
   void CreateFramebuffer();

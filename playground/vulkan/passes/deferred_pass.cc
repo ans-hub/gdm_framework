@@ -148,7 +148,7 @@ void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
 {
   cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
   data_[frame_num].pfcb_staging_ps_->Map();
-  data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 1);
+  data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 0, 1);
   data_[frame_num].pfcb_staging_ps_->Unmap();
   cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_ps_, *data_[frame_num].pfcb_uniform_ps_, sizeof(DeferredPs_PFCB));
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);

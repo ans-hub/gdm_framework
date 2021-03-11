@@ -13,6 +13,11 @@
 
 // --public create
 
+void gdm::DebugPass::BindFramebuffer(api::Framebuffer* fb, uint frame_num)
+{
+  data_[frame_num].fb_ = fb;
+}
+
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
   data_[frame_num].pfcb_staging_vs_ = GMNew api::Buffer(device_, sizeof(DebugVs_PFCB) * 1, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
@@ -22,7 +27,7 @@ void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
 }
 
-void gdm::DebugPass::CreateBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size)
+void gdm::DebugPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size)
 {
   data_[frame_num].vertex_buffer_ = GMNew api::Buffer(device_, uint(buffer_size), gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
@@ -67,18 +72,6 @@ void gdm::DebugPass::CreateRenderPass()
   uint subpass_idx = pass_->CreateSubpass(gfx::EQueueType::GRAPHICS);
   pass_->AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
   pass_->Finalize();
-}
-
-void gdm::DebugPass::CreateFramebuffer()
-{
-  uint height = rdr_->GetSurfaceHeight();
-  uint width = rdr_->GetSurfaceWidth();
-
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
-  {
-    api::ImageViews image_views { rdr_->GetBackBufferViews()[i] };
-    data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
-  }
 }
 
 void gdm::DebugPass::CreatePipeline()
@@ -128,7 +121,7 @@ void gdm::DebugPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
 {
   cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
   data_[frame_num].pfcb_staging_vs_->Map();
-  data_[frame_num].pfcb_staging_vs_->CopyDataToGpu(&data_[frame_num].pfcb_data_vs_, 1);
+  data_[frame_num].pfcb_staging_vs_->CopyDataToGpu(&data_[frame_num].pfcb_data_vs_, 0, 1);
   data_[frame_num].pfcb_staging_vs_->Unmap();
   cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_vs_, *data_[frame_num].pfcb_uniform_vs_, sizeof(DebugVs_PFCB));
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
@@ -164,4 +157,6 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame)
   cmd.EndRenderPass();
 
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
+
+  data.vertices_count_ = 0;
 }

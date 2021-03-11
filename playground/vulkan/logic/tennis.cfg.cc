@@ -10,7 +10,6 @@
 
 #include <data/model_factory.h>
 #include <render/camera_eul.h>
-#include <render/debug_draw.h>
 #include <window/main_input.h>
 #include <system/diff_utils.h>
 #include <math/vector3.h>
@@ -19,6 +18,7 @@
 #include <math/intersection.h>
 #include <math/sphere.h>
 
+#include "scene/debug_draw.h"
 #include "scene/defines.h"
 
 //--private

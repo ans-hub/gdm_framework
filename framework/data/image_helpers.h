@@ -18,6 +18,7 @@
 
 namespace gdm::helpers {
 
+  auto MakeImage(const AbstractImage::StorageType& raw, int width, int height, int depth) -> AbstractImage*;
   auto MakeImage(const char* fname, std::array<float,3> rgb = {0.f, 0.f, 0.f}) -> AbstractImage*;
   void ReleaseImage(AbstractImage* img);
 

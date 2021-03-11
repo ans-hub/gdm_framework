@@ -18,13 +18,24 @@ gdm::GpuStreamer::GpuStreamer(api::Renderer& gfx)
   : gfx_{gfx}
   , device_{gfx.GetDevice()}
   , staging_buffers_{}
-{ }
+{
+  staging_buffers_.reserve(v_max_buffers_);
+}
 
 auto gdm::GpuStreamer::CreateStagingBuffer(uint bytes) -> uint
 {
   auto buffer = GMNew api::Buffer(&device_, bytes, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
   staging_buffers_.push_back(buffer);
   return static_cast<uint>(staging_buffers_.size() - 1);
+}
+
+int gdm::GpuStreamer::FindStagingBuffer(uint min_size)
+{
+  for (const auto& [i,buffer] : Enumerate(staging_buffers_))
+    if (buffer->GetSize() >= min_size)
+      return i;
+
+  return -1; 
 }
 
 void gdm::GpuStreamer::CopyModelsToGpu(const std::vector<ModelHandle>& models)
@@ -39,7 +50,7 @@ void gdm::GpuStreamer::CopyModelsToGpu(const std::vector<ModelHandle>& models)
   std::vector<MaterialHandle> materials = helpers::GetMaterialsToLoad(models);
 
   CopyGeometryToGpu(models, vstg, istg, setup_list);
-  CopyTexturesToGpu(materials, tstg, setup_list);
+  CopyMaterialsToGpu(materials, tstg, setup_list);
 
   if (!TextureFactory::Has(cfg::v_dummy_image))
     CreateDummyView(setup_list);
@@ -109,7 +120,7 @@ void gdm::GpuStreamer::CopyGeometryToGpu(const std::vector<ModelHandle>& handles
   }
 }
 
-void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<MaterialHandle>& handles, uint tstg_index, api::CommandList& cmd)
+void gdm::GpuStreamer::CopyMaterialsToGpu(const std::vector<MaterialHandle>& handles, uint tstg_index, api::CommandList& cmd)
 {
   api::Buffer& tstg = *staging_buffers_[tstg_index];
 
@@ -120,7 +131,8 @@ void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<MaterialHandle>& hand
   for (auto [index, material_handle] : Enumerate(handles))
   {
     AbstractMaterial* material = MaterialFactory::Get(material_handle);
-    auto textures = TextureFactory::Get(material->GetTextureHandles());
+    std::vector<AbstractTexture**> textures = TextureFactory::Get(material->GetTextureHandles());
+
     for (auto texture : textures)
     {
       offsets.push_back(curr_offset);
@@ -142,6 +154,43 @@ void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<MaterialHandle>& hand
   }
 }
 
+void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<TextureHandle>& handles, uint tstg_index)
+{
+  api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::Fence submit_fence(device_);
+
+  CopyTexturesToGpu(handles, tstg_index, setup_list);
+
+  setup_list.Finalize();
+  gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
+  submit_fence.WaitSignalFromGpu();
+}
+
+void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<TextureHandle>& handles, uint tstg_index, api::CommandList& cmd)
+{
+  api::Buffer& tstg = *staging_buffers_[tstg_index];
+
+  uint curr_offset = 0;
+  std::vector<uint> offsets = {};
+  
+  tstg.Map();
+  for (auto [index, texture_handle] : Enumerate(handles))
+  {
+    AbstractTexture* texture = TextureFactory::Get(texture_handle);
+    offsets.push_back(curr_offset);
+    curr_offset = CopyTextureToStagingBuffer(texture, tstg, curr_offset);
+  }
+  tstg.Unmap();
+
+  auto offset = offsets.begin();
+  for (auto [index, texture_handle] : Enumerate(handles))
+  {
+    AbstractTexture* texture = TextureFactory::Get(texture_handle);
+    CopyTextureFromStagingBuffer(cmd, texture, tstg, *offset);
+    ++offset;
+  }
+}
+
 //--private
 
 uint gdm::GpuStreamer::CopyTextureToStagingBuffer(AbstractTexture* texture, api::Buffer& stg, uint curr_offset)
@@ -154,8 +203,15 @@ uint gdm::GpuStreamer::CopyTextureToStagingBuffer(AbstractTexture* texture, api:
   auto* api_img = GMNew api::Image2D(&device_, image->GetWidth(), image->GetHeight());
   auto* api_img_view = GMNew api::ImageView(device_);
   
+  gfx::EFormatType texture_format = gfx::EFormatType::FORMAT_TYPE_MAX;
+  
+  if (texture->format_ == AbstractTexture::EFormatType::FORMAT_TYPE_MAX)
+    texture_format = v_default_texture_fmt;
+  else
+    texture_format = helpers::ConvertData2RenderTextureFormat(texture->format_);
+
   api_img->GetProps()
-    .AddFormatType(gfx::UNORM4)
+    .AddFormatType(texture_format)
     .AddImageUsage(gfx::TRANSFER_DST_IMG | gfx::SAMPLED)
     .Create();
   api_img_view->GetProps()

@@ -21,6 +21,7 @@ using ImageHandle = Handle;
 struct ImageFactory : public DataFactory<AbstractImage*>
 {
   static auto Create(const char* name, int w, int h, int d, float r, float g, float b) -> ImageHandle;
+  static auto Create(const char* name, const AbstractImage::StorageType& raw, int w, int h, int d) -> ImageHandle;
   static auto Load(const char* fpath) -> ImageHandle;
   static void Release(ImageHandle handle);
 

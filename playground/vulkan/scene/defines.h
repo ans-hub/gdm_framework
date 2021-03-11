@@ -13,8 +13,9 @@
 #include <data/model_factory.h>
 #include <render/camera_eul.h>
 #include <render/defines.h>
-#include <render/debug_draw.h>
 #include <window/main_input.h>
+#include <scene/debug_draw.h>
+
 
 namespace gdm::cfg {
 

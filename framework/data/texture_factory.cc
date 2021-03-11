@@ -24,6 +24,7 @@
 
 gdm::AbstractTexture::AbstractTexture(ImageHandle handle)
   : image_{handle}
+  , format_{EFormatType::FORMAT_TYPE_MAX}
 { }
  
 // --public TextureFactory
@@ -55,6 +56,13 @@ gdm::TextureHandle gdm::TextureFactory::Create(const char* fpath, const Vec3u& w
     img_handle = ImageFactory::GetHandle(fpath);
   else
     img_handle = ImageFactory::Create(fpath, whd.w, whd.h, whd.d, rgb.r, rgb.g, rgb.b);
+  Handle tex_handle = Load(img_handle);
+  return tex_handle;
+}
+
+gdm::TextureHandle gdm::TextureFactory::Create(const char* name, const AbstractImage::StorageType& raw, const Vec3u& whd)
+{
+  ImageHandle img_handle = ImageFactory::Create(name, raw, whd.w, whd.h, whd.d);
   Handle tex_handle = Load(img_handle);
   return tex_handle;
 }

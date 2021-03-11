@@ -38,6 +38,8 @@ struct Font
 
   void Dump(const std::string& png_name);
   auto operator[](int i) const -> const Character& { return characters_[i]; }
+  auto GetMetrics() const -> const Metrics& { return metrics_; }
+  auto GetRaw() const -> const std::vector<unsigned char>& { return atlas_data_; }
 
 private:
   constexpr static const int v_chars_cnt_ = 128;

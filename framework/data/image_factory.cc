@@ -28,6 +28,15 @@ auto gdm::ImageFactory::Create(const char* name, int w, int h, int d, float r, f
   return handle;
 }
 
+auto gdm::ImageFactory::Create(const char* name, const AbstractImage::StorageType& raw, int w, int h, int d) -> ImageHandle
+{
+  ASSERT(!Has(name));
+	AbstractImage* img = GMNew AbstractImage(raw, w, h, d);
+  Handle handle = helpers::GenerateHandle(name);
+  resources_[handle] = img;
+  return handle;
+}
+
 gdm::ImageHandle gdm::ImageFactory::Load(const char* fpath)
 {
   ASSERT(*fpath != '\000');  

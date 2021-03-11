@@ -13,7 +13,6 @@
 #include "render/camera_eul.h"
 #include "render/defines.h"
 #include "render/api.h"
-#include "render/debug_draw.h"
 #include "render/renderer.h"
 
 #include "memory/defines.h"
@@ -34,6 +33,7 @@ namespace gdm::helpers {
   auto LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>;
   auto GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<ModelHandle>;
   auto GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>;
+  auto ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType;
 
 } // namespace gdm::helpers
 

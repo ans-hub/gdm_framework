@@ -44,6 +44,7 @@ struct CommandList
   void BindDescriptorSetGraphics(const vk::DescriptorSets& descriptor_sets, Pipeline& pipeline, const std::vector<uint>& offsets);
   void DrawIndexed(const std::vector<Vec3u>& data);
   void Draw(size_t vertex_count);
+  void Draw(size_t vertex_count, size_t first_vertex);
   void DrawDummy();
 
   bool IsFinalized() const { return explicitly_finalized_; }

@@ -32,6 +32,15 @@ struct WireInputLayout : public InputLayout
   { }
 };
 
+struct TextInputLayout : public InputLayout
+{
+  TextInputLayout() : InputLayout({
+    helpers::MakeLayoutElement<Vec2f>("COORD"),
+    helpers::MakeLayoutElement<Vec2f>("UV")},
+    gfx::EPrimitiveType::TRIANGLE_STRIP)
+  { }
+};
+
 struct EmptyInputLayout : public InputLayout
 {
   EmptyInputLayout() : InputLayout({}, gfx::EPrimitiveType::TRIANGLE_LIST)

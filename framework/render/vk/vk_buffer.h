@@ -24,8 +24,6 @@ struct Buffer
   void Map(uint offset, uint size);
   void Unmap();
   template<class T>
-  void CopyDataToGpu(const T* data, size_t count);
-  template<class T>
   void CopyDataToGpu(const T* data, uint offset, size_t count);
 
   Buffer(const Buffer& other) = delete;

@@ -4,14 +4,48 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "debug_draw.h"
+#include "scene/debug_draw.h"
 
 #include <math/obb.h>
 #include <math/aabb.h>
 #include <math/sphere.h>
 #include <math/general.h>
+#include <system/string_utils.h>
+#include <data/texture_factory.h>
+
+#include "scene/gpu_streamer.h"
 
 //--public
+
+void gdm::DebugDraw::AddFont(GpuStreamer& gpu_streamer, const std::string& font_path, int size_pt)
+{
+  font_ = std::make_unique<Font>(font_path, size_pt);
+
+  const AbstractImage::StorageType& raw_text = font_->GetRaw();
+  const Font::Metrics& metrics = font_->GetMetrics();
+  const Vec3u whd {uint(metrics.texture_width_), uint(metrics.texture_height_), 1};
+  const std::string font_name = str::GetFileNameFromFpath(font_path);
+  
+  TextureHandle texture_handle = TextureFactory::Create(font_name.c_str(), raw_text, whd);
+  AbstractTexture* texture = TextureFactory::Get(texture_handle);
+  texture->format_ = AbstractTexture::EFormatType::R8_UNORM;
+
+  int tidx = gpu_streamer.FindStagingBuffer(raw_text.size());
+
+  if (tidx == -1)
+    tidx = gpu_streamer.CreateStagingBuffer(raw_text.size());
+
+  gpu_streamer.CopyTexturesToGpu({texture_handle}, tidx);
+
+  font_view_ = texture->GetApiImageView<api::ImageView>();
+}
+
+void gdm::DebugDraw::DrawText(Vec3f pos, const std::string& text, Vec4f color)
+{
+  ASSERTF(font_, "Font is not loaded");
+
+  text_data_.emplace_back(pos, color, text);
+}
 
 void gdm::DebugDraw::DrawCross(Vec3f point, float len, Vec4f color)
 {
@@ -22,18 +56,18 @@ void gdm::DebugDraw::DrawCross(Vec3f point, float len, Vec4f color)
   Vec3f u (0.f, 1.f, 0.f);
   Vec3f f (0.f, 0.f, 1.f);
 
-  data_.push_back({point, color});
-  data_.push_back({point + r * len, color});
-  data_.push_back({point, color});
-  data_.push_back({point + r * -len, color});
-  data_.push_back({point, color});
-  data_.push_back({point + u * len, color});
-  data_.push_back({point, color});
-  data_.push_back({point + u * -len, color});
-  data_.push_back({point, color});
-  data_.push_back({point + f * len, color});
-  data_.push_back({point, color});
-  data_.push_back({point + f* - len, color});
+  draw_data_.push_back({point, color});
+  draw_data_.push_back({point + r * len, color});
+  draw_data_.push_back({point, color});
+  draw_data_.push_back({point + r * -len, color});
+  draw_data_.push_back({point, color});
+  draw_data_.push_back({point + u * len, color});
+  draw_data_.push_back({point, color});
+  draw_data_.push_back({point + u * -len, color});
+  draw_data_.push_back({point, color});
+  draw_data_.push_back({point + f * len, color});
+  draw_data_.push_back({point, color});
+  draw_data_.push_back({point + f* - len, color});
 }
 
 void gdm::DebugDraw::DrawLine(Vec3f begin, Vec3f end, Vec4f color)
@@ -41,8 +75,8 @@ void gdm::DebugDraw::DrawLine(Vec3f begin, Vec3f end, Vec4f color)
   if (!is_active_)
     return;
 
-  data_.push_back({begin, color});
-  data_.push_back({end, color});
+  draw_data_.push_back({begin, color});
+  draw_data_.push_back({end, color});
 }
 
 void gdm::DebugDraw::DrawBasis(Vec3f wpos, Vec3f right, Vec3f up, Vec3f fwd, float len)
@@ -50,12 +84,12 @@ void gdm::DebugDraw::DrawBasis(Vec3f wpos, Vec3f right, Vec3f up, Vec3f fwd, flo
   if (!is_active_)
     return;
 
-  data_.push_back({wpos, color::LightRed});
-  data_.push_back({wpos + up * len, color::LightRed});
-  data_.push_back({wpos, color::LightGreen});
-  data_.push_back({wpos + right * len, color::LightGreen});
-  data_.push_back({wpos, color::LightBlue});
-  data_.push_back({wpos + fwd * len, color::LightBlue});
+  draw_data_.push_back({wpos, color::LightRed});
+  draw_data_.push_back({wpos + up * len, color::LightRed});
+  draw_data_.push_back({wpos, color::LightGreen});
+  draw_data_.push_back({wpos + right * len, color::LightGreen});
+  draw_data_.push_back({wpos, color::LightBlue});
+  draw_data_.push_back({wpos + fwd * len, color::LightBlue});
 }
 
 void gdm::DebugDraw::DrawBasis(const Mat4f& mx, float len)

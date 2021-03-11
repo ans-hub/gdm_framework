@@ -22,6 +22,22 @@ using TextureHandle = Handle;
 
 struct AbstractTexture
 {
+  enum class EFormatType
+  {
+    F1,
+    F2,
+    F3,
+    F4,
+    F4HALF,
+    SRGB4,
+    UNORM4,
+    D24_UNORM_S8_UINT,
+    D32_SFLOAT_S8_UINT,
+    R8_UNORM,
+    D16_UNORM,
+    FORMAT_TYPE_MAX
+  };
+  
   AbstractTexture(ImageHandle handle);
 
   template<class T>
@@ -34,7 +50,8 @@ struct AbstractTexture
   template<class T>
   auto GetApiImageView() const -> T* { return static_cast<T*>(image_view_impl_); }
 
-  ImageHandle image_; 
+  ImageHandle image_;
+  EFormatType format_;
   void* image_impl_ = nullptr;
   void* image_view_impl_ = nullptr;
 
@@ -45,6 +62,7 @@ struct TextureFactory : public DataFactory<AbstractTexture*>
   static auto Load(ImageHandle handle) -> TextureHandle;
   static auto Load(const char* fpath) -> TextureHandle;
   static auto Create(const char* fpath, const Vec3u& whd, const Vec3f& rgb) -> TextureHandle;
+  static auto Create(const char* name, const AbstractImage::StorageType& raw, const Vec3u& whd) -> TextureHandle;
   static void Release(TextureHandle handle); // TODO: Release what? only tex? or with chidlren? ref_cnt needed
 };
 

@@ -14,6 +14,11 @@
 
 // --helpers
 
+gdm::AbstractImage* gdm::helpers::MakeImage(const AbstractImage::StorageType& raw, int width, int height, int depth)
+{
+  return GMNew AbstractImage(raw, width, height, depth);
+}
+
 gdm::AbstractImage* gdm::helpers::MakeImage(const char* fname, std::array<float,3> rgb)
 {
   std::string ext = str::GetFileExtension(fname);

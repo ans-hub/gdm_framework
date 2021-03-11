@@ -197,15 +197,15 @@ void gdm::GbufferPass::UpdateUniforms(api::CommandList& cmd, uint max_objects)
   cmd.PushBarrier(*data_.to_write_barriers_[2]);
 
   data_.pfcb_staging_vs_->Map();
-  data_.pfcb_staging_vs_->CopyDataToGpu(&data_.pfcb_data_vs_, 1);
+  data_.pfcb_staging_vs_->CopyDataToGpu(&data_.pfcb_data_vs_, 0, 1);
   data_.pfcb_staging_vs_->Unmap();
   cmd.CopyBufferToBuffer(*data_.pfcb_staging_vs_, *data_.pfcb_uniform_vs_, sizeof(GbufferVs_PFCB));
   
-  data_.pocb_staging_vs_->CopyDataToGpu(data_.pocb_data_vs_.data(), data_.pocb_data_vs_.size());
+  data_.pocb_staging_vs_->CopyDataToGpu(data_.pocb_data_vs_.data(), 0, data_.pocb_data_vs_.size());
   uint pocb_size_vs = static_cast<uint>(sizeof(GbufferVs_POCB) * data_.pocb_data_vs_.size());
   cmd.CopyBufferToBuffer(*data_.pocb_staging_vs_, *data_.pocb_uniform_vs_, pocb_size_vs);
 
-  data_.pocb_staging_ps_->CopyDataToGpu(data_.pocb_data_ps_.data(), data_.pocb_data_ps_.size());
+  data_.pocb_staging_ps_->CopyDataToGpu(data_.pocb_data_ps_.data(), 0, data_.pocb_data_ps_.size());
   uint pocb_size_ps = static_cast<uint>(sizeof(GbufferPs_POCB) * data_.pocb_data_ps_.size());
   cmd.CopyBufferToBuffer(*data_.pocb_staging_ps_, *data_.pocb_uniform_ps_, pocb_size_ps);
 

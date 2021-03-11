@@ -9,7 +9,6 @@
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
-#include "render/debug_draw.h"
 #include "render/desc/viewport_desc.h"
 
 #include "window/main_input.h"
@@ -19,6 +18,7 @@
 #include "data/cfg_loader.h"
 
 #include "cfg_dispatcher.h"
+#include "debug_draw.h"
 
 namespace gdm {
 

@@ -177,3 +177,26 @@ auto gdm::helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -
   }
   return result;
 }
+
+auto gdm::helpers::ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType
+{
+  switch(type)
+  {
+    case AbstractTexture::EFormatType::F1: return gfx::EFormatType::F1;
+    case AbstractTexture::EFormatType::F2: return gfx::EFormatType::F2;
+    case AbstractTexture::EFormatType::F3: return gfx::EFormatType::F3;
+    case AbstractTexture::EFormatType::F4: return gfx::EFormatType::F4;
+    case AbstractTexture::EFormatType::F4HALF: return gfx::EFormatType::F4HALF;
+    case AbstractTexture::EFormatType::SRGB4: return gfx::EFormatType::SRGB4;
+    case AbstractTexture::EFormatType::UNORM4: return gfx::EFormatType::UNORM4;
+    case AbstractTexture::EFormatType::D24_UNORM_S8_UINT: return gfx::EFormatType::D24_UNORM_S8_UINT;
+    case AbstractTexture::EFormatType::D32_SFLOAT_S8_UINT: return gfx::EFormatType::D32_SFLOAT_S8_UINT;
+    case AbstractTexture::EFormatType::R8_UNORM: return gfx::EFormatType::R8_UNORM;
+    case AbstractTexture::EFormatType::D16_UNORM: return gfx::EFormatType::D16_UNORM;
+    default:
+    {
+      ASSERTF(false, "No association with texture type");
+      return gfx::EFormatType::FORMAT_TYPE_MAX;
+    }
+  }
+}

@@ -36,6 +36,8 @@ private:
 
 }; // struct Framebuffer
 
+using Framebuffers = std::vector<Framebuffer*>;
+
 } // namespace gdm::vk
 
 #endif // GM_VK_FRAMEBUFFER_H

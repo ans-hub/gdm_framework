@@ -198,6 +198,11 @@ void gdm::vk::CommandList::Draw(size_t vertex_count)
   vkCmdDraw(command_buffer_, static_cast<uint32_t>(vertex_count), 1, 0, 0);
 }
 
+void gdm::vk::CommandList::Draw(size_t vertex_count, size_t first_vertex)
+{
+  vkCmdDraw(command_buffer_, static_cast<uint32_t>(vertex_count), 1, static_cast<uint32_t>(first_vertex), 0);
+}
+
 void gdm::vk::CommandList::DrawDummy()
 {
   vkCmdDraw(command_buffer_, 3, 1, 0, 0);

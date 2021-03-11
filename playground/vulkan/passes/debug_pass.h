@@ -14,7 +14,6 @@
 #include "render/renderer.h"
 #include "render/shader.h"
 #include "render/camera_eul.h"
-#include "render/debug_draw.h"
 
 #include "math/matrix.h"
 #include "math/vector4.h"
@@ -25,6 +24,8 @@
 #include "render/desc/sampler_desc.h"
 #include "render/desc/rasterizer_desc.h"
 #include "render/desc/input_layout_desc.h"
+
+#include "scene/debug_draw.h"
 
 namespace gdm {
 
@@ -53,7 +54,7 @@ struct DebugPassData
   api::ImageBarrier* present_to_write_barrier_;
   api::DescriptorSetLayout* descriptor_set_layout_;
   api::DescriptorSet* descriptor_set_;  
-  size_t vertices_count_;
+  size_t vertices_count_ = 0;
 
   DebugVs_PFCB pfcb_data_vs_ = {};
 };
@@ -74,16 +75,19 @@ struct DebugPass
 
   std::vector<DebugPassData> data_;
 
+  void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
+
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
-  void CreateBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size);
+  void CreateVertexBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size);
   void CreateImages(api::CommandList& cmd);
-  void CreateFramebuffer();
+  void CreateFramebuffer(uint frame_num);
   void CreateRenderPass();
   void CreatePipeline();
   
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
   void UpdateUniformsData(uint curr_frame, const CameraEul& camera);
   void UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<DebugData>& debug_data);
+
   void Draw(api::CommandList& cmd, uint curr_frame);
 };
 

@@ -10,6 +10,13 @@
 
 // --public
 
+gdm::AbstractImage::AbstractImage(const AbstractImage::StorageType& raw, int width, int height, int depth)
+  : width_{width}
+  , height_{height}
+  , depth_{depth}
+  , data_{raw}
+{ }
+
 gdm::AbstractImage::AbstractImage(int width, int height, int depth, float r, float g, float b, float a)
 	: width_{width}
 	, height_{height}

@@ -19,6 +19,7 @@ struct AbstractImage
   using StorageType = std::vector<DataType>;
 
   AbstractImage() = default;
+  AbstractImage(const StorageType& raw, int width, int height, int depth);
   AbstractImage(int width, int height, int depth, float r, float g, float b, float a = 1.f);
 
   virtual auto GetWidth() const -> unsigned;

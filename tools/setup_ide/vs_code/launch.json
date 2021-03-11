@@ -28,6 +28,7 @@
       "stopAtEntry": false,
       "environment": [
         {
+            "justMyCode" : false,
             "name": "VK_LOADER_DEBUG",
             "value": "err"
         }

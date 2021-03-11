@@ -29,18 +29,22 @@
 #include "passes/deferred_pass.h"
 #include "passes/gbuffer_pass.h"
 #include "passes/debug_pass.h"
+#include "passes/text_pass.h"
 
 #include "data/model_factory.h"
 #include "data/cfg_loader.h"
 
+#include "system/font.h"
+
 #include "scene.h"
 #include "gpu_streamer.h"
+#include "debug_draw.h"
 
 namespace gdm {
 
 struct SceneRenderer
 {
-  SceneRenderer(api::Renderer& gfx);
+  SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer);
 
   void Update(float dt,
               const CameraEul& camera,
@@ -55,11 +59,12 @@ private:
   api::Device& device_;
   api::Fence submit_fence_;
 
+  DebugDraw debug_draw_;
+
   GbufferPass gbuffer_pass_;
   DeferredPass deferred_pass_;
   DebugPass debug_pass_;
-
-  DebugDraw debug_draw_;
+  TextPass text_pass_;
 
 };  // struct Renderer
 

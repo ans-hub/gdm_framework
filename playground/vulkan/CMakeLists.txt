@@ -38,16 +38,18 @@ set(SRC main.cc
         passes/gbuffer_pass.cc
         passes/deferred_pass.cc
         passes/debug_pass.cc
+        passes/text_pass.cc
         scene/gpu_streamer.cc
         scene/scene_renderer.cc
         scene/data_helpers.cc
         scene/input_helpers.cc
         scene/scene.cc
+        scene/debug_draw.cc
         scene/cfg_dispatcher.cc)
 
 if (WIN32)
   set(CMAKE_CXX_FLAGS
-      "${CMAKE_CXX_FLAGS} /DWIN32 /D_WINDOWS /WX /wd4355"
+      "${CMAKE_CXX_FLAGS} /DWIN32 /D_WINDOWS /WX /wd4355 /wd4267"
       CACHE STRING "Debug compiler flags" FORCE)
   message("* App ${BIN}: set linker specific for Windows")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
@@ -72,3 +74,4 @@ endif()
 
 include(${GDM_ROOT_DIR}/tools/cmake_includes/vulkan_post.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/dxc_post.cmake)
+include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype_post.cmake)

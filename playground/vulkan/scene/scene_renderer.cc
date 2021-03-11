@@ -20,15 +20,19 @@
 
 // --public
 
-gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx)
+gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   : gfx_{ gfx }
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
+  , debug_draw_{}
   , gbuffer_pass_(gfx_)
   , deferred_pass_(gfx::v_num_images, gfx_)
   , debug_pass_(gfx::v_num_images, gfx_)
-  , debug_draw_{}
+  , text_pass_(gfx::v_num_images, gfx_)
 {
+  debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
+  text_pass_.BindFont(debug_draw_.GetFont(), debug_draw_.GetFontView());
+
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
 
   gbuffer_pass_.CreateUniforms(setup_list, cfg::v_max_objects);
@@ -48,13 +52,18 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx)
 
   for (uint i = 0; i < gfx::v_num_images; ++i)
   {
+    debug_pass_.BindFramebuffer(deferred_pass_.GetFramebuffer(i), i);
+    text_pass_.BindFramebuffer(deferred_pass_.GetFramebuffer(i), i);
     debug_pass_.CreateUniforms(setup_list, i);
-    debug_pass_.CreateBuffer(setup_list, i, 128_Kb);
+    text_pass_.CreateUniforms(setup_list, i);
+    debug_pass_.CreateVertexBuffer(setup_list, i, 128_Kb);
+    text_pass_.CreateVertexBuffer(setup_list, i);
   }
   debug_pass_.CreateImages(setup_list);
   debug_pass_.CreateRenderPass();
-  debug_pass_.CreateFramebuffer();
   debug_pass_.CreatePipeline();
+  text_pass_.CreateRenderPass();
+  text_pass_.CreatePipeline();
 
   submit_fence_.Reset();
 
@@ -115,9 +124,14 @@ void gdm::SceneRenderer::Update(
 
     debug_pass_.UpdateUniformsData(curr_frame, camera);
     debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
-    debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetData());
+    debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetDrawData());
     debug_pass_.Draw(cmd_debug, curr_frame);
     debug_draw_.Clear();
+
+    text_pass_.UpdateUniformsData(curr_frame, camera);
+    text_pass_.UpdateUniforms(cmd_debug, curr_frame);
+    text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetTextData());
+
     submit_fence_.Reset();
     cmd_debug.Finalize();
 

@@ -95,32 +95,32 @@ void gdm::vk::Pipeline::Compile()
   input_assembly.topology = static_cast<VkPrimitiveTopology>(input_layout_.GetPrimitiveType());
   input_assembly.primitiveRestartEnable = VK_FALSE;
 
-  std::vector<VkVertexInputBindingDescription> vertex_binding_descritpion;
+  std::vector<VkVertexInputBindingDescription> vertex_binding_description;
   if (input_layout_.GetSize() != 0)
   {
-    vertex_binding_descritpion.push_back({});
-    vertex_binding_descritpion.back().binding = 0;
-    vertex_binding_descritpion.back().stride = input_layout_.GetSize();
-    vertex_binding_descritpion.back().inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    vertex_binding_description.push_back({});
+    vertex_binding_description.back().binding = 0;
+    vertex_binding_description.back().stride = input_layout_.GetSize();
+    vertex_binding_description.back().inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
   }
 
   const auto& elements = input_layout_.GetData();
-  std::vector<VkVertexInputAttributeDescription> vertex_attribute_descritpion (elements.size()); 
+  std::vector<VkVertexInputAttributeDescription> vertex_attribute_description (elements.size()); 
 
   for (size_t i = 0; i < elements.size(); ++i)
   {
-    vertex_attribute_descritpion[i].location = static_cast<uint>(i);
-    vertex_attribute_descritpion[i].binding = 0;
-    vertex_attribute_descritpion[i].format = static_cast<VkFormat>(elements[i].type_);
-    vertex_attribute_descritpion[i].offset = elements[i].offset_;
+    vertex_attribute_description[i].location = static_cast<uint>(i);
+    vertex_attribute_description[i].binding = 0;
+    vertex_attribute_description[i].format = static_cast<VkFormat>(elements[i].type_);
+    vertex_attribute_description[i].offset = elements[i].offset_;
   }
 
   VkPipelineVertexInputStateCreateInfo vertex_input_info = {};
   vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-  vertex_input_info.vertexBindingDescriptionCount = static_cast<uint>(vertex_binding_descritpion.size());
-  vertex_input_info.pVertexBindingDescriptions = vertex_binding_descritpion.data();
-  vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint>(vertex_attribute_descritpion.size());
-  vertex_input_info.pVertexAttributeDescriptions = vertex_attribute_descritpion.data();
+  vertex_input_info.vertexBindingDescriptionCount = static_cast<uint>(vertex_binding_description.size());
+  vertex_input_info.pVertexBindingDescriptions = vertex_binding_description.data();
+  vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint>(vertex_attribute_description.size());
+  vertex_input_info.pVertexAttributeDescriptions = vertex_attribute_description.data();
 
   std::vector<VkShaderModule> shader_modules{};
   std::vector<VkPipelineShaderStageCreateInfo> shader_stages{};
