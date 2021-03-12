@@ -81,11 +81,13 @@ public:
     , characters_count_{0}
   { }
 
+  [[deprecated]] void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
+
   void BindFont(const Font* font, api::ImageView* font_texture);
-  void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
   
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateVertexBuffer(api::CommandList& cmd, uint frame_num);
+  void CreateFramebuffer();
   void CreateRenderPass();
   void CreatePipeline();
 

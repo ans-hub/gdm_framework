@@ -50,19 +50,27 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   deferred_pass_.CreateFramebuffer();
   deferred_pass_.CreatePipeline(gbuffer_pass_.data_.image_views_);
 
-  for (uint i = 0; i < gfx::v_num_images; ++i)
-  {
-    debug_pass_.BindFramebuffer(deferred_pass_.GetFramebuffer(i), i);
-    text_pass_.BindFramebuffer(deferred_pass_.GetFramebuffer(i), i);
-    debug_pass_.CreateUniforms(setup_list, i);
-    text_pass_.CreateUniforms(setup_list, i);
-    debug_pass_.CreateVertexBuffer(setup_list, i, 128_Kb);
-    text_pass_.CreateVertexBuffer(setup_list, i);
-  }
   debug_pass_.CreateImages(setup_list);
   debug_pass_.CreateRenderPass();
+  debug_pass_.CreateFramebuffer();
+  
+  for (uint i = 0; i < gfx::v_num_images; ++i)
+  {
+    debug_pass_.CreateUniforms(setup_list, i);
+    debug_pass_.CreateVertexBuffer(setup_list, i, 128_Kb);
+  }
+  
   debug_pass_.CreatePipeline();
+  
   text_pass_.CreateRenderPass();
+  text_pass_.CreateFramebuffer();
+
+  for (uint i = 0; i < gfx::v_num_images; ++i)
+  {
+    text_pass_.CreateUniforms(setup_list, i);
+    text_pass_.CreateVertexBuffer(setup_list, i);
+  }
+
   text_pass_.CreatePipeline();
 
   submit_fence_.Reset();
@@ -73,7 +81,7 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   submit_fence_.Reset();
 }
 
-void gdm::SceneRenderer::Update(
+void gdm::SceneRenderer::Render(
   float dt,
   const CameraEul& camera,
   const std::vector<ModelInstance*>& models,

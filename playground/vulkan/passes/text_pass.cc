@@ -39,7 +39,6 @@ void gdm::TextPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num)
   data_[frame_num].vertex_buffer_ = GMNew api::Buffer(device_, uint(buffer_size), gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
 
-
 void gdm::TextPass::CreateRenderPass()
 {
   pass_ = GMNew api::RenderPass(*device_);
@@ -57,6 +56,18 @@ void gdm::TextPass::CreateRenderPass()
   uint subpass_idx = pass_->CreateSubpass(gfx::EQueueType::GRAPHICS);
   pass_->AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
   pass_->Finalize();
+}
+
+void gdm::TextPass::CreateFramebuffer()
+{
+  uint height = rdr_->GetSurfaceHeight();
+  uint width = rdr_->GetSurfaceWidth();
+
+  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  {
+    api::ImageViews image_views { rdr_->GetBackBufferViews()[i] };
+    data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
+  }
 }
 
 void gdm::TextPass::CreatePipeline()

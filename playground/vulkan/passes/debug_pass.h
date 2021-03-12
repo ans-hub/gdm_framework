@@ -75,12 +75,10 @@ struct DebugPass
 
   std::vector<DebugPassData> data_;
 
-  void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
-
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateVertexBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size);
   void CreateImages(api::CommandList& cmd);
-  void CreateFramebuffer(uint frame_num);
+  void CreateFramebuffer();
   void CreateRenderPass();
   void CreatePipeline();
   

@@ -94,7 +94,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
       input,
       scene_renderer.GetDebugDraw());
     
-    scene_renderer.Update(dt,
+    scene_renderer.Render(dt,
       scene.GetCamera(),
       scene.GetRenderableInstances(),
       scene.GetRenderableMaterials(),

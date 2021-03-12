@@ -11,6 +11,7 @@
 
 #include "render/defines.h"
 
+#include "vk_pointers.h"
 #include "vk_defines.h"
 #include "vk_device.h"
 #include "vk_physical_device.h"
@@ -41,7 +42,10 @@ struct Renderer
   auto AcquireNextFrame(VkSemaphore sem_sig, VkFence fence) -> uint;
   void SubmitCommandLists(const std::vector<VkCommandBuffer>& command_lists, const std::vector<VkSemaphore>& sem_wait, const std::vector<VkSemaphore>& sem_sig, VkFence fence);
   void SubmitPresentation(uint frame_num, const std::vector<VkSemaphore>& sem_wait);
-  
+  void BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
+  void InsertDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
+  void EndDebugLabel(VkCommandBuffer cmd);
+
   constexpr auto GetBackBuffersCount() const -> uint { return v_num_images_; };
 
 private:
@@ -54,10 +58,12 @@ private:
   auto CreateCommandPool(bool reset_on_begin, uint queue_index, VkCommandPoolCreateFlagBits flags) -> VkCommandPool;
   auto CreateCommandBuffers(VkCommandPool pool, uint count) -> std::vector<VkCommandBuffer>;
   auto CreateDescriptorPool(int max_sets, const std::vector<std::pair<gfx::EResourceType, uint>>& pools_description) -> VkDescriptorPool;
-  auto CreateDebugCallback() -> VkDebugReportCallbackEXT;
+  auto CreateDebugCallbackLegacy() -> VkDebugReportCallbackEXT;
+  auto CreateDebugCallbackModern() -> VkDebugUtilsMessengerEXT;
   void InitializePresentImages();
   auto FillInstanceLayersInfo() -> std::vector<const char*>;
   auto FillInstanceExtensionsInfo() -> std::vector<const char*>;
+  void ValidateSetup();
   void Cleanup();
   
 private:
@@ -66,7 +72,8 @@ private:
   std::vector<const char*> instance_extensions_;
   std::vector<const char*> instance_layers_;
   VkInstance instance_;
-  VkDebugReportCallbackEXT debug_callback_; 
+  VkDebugUtilsMessengerEXT debug_callback_modern_;
+  VkDebugReportCallbackEXT debug_callback_legacy_;
   VkSurfaceKHR surface_;
   VkQueueFlags queue_flags_;
   std::vector<PhysicalDevice> phys_devices_db_;

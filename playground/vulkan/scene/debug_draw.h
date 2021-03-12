@@ -43,7 +43,7 @@ struct DebugDraw
 {
   void AddFont(GpuStreamer& gpu_streamer, const std::string& font_path, int size_pt);
 
-  void DrawText(Vec3f pos, const std::string& text, Vec4f color);
+  void DrawString(Vec3f pos, const std::string& text, Vec4f color);
   void DrawCross(Vec3f point, float len, Vec4f color = color::LightGray);
   void DrawLine(Vec3f begin, Vec3f end, Vec4f color = color::LightGray);
   void DrawBasis(Vec3f wpos, Vec3f right, Vec3f up, Vec3f fwd, float len = 1.f);

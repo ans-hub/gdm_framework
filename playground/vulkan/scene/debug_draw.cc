@@ -40,7 +40,7 @@ void gdm::DebugDraw::AddFont(GpuStreamer& gpu_streamer, const std::string& font_
   font_view_ = texture->GetApiImageView<api::ImageView>();
 }
 
-void gdm::DebugDraw::DrawText(Vec3f pos, const std::string& text, Vec4f color)
+void gdm::DebugDraw::DrawString(Vec3f pos, const std::string& text, Vec4f color)
 {
   ASSERTF(font_, "Font is not loaded");
 

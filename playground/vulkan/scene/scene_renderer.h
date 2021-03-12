@@ -46,7 +46,7 @@ struct SceneRenderer
 {
   SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer);
 
-  void Update(float dt,
+  void Render(float dt,
               const CameraEul& camera,
               const std::vector<ModelInstance*>& models,
               const api::ImageViews& materials,

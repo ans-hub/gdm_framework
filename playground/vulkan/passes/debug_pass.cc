@@ -8,15 +8,11 @@
 
 #include "render/api.h"
 #include "render/defines.h"
+#include "render/colors.h"
 #include "system/diff_utils.h"
 #include "data/model_factory.h"
 
 // --public create
-
-void gdm::DebugPass::BindFramebuffer(api::Framebuffer* fb, uint frame_num)
-{
-  data_[frame_num].fb_ = fb;
-}
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
@@ -55,6 +51,18 @@ void gdm::DebugPass::CreateImages(api::CommandList& cmd)
   }
 }
 
+void gdm::DebugPass::CreateFramebuffer()
+{
+  uint height = rdr_->GetSurfaceHeight();
+  uint width = rdr_->GetSurfaceWidth();
+
+  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  {
+    api::ImageViews image_views { rdr_->GetBackBufferViews()[i] };
+    data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
+  }
+}
+
 void gdm::DebugPass::CreateRenderPass()
 {
   pass_ = GMNew api::RenderPass(*device_);
@@ -67,7 +75,7 @@ void gdm::DebugPass::CreateRenderPass()
     .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddLoadOp(gfx::EAttachmentLoadOp::LOAD_OP)
-    .AddStoreOp(gfx::EAttachmentStoreOp::STORE_DONT_CARE);
+    .AddStoreOp(gfx::EAttachmentStoreOp::STORE_OP);
 
   uint subpass_idx = pass_->CreateSubpass(gfx::EQueueType::GRAPHICS);
   pass_->AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
@@ -145,18 +153,24 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame)
   if (data.vertices_count_ == 0)
     return;
 
+  rdr_->BeginDebugLabel(cmd, "Hello world", color::Green);
+
   cmd.PushBarrier(*data.present_to_write_barrier_);
   
   api::DescriptorSets descriptor_sets {*data_[curr_frame].descriptor_set_};
 
   cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{});      
   cmd.BindPipelineGraphics(*pipeline_);
+
+  
   cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
   cmd.BindVertexBuffer(*data.vertex_buffer_);
   cmd.Draw(data.vertices_count_);
   cmd.EndRenderPass();
 
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
+  
+  rdr_->EndDebugLabel(cmd);
 
   data.vertices_count_ = 0;
 }

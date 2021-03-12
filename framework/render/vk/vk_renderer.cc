@@ -23,7 +23,7 @@
 
 namespace gdm::_private {
 
-  static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportCB(
+  static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportLegacyCB(
     VkDebugReportFlagsEXT       flags,
     VkDebugReportObjectTypeEXT  object_type,
     uint64_t                    object,
@@ -34,6 +34,17 @@ namespace gdm::_private {
     void*                       user_data)
   {
     OutputDebugStringA(message);
+    OutputDebugStringA("\n");
+    return VK_FALSE;
+  }
+
+  static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReportModernCB(
+    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    VkDebugUtilsMessageTypeFlagsEXT message_type,
+    const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
+    void* user_data)
+  {
+    OutputDebugStringA(callback_data->pMessage);
     OutputDebugStringA("\n");
     return VK_FALSE;
   }
@@ -54,7 +65,8 @@ gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
   , instance_extensions_{ FillInstanceExtensionsInfo() }
   , instance_layers_{ FillInstanceLayersInfo() }
   , instance_{ CreateInstance() }
-  , debug_callback_{ CreateDebugCallback() }
+  , debug_callback_modern_{ CreateDebugCallbackModern() }
+  , debug_callback_legacy_{ debug_callback_modern_ ? nullptr : CreateDebugCallbackLegacy() }
   , surface_{ CreateSurface(window_handle, instance_) }
   , queue_flags_{ VK_QUEUE_GRAPHICS_BIT }
   , phys_devices_db_{ helpers::EnumeratePhysicalDevices(instance_, surface_) }
@@ -66,6 +78,8 @@ gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
   , present_images_views_{ CreatePresentImagesView() }
 { 
   InitializePresentImages();
+  GatherAdditionalVulkanFunctionPtrs(*device_);
+  ValidateSetup();
 }
 
 gdm::vk::Renderer::~Renderer()
@@ -181,7 +195,39 @@ void gdm::vk::Renderer::SubmitPresentation(uint frame_num, const std::vector<VkS
   ASSERTF(res == VK_SUCCESS, "vkQueuePresentKHR %d\n", res);
 }
 
+void gdm::vk::Renderer::BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color)
+{
+  VkDebugUtilsLabelEXT markerInfo = {};
+  markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+  memcpy(markerInfo.color, &color.data[0], sizeof(Vec4f));
+  markerInfo.pLabelName = name;
+  vkCmdBeginDebugUtilsLabel(cmd, &markerInfo);
+}
+
+void gdm::vk::Renderer::InsertDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color)
+{
+  VkDebugUtilsLabelEXT markerInfo = {};
+  markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
+  memcpy(markerInfo.color, &color.data[0], sizeof(Vec4f));
+  markerInfo.pLabelName = name;
+  vkCmdInsertDebugUtilsLabel(cmd, &markerInfo);
+}
+
+void gdm::vk::Renderer::EndDebugLabel(VkCommandBuffer cmd)
+{
+  vkCmdEndDebugUtilsLabel(cmd);
+}
+
 // --private
+
+void gdm::vk::Renderer::ValidateSetup()
+{
+  if constexpr (gfx::v_DebugBuild)
+  {
+    const bool valid_debug_cb = debug_callback_legacy_ || debug_callback_modern_;
+    ENSUREF(valid_debug_cb, "No one valid debug callback for validation layer was provided");
+  }
+}
 
 auto gdm::vk::Renderer::CreateInstance() -> VkInstance
 {
@@ -394,12 +440,21 @@ auto gdm::vk::Renderer::CreateDescriptorPool(int max_sets, const std::vector<std
   return descriptor_pool;
 }
 
-auto gdm::vk::Renderer::CreateDebugCallback() -> VkDebugReportCallbackEXT
+auto gdm::vk::Renderer::CreateDebugCallbackLegacy() -> VkDebugReportCallbackEXT
 {
-  static VkDebugReportCallbackEXT callback;
+  static VkDebugReportCallbackEXT callback = nullptr;
   
   if constexpr (gfx::v_DebugBuild)
   {
+      PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
+      CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance_, "vkCreateDebugReportCallbackEXT");
+
+      // PFN_vkDestroyDebugReportCallbackEXT DestroyDebugReportCallback;
+      // DestroyDebugReportCallback = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance_, "vkDestroyDebugReportCallbackEXT");
+
+      if (!CreateDebugReportCallback)
+        return nullptr;
+
       VkDebugReportCallbackCreateInfoEXT cb_create_info {};
       cb_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
       cb_create_info.pNext = nullptr;
@@ -407,14 +462,49 @@ auto gdm::vk::Renderer::CreateDebugCallback() -> VkDebugReportCallbackEXT
                              VK_DEBUG_REPORT_ERROR_BIT_EXT |
                              VK_DEBUG_REPORT_WARNING_BIT_EXT |
                              VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
-      cb_create_info.pfnCallback = _private::DebugReportCB;
+      cb_create_info.pfnCallback = _private::DebugReportLegacyCB;
       cb_create_info.pUserData = nullptr;
 
-      PFN_vkCreateDebugReportCallbackEXT CreateDebugReportCallback;
-      CreateDebugReportCallback = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance_, "vkCreateDebugReportCallbackEXT");
 
       VkResult res = CreateDebugReportCallback(instance_, &cb_create_info, &allocator_, &callback);
       ASSERTF(res == VK_SUCCESS, "vkCreateDebugReportCallbackEXT error %d\n", res);
+  }
+  return callback;
+}
+
+// https://www.lunarg.com/wp-content/uploads/2018/05/Vulkan-Debug-Utils_05_18_v1.pdf
+
+auto gdm::vk::Renderer::CreateDebugCallbackModern() -> VkDebugUtilsMessengerEXT
+{
+  static VkDebugUtilsMessengerEXT callback = nullptr;
+  
+  if constexpr (gfx::v_DebugBuild)
+  {
+      PFN_vkCreateDebugUtilsMessengerEXT CreateDebugUtilsMessenger;
+      CreateDebugUtilsMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance_, "vkCreateDebugUtilsMessengerEXT");
+
+      // PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessenger;
+      // DestroyDebugUtilsMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance_, "vkDestroyDebugUtilsMessengerEXT");
+
+      if (!CreateDebugUtilsMessenger)
+        return nullptr;
+
+      VkDebugUtilsMessengerCreateInfoEXT cb_create_info {};
+      cb_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+      cb_create_info.pNext = nullptr;
+      cb_create_info.flags = 0;
+      cb_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+                                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+      cb_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                   VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
+                                   VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+      cb_create_info.pfnUserCallback = _private::DebugReportModernCB;
+      cb_create_info.pUserData = nullptr;
+
+      VkResult res = CreateDebugUtilsMessenger(instance_, &cb_create_info, &allocator_, &callback);
+      ASSERTF(res == VK_SUCCESS, "vkCreateDebugUtilsMessengerEXT error %d\n", res);
   }
   return callback;
 }
@@ -443,7 +533,7 @@ auto gdm::vk::Renderer::FillInstanceExtensionsInfo() -> std::vector<const char*>
   if constexpr (gfx::v_DebugBuild)
   {
     instance_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
-    instance_extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+    instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
   }
   if constexpr (gfx::v_Windows)
     instance_extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
