@@ -441,11 +441,24 @@ auto gdm::vk::Renderer::FillInstanceExtensionsInfo() -> std::vector<const char*>
   instance_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);  // for dynamic_indexing
 
   if constexpr (gfx::v_DebugBuild)
+  {
     instance_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    instance_extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+  }
   if constexpr (gfx::v_Windows)
     instance_extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 
-  ASSERT(helpers::FindUnsupportedInstanceExtensions(instance_extensions).empty());
+  auto unsupported = helpers::FindUnsupportedInstanceExtensions(instance_extensions);
+
+  if (!unsupported.empty())
+  {
+    for (auto&& num : unsupported)
+    {
+      ENSUREF(false, "Unsupported extensions: %s", instance_extensions[num]);
+      auto it = instance_extensions.begin() + num;
+      instance_extensions.erase(it);
+    }
+  }
 
   return instance_extensions;
 }

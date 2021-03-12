@@ -69,6 +69,7 @@ auto gdm::vk::Device::CreateLogicalDevice(VkPhysicalDevice phys_device, int queu
   device_features12.shaderSampledImageArrayNonUniformIndexing = true;
   device_features12.runtimeDescriptorArray = true;
   device_features12.descriptorBindingVariableDescriptorCount = true;
+  device_features12.descriptorIndexing = VK_TRUE;
   device_features12.pNext = NULL;
   
   VkPhysicalDeviceFeatures device_features = {};
