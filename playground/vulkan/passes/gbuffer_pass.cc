@@ -8,7 +8,9 @@
 
 #include "render/api.h"
 #include "render/defines.h"
+#include "render/debug.h"
 #include "system/diff_utils.h"
+#include "system/event_point.h"
 #include "data/model_factory.h"
 
 // --public create
@@ -249,6 +251,8 @@ void gdm::GbufferPass::UpdateDescriptorSet(const api::ImageViews& renderable_mat
 
 void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelInstance*>& renderable_models)
 {
+  GDM_EVENT_POINT("GbufferPass", GDM_LABEL_S(color::Black));
+
   for(auto* barrier : data_.image_barriers_to_write_)
     cmd.PushBarrier(*barrier);
 

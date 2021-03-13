@@ -6,7 +6,9 @@
 
 #include "deferred_pass.h"
 
+#include "render/debug.h"
 #include "system/diff_utils.h"
+#include "system/event_point.h"
 
 // --public create
 
@@ -187,6 +189,8 @@ void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& cam
 
 void gdm::DeferredPass::Draw(api::CommandList& cmd, uint curr_frame)
 {
+  GDM_EVENT_POINT("DeferredPass", GDM_LABEL_S(color::Blue));
+
   cmd.PushBarrier(*data_[curr_frame].present_to_write_barrier_);    
 
   api::DescriptorSets descriptor_sets {*data_[curr_frame].descriptor_set_};

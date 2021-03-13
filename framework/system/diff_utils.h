@@ -13,6 +13,11 @@
 #define UNUSED(x) (&reinterpret_cast<const int&>(x))
 #endif
 
+#ifndef GDM_CONCAT
+#define GDM_CONCAT_(x, y) x##y
+#define GDM_CONCAT(x, y) GDM_CONCAT_(x, y)
+#endif
+
 namespace gdm {
 
   template<class T, class IterBegin = decltype(std::begin(std::declval<T>())),

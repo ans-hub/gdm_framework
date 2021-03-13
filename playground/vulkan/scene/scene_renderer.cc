@@ -8,7 +8,9 @@
 
 #include "system/diff_utils.h"
 #include "system/literals.h"
+#include "system/event_point.h"
 
+#include "render/debug.h"
 #include "render/shader.h"
 #include "render/desc/sampler_desc.h"
 #include "render/desc/input_layout_desc.h"

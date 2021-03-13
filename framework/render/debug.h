@@ -10,7 +10,9 @@
 #include "defines.h"
 #include "api.h"
 #include "renderer.h"
+
 #include <math/vector4.h>
+#include <system/diff_utils.h>
 
 // Gpu labels for event point. By convention in caller context should present
 // interface to renderer pointer named rdr_ and command list called cmd. Otherwise
@@ -34,7 +36,7 @@ namespace gdm::gfx {
 #ifdef GDM_LABELS_ENABLED
 
 # define GDM_LABEL_S(col)\
-    ::gdm::gfx::DebugScope(*rdr_, cmd, v_eventname64, col);
+    [[maybe_unused]] ::gdm::gfx::DebugScope GDM_CONCAT(label, __LINE__)(*rdr_, cmd, v_eventname64, col);
 
 # define GDM_LABEL_B(col)\
     do {\
