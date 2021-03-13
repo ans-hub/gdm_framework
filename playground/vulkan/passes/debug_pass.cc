@@ -8,8 +8,10 @@
 
 #include "render/api.h"
 #include "render/defines.h"
+#include "render/debug.h"
 #include "render/colors.h"
 #include "system/diff_utils.h"
+#include "system/event_point.h"
 #include "data/model_factory.h"
 
 // --public create
@@ -153,7 +155,7 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame)
   if (data.vertices_count_ == 0)
     return;
 
-  rdr_->BeginDebugLabel(cmd, "Hello world", color::Green);
+  GDM_EVENT_POINT("DebugPass", GDM_LABEL_S(color::LightGreen));
 
   cmd.PushBarrier(*data.present_to_write_barrier_);
   
@@ -162,7 +164,6 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame)
   cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{});      
   cmd.BindPipelineGraphics(*pipeline_);
 
-  
   cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
   cmd.BindVertexBuffer(*data.vertex_buffer_);
   cmd.Draw(data.vertices_count_);

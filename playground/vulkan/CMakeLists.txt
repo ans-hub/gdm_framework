@@ -13,7 +13,9 @@ include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype.cmake)
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
-add_definitions(-DGFX_VK_API)
+add_definitions(-DGDM_LABELS_ENABLED) # ANS: please remove it after solve issues with microprofiler
+add_definitions(-DGFX_VK_API) # ANS: looks like hack too
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(VK_API 1)
 set(CMAKE_CXX_STANDARD 20)

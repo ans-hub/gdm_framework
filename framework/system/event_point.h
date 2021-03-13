@@ -17,12 +17,14 @@
 
 // Event points consists of profiler markers ans log markers.
 // Necessary to combine logging and profiling functionality in
-// critical code
+// critical code. You may add own markers in GDM_EVENT_POINT body 
+// from within other projects
 
 // Usage:
 //  GDM_EVENT_POINT("OnlyLog", GDM_LOG("Name custom"));
 //  GDM_EVENT_POINT("LogGpu and log", GDM_CPU(core::COLOR_BLUE) GDM_LOG_E());
-  
+//  GDM_EVENT_POINT("RenderPass", GDM_LABEL_B()) // GDM_LABEL_B from other project
+
 // Profiler markers for event points
 
 #ifdef GDM_PROFILER_ENABLED
@@ -74,7 +76,7 @@
 
 // Event points by itself
 
-#if defined(GDM_LOGGER_ENABLED) || defined(GDM_PROFILER_ENABLED)
+#if defined(GDM_LOGGER_ENABLED) || defined(GDM_PROFILER_ENABLED) || defined(GDM_LABELS_ENABLED)
 # define GDM_EVENT_POINT_NEXT(...) __VA_ARGS__
 # define GDM_EVENT_POINT(name, ...) char v_eventname64[64] = name; GDM_EVENT_POINT_NEXT(__VA_ARGS__)
 #else
@@ -83,7 +85,7 @@
 
 // Helper macroses
 
-#if defined(GDM_LOGGER_ENABLED) || defined(GDM_PROFILER_ENABLED)
+#if defined(GDM_LOGGER_ENABLED) || defined(GDM_PROFILER_ENABLED) || defined(GDM_LABELS_ENABLED)
 # define GDM_EVENT_STR v_eventname64
 #else
 # define GDM_EVENT_STR

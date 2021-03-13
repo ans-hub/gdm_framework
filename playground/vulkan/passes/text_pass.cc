@@ -10,7 +10,9 @@
 
 #include "render/api.h"
 #include "render/defines.h"
+#include "render/debug.h"
 #include "system/diff_utils.h"
+#include "system/event_point.h"
 
 // --public different
 
@@ -171,6 +173,8 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
   if (characters_count_ == 0)
     return;
 
+  GDM_EVENT_POINT("TextPass", GDM_LABEL_S(color::LightGreen));
+  
   data.vertex_buffer_->Map();
 
   cmd.PushBarrier(*data.present_to_write_barrier_);
@@ -183,7 +187,10 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
   cmd.BindVertexBuffer(*data.vertex_buffer_);
 
   for (uint i = 0; i < characters_count_; ++i)
+  {
+    GDM_EVENT_POINT("DrawLetter", GDM_LABEL_I(color::Brown));
     cmd.Draw(v_vxs_per_char_, i * v_vxs_per_char_);
+  }
 
   cmd.EndRenderPass();
 

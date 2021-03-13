@@ -17,6 +17,11 @@ include_directories(
 
 set(CMAKE_CXX_STANDARD 20)
 
+if ("${PROFILING_ENABLED}")
+  set(PROFILING_DEFINITIONS
+    -DGDM_LABELS_ENABLED=1)
+endif()
+
 if ("${DX_API}")
   message("  ** using api: DX")
   set(SRC_FILES
