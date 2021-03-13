@@ -194,6 +194,8 @@ void gdm::GbufferPass::CreatePipeline()
 
 void gdm::GbufferPass::UpdateUniforms(api::CommandList& cmd, uint max_objects)
 {
+  GDM_EVENT_POINT("GbufferUniform", GDM_LABEL_S(color::Black));
+
   cmd.PushBarrier(*data_.to_write_barriers_[0]);
   cmd.PushBarrier(*data_.to_write_barriers_[1]);
   cmd.PushBarrier(*data_.to_write_barriers_[2]);

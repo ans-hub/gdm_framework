@@ -70,7 +70,7 @@ void gdm::Font::FillMetrics(NativeFont& ft)
 
   metrics_.texture_width_ = tex_width;
   metrics_.texture_height_ = tex_width;
-  metrics_.font_height_ = ft.face_->size->metrics.height;  
+  metrics_.font_height_ = ft.face_->size->metrics.height >> 6;  
 }
 
 //--public
@@ -87,11 +87,13 @@ gdm::Font::Font(const std::string& font_name, int size_pt, Ops ops)
   FillMetrics(ft);
 
   atlas_data_.resize(metrics_.texture_width_ * metrics_.texture_height_, 255);
+  float recip_width = 1.0f / metrics_.texture_width_;
+  float recip_height = recip_width;
 
 	int pen_x = 0;
   int pen_y = 0;
 
-  for (unsigned char c = 0; c < static_cast<unsigned char>(v_chars_cnt_); c++)
+  for (unsigned char c = v_first_char_; c < static_cast<unsigned char>(v_chars_cnt_); c++)
   {
     ft.LoadChar(c);
 
@@ -99,7 +101,7 @@ gdm::Font::Font(const std::string& font_name, int size_pt, Ops ops)
 
     int bmp_w = bmp->width;
     int bmp_h = bmp->rows;
-
+    
 		if (pen_x + bmp_w >= metrics_.texture_width_)
     {
 			pen_x = 0;
@@ -116,19 +118,24 @@ gdm::Font::Font(const std::string& font_name, int size_pt, Ops ops)
 			}
 		}
 
+    const int base_line_to_bottom = ft.face_->glyph->bitmap_top - bmp_h;
+    const int base_line_to_top = ft.face_->glyph->bitmap_top;
+
     Vec4i coords;
-		coords.x0 = pen_x;
-		coords.y0 = pen_y;
-		coords.x1 = pen_x + bmp_w;
-		coords.y1 = pen_y + bmp_h;
+		coords.x0 = 0;
+		coords.y0 = base_line_to_bottom;
+		coords.x1 = bmp_w;
+		coords.y1 = base_line_to_top;
 
-    Vec2i bearing;
-		bearing.x = ft.face_->glyph->bitmap_left;
-		bearing.y = ft.face_->glyph->bitmap_top;
-		
-    int advance = ft.face_->glyph->advance.x >> 6;
+    Vec4f uv;
+    uv.u0 = pen_x * recip_width;
+    uv.v0 = pen_y * recip_height;
+    uv.u1 = (pen_x + bmp_w) * recip_width;
+    uv.v1 = (pen_y + bmp_h) * recip_height;
+	
+    float advance = float(ft.face_->glyph->advance.x >> 6);
 
-    characters_[static_cast<int>(c)] = Character { coords, bearing, advance }; ;
+    characters_[static_cast<int>(c)] = Character { coords, uv, advance };
 
 		pen_x += bmp_w + 1;
   };

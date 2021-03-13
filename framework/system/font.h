@@ -20,8 +20,8 @@ struct Font
   struct Character
   {
     Vec4i coords_;
-    Vec2i bearing_;
-    int advance_;
+    Vec4f uv_;
+    float advance_;
   };
 
   struct Metrics
@@ -42,7 +42,8 @@ struct Font
   auto GetRaw() const -> const std::vector<unsigned char>& { return atlas_data_; }
 
 private:
-  constexpr static const int v_chars_cnt_ = 128;
+  constexpr static const int v_chars_cnt_ = 224;
+  constexpr static const int v_first_char_ = 32;
 
   struct NativeFont;
 

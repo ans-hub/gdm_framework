@@ -30,7 +30,7 @@ void gdm::DebugPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num, u
   data_[frame_num].vertex_buffer_ = GMNew api::Buffer(device_, uint(buffer_size), gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
 
-void gdm::DebugPass::CreateImages(api::CommandList& cmd)
+void gdm::DebugPass::CreateBarriers(api::CommandList& cmd)
 {
   auto present_images = rdr_->GetBackBufferImages();
 
@@ -129,6 +129,8 @@ void gdm::DebugPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera
 
 void gdm::DebugPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
 {
+  GDM_EVENT_POINT("DebugUniforms", GDM_LABEL_S(color::LightGreen));
+
   cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
   data_[frame_num].pfcb_staging_vs_->Map();
   data_[frame_num].pfcb_staging_vs_->CopyDataToGpu(&data_[frame_num].pfcb_data_vs_, 0, 1);

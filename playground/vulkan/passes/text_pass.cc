@@ -31,14 +31,39 @@ void gdm::TextPass::BindFramebuffer(api::Framebuffer* fb, uint frame_num)
 
 void gdm::TextPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
-  data_[frame_num].pfcb_uniform_vs_ = GMNew api::Buffer(device_, sizeof(TextVs_PFCB) * 1, gfx::UNIFORM, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
-  [[maybe_unused]] const bool map_and_never_unmap = [&](){ data_[frame_num].pfcb_uniform_vs_->Map(); return true; }();
+  data_[frame_num].pocb_uniform_fs_ = GMNew api::Buffer(device_, sizeof(TextFs_POCB) * 1, gfx::UNIFORM, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  [[maybe_unused]] const bool map_and_never_unmap = [&](){ data_[frame_num].pocb_uniform_fs_->Map(); return true; }();
 }
 
 void gdm::TextPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num)
 {
-  const int buffer_size = v_max_string_;
+  const int quad_size = 4;
+  const int buffer_size = v_max_string_ * sizeof(Vec4f) * quad_size;
+
   data_[frame_num].vertex_buffer_ = GMNew api::Buffer(device_, uint(buffer_size), gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+}
+
+void gdm::TextPass::CreateBarriers(api::CommandList& cmd)
+{
+  auto present_images = rdr_->GetBackBufferImages();
+
+  for(auto&& [i, data] : Enumerate(data_))
+  {
+    data.present_to_read_barrier_ = GMNew api::ImageBarrier();
+    data.present_to_write_barrier_ = GMNew api::ImageBarrier();
+
+    data.present_to_read_barrier_->GetProps()
+      .AddImage(present_images[i])
+      .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
+      .Finalize();
+
+    data.present_to_write_barrier_->GetProps()
+      .AddImage(present_images[i])
+      .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
+      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
+      .Finalize();
+  }
 }
 
 void gdm::TextPass::CreateRenderPass()
@@ -90,7 +115,7 @@ void gdm::TextPass::CreatePipeline()
   for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
   {
     auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
-    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_[i].pfcb_uniform_vs_);
+    descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_[i].pocb_uniform_fs_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(1, *sampler_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(2, *font_texture_);
     descriptor_set->Finalize();
@@ -115,22 +140,10 @@ void gdm::TextPass::CreatePipeline()
 
 // --public update
 
-// begin
-
-void gdm::TextPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera)
-{
-  Mat4f view = camera.GetViewMx();
-  Mat4f proj = camera.GetProjectionMx();
-  data_[curr_frame].pfcb_data_vs_.view_proj_ = proj * view;
-}
-
-void gdm::TextPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
-{
-  data_[frame_num].pfcb_uniform_vs_->CopyDataToGpu(&data_[frame_num].pfcb_data_vs_, 0, 1);
-}
-
 void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<TextData>& text_data)
 {
+  GDM_EVENT_POINT("TextMap", GDM_LABEL_S(color::LightGray));
+
   ASSERTF(font_, "Font is not binded");
 
   auto& vbuf = *data_[curr_frame].vertex_buffer_;
@@ -139,41 +152,53 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
 
   std::vector<Vec4f> mapped_data;
   mapped_data.reserve(text_data.size() * v_vxs_per_char_);
- 
+
+  const float w = (float)rdr_->GetSurfaceWidth();
+	const float h = (float)rdr_->GetSurfaceHeight();
+  const float prop = 1.f / w * 2.f;
+  const float font_height = font_->GetMetrics().font_height_;
+
   for (auto&& data : text_data)
   {
+    float x = data.pos_.x;
+    float y = data.pos_.y + font_height;
+
     for (auto&& letter : data.text_)
     {
       const Font::Character& char_data = (*font_)[static_cast<int>(letter)];
-      
-      const float x = data.pos_.x;
-      const float y = data.pos_.y;
-      const float x0 = float(char_data.coords_.x0);
-      const float x1 = float(char_data.coords_.x1);
-      const float y0 = float(char_data.coords_.y0);
-      const float y1 = float(char_data.coords_.y1);
 
-      mapped_data.push_back( Vec4f{ x + x0, y + y0, x0, y0 } );
-      mapped_data.push_back( Vec4f{ x + x1, y + y0, x1, y0 } );
-      mapped_data.push_back( Vec4f{ x + x0, y + y1, x0, y1 } );
-      mapped_data.push_back( Vec4f{ x + x1, y + y1, x1, y1 } );
+      const float x0 = ((x + char_data.coords_.x0) * prop) - 1.f;
+      const float x1 = ((x + char_data.coords_.x1) * prop) - 1.f;
+      const float y1 = ((y + char_data.coords_.y0) * prop) - 1.f;
+      const float y0 = ((y + char_data.coords_.y1) * prop) - 1.f;
+      const float u0 = char_data.uv_.u0;
+      const float u1 = char_data.uv_.u1;
+      const float v0 = char_data.uv_.v0;
+      const float v1 = char_data.uv_.v1;
+
+      mapped_data.push_back( Vec4f{ x0, y0, u0, v0 } );
+      mapped_data.push_back( Vec4f{ x1, y0, u1, v0 } );
+      mapped_data.push_back( Vec4f{ x0, y1, u0, v1 } );
+      mapped_data.push_back( Vec4f{ x1, y1, u1, v1 } );
+
+      x += char_data.advance_;
     }
+
+    strings_.push_back(std::make_pair(uint(data.text_.size()), data.color_));
   }
   
   vbuf.CopyDataToGpu(mapped_data.data(), 0, mapped_data.size());
   vbuf.Unmap();
-
-  characters_count_ = mapped_data.size();
 }
 
 void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
 {
   auto& data = data_[curr_frame];
 
-  if (characters_count_ == 0)
+  if (strings_.empty())
     return;
 
-  GDM_EVENT_POINT("TextPass", GDM_LABEL_S(color::LightGreen));
+  GDM_EVENT_POINT("TextPass", GDM_LABEL_S(color::LightYellow));
   
   data.vertex_buffer_->Map();
 
@@ -186,16 +211,24 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
   cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
   cmd.BindVertexBuffer(*data.vertex_buffer_);
 
-  for (uint i = 0; i < characters_count_; ++i)
+  uint characters_offset = 0;
+
+  for (auto&& [characters_count, color] : strings_)
   {
-    GDM_EVENT_POINT("DrawLetter", GDM_LABEL_I(color::Brown));
-    cmd.Draw(v_vxs_per_char_, i * v_vxs_per_char_);
+    GDM_EVENT_POINT("DrawString", GDM_LABEL_I(color::LightGray));
+
+    TextFs_POCB ub {color};
+    data_[curr_frame].pocb_uniform_fs_->CopyDataToGpu(&ub, 0, 1);
+
+    for (uint i = characters_offset; i < characters_count + characters_offset; ++i)
+      cmd.Draw(v_vxs_per_char_, i * v_vxs_per_char_);
+   
+    characters_offset += characters_count;
   }
 
   cmd.EndRenderPass();
-
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
 
   data.vertex_buffer_->Unmap();
-  characters_count_ = 0;
+  strings_.clear();
 }

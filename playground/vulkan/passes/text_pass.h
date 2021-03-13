@@ -26,14 +26,14 @@
 
 namespace gdm {
 
-__declspec(align(64)) struct TextVs_PFCB
+__declspec(align(64)) struct TextFs_POCB
 {  
-  static const gfx::UboType v_type_ = gfx::EUboType::PER_FRAME; 
-  static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::VX; 
+  static const gfx::UboType v_type_ = gfx::EUboType::PER_OBJECT; 
+  static const gfx::ShaderType v_shader_type_ = gfx::EShaderType::PX; 
 
-  alignas(16) Mat4f view_proj_ = Mat4f(1.f);
+  alignas(16) Vec4f color_ = Vec4f(1.f);
 
-}; // struct TextVs_PFCB
+}; // struct TextFs_POCB
 
 struct TextPassData
 {
@@ -44,15 +44,13 @@ struct TextPassData
 
   api::Renderer* rdr_;
   api::Device* device_;
-  api::Buffer* pfcb_uniform_vs_;
+  api::Buffer* pocb_uniform_fs_;
   api::Framebuffer* fb_;
   api::Buffer* vertex_buffer_;
   api::DescriptorSetLayout* descriptor_set_layout_;
   api::DescriptorSet* descriptor_set_;
   api::ImageBarrier* present_to_read_barrier_;
   api::ImageBarrier* present_to_write_barrier_;
-
-  TextVs_PFCB pfcb_data_vs_ = {};
 };
 
 class TextPass
@@ -69,7 +67,7 @@ class TextPass
   std::vector<TextPassData> data_ = {};
   const Font* font_ = nullptr;
   api::ImageView* font_texture_ = nullptr;
-  uint characters_count_ = 0;
+  std::vector<std::pair<uint, Vec4f>> strings_ = {};
 
 public:
   TextPass(int frame_count, api::Renderer& rdr)
@@ -78,7 +76,7 @@ public:
     , data_(frame_count, rdr)
     , font_{nullptr}
     , font_texture_{nullptr}
-    , characters_count_{0}
+    , strings_{}
   { }
 
   [[deprecated]] void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
@@ -87,12 +85,11 @@ public:
   
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateVertexBuffer(api::CommandList& cmd, uint frame_num);
+  void CreateBarriers(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();
   void CreatePipeline();
 
-  void UpdateUniformsData(uint curr_frame, const CameraEul& camera);
-  void UpdateUniforms(api::CommandList& cmd, uint frame_num);
   void UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<TextData>& text_data);
   void Draw(api::CommandList& cmd, uint curr_frame);
 };

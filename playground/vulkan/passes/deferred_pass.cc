@@ -148,6 +148,8 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
 
 void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
 {
+  GDM_EVENT_POINT("DeferredUniforms", GDM_LABEL_S(color::Blue));
+
   cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
   data_[frame_num].pfcb_staging_ps_->Map();
   data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 0, 1);

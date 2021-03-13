@@ -30,6 +30,7 @@ struct Vector4
     struct { T l, r, t, b; };
     struct { T x, y, u, v; };
     struct { T x0, y0, x1, y1; };
+    struct { T u0, v0, u1, v1; };
     struct { T data[4]; };
   };
 

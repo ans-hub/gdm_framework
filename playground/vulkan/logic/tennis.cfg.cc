@@ -172,6 +172,7 @@ namespace gdm::_private
 
     debug.DrawBasis(ball.tm_, 1.f);
     debug.DrawBasis(table.tm_, 1.f);
-    debug.DrawString(Vec3f(0.f, 0.f, 0.f), "Hello World", color::Green);
+    debug.DrawString(Vec3f(10.f, 30.f, 0.f), "Tennis", color::Green);
+    debug.DrawString(Vec3f(10.f, 10.f, 0.f), "Hello World", color::Green);
   }
 }

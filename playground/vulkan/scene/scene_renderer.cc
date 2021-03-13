@@ -32,7 +32,7 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
 {
-  debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
+  debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 10);
   text_pass_.BindFont(debug_draw_.GetFont(), debug_draw_.GetFontView());
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
@@ -52,7 +52,7 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   deferred_pass_.CreateFramebuffer();
   deferred_pass_.CreatePipeline(gbuffer_pass_.data_.image_views_);
 
-  debug_pass_.CreateImages(setup_list);
+  debug_pass_.CreateBarriers(setup_list);
   debug_pass_.CreateRenderPass();
   debug_pass_.CreateFramebuffer();
   
@@ -64,6 +64,7 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   
   debug_pass_.CreatePipeline();
   
+  text_pass_.CreateBarriers(setup_list);
   text_pass_.CreateRenderPass();
   text_pass_.CreateFramebuffer();
 
@@ -136,11 +137,9 @@ void gdm::SceneRenderer::Render(
     debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
     debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetDrawData());
     debug_pass_.Draw(cmd_debug, curr_frame);
-    debug_draw_.Clear();
 
-    text_pass_.UpdateUniformsData(curr_frame, camera);
-    text_pass_.UpdateUniforms(cmd_debug, curr_frame);
     text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetTextData());
+    text_pass_.Draw(cmd_debug, curr_frame);
 
     submit_fence_.Reset();
     cmd_debug.Finalize();
@@ -149,4 +148,6 @@ void gdm::SceneRenderer::Render(
     gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdebug_done});
     submit_fence_.WaitSignalFromGpu();
   }
+
+  debug_draw_.Clear();
 }

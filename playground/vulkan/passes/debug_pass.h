@@ -77,7 +77,7 @@ struct DebugPass
 
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateVertexBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size);
-  void CreateImages(api::CommandList& cmd);
+  void CreateBarriers(api::CommandList& cmd);
   void CreateFramebuffer();
   void CreateRenderPass();
   void CreatePipeline();
