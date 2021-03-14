@@ -12,6 +12,7 @@
 #include "render/desc/rasterizer_desc.h"
 #include "render/input_layout.h"
 #include "render/vk/vk_descriptor_set.h"
+#include "render/vk/vk_blend_state.h"
 
 namespace gdm {
   struct Shader;
@@ -33,7 +34,7 @@ struct Pipeline
   void SetRenderPass(VkRenderPass pass);
   void SetDescriptorSetLayouts(const DescriptorSetLayouts& layouts);
   void SetDynamicState(gfx::EDynamicState dynamic_state);
-  void SetBlendAttachmentsCount(uint count);
+  void SetBlendState(const BlendState& blend_state);
 
   operator VkPipeline() const;
   operator VkPipelineLayout() const;
@@ -56,6 +57,7 @@ private:
   VkRenderPass render_pass_ = VK_NULL_HANDLE;
   std::vector<VkDescriptorSetLayout> descriptor_set_layouts_ = {};
   InputLayout input_layout_ = {};
+  BlendState blend_state_ = {};
   std::vector<VkDynamicState> dynamic_state_ = {};
   VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
   uint blend_attachments_count_ = 1;

@@ -19,7 +19,7 @@ gdm::vk::Pipeline::Pipeline(VkDevice device)
   , allocator_{ *HostAllocator::GetPtr() }
   , compiled_{ false }
   , pipeline_{VK_NULL_HANDLE}
-  // and other
+  // ANS: and other?
 { }
 
 void gdm::vk::Pipeline::SetShaderStage(const Shader& shader, gfx::EShaderType type)
@@ -74,10 +74,10 @@ gdm::vk::Pipeline::operator VkPipeline() const
   return pipeline_;
 }
 
-void gdm::vk::Pipeline::SetBlendAttachmentsCount(uint count)
+void gdm::vk::Pipeline::SetBlendState(const BlendState& blend_state)
 {
   ASSERTF(!compiled_, "Trying access non compiled pipeline");
-  blend_attachments_count_ = count;
+  blend_state_ = blend_state;
 }
 
 gdm::vk::Pipeline::operator VkPipelineLayout() const 
@@ -179,19 +179,12 @@ void gdm::vk::Pipeline::Compile()
   multisampling.sampleShadingEnable = VK_FALSE;
   multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-  std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachment(blend_attachments_count_);
-  for(auto& attachment : color_blend_attachment)
-  {
-    attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    attachment.blendEnable = VK_FALSE;
-  }
-
   VkPipelineColorBlendStateCreateInfo color_blending{};
   color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   color_blending.logicOpEnable = VK_FALSE;
   color_blending.logicOp = VK_LOGIC_OP_COPY;
-  color_blending.attachmentCount = blend_attachments_count_;
-  color_blending.pAttachments = color_blend_attachment.data();
+  color_blending.attachmentCount = blend_state_.GetAttachmentsCount();
+  color_blending.pAttachments = blend_state_.GetAttachmentsDescription();
   color_blending.blendConstants[0] = 0.0f;
   color_blending.blendConstants[1] = 0.0f;
   color_blending.blendConstants[2] = 0.0f;

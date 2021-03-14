@@ -115,6 +115,14 @@ void gdm::DebugPass::CreatePipeline()
   pipeline_->SetInputLayout(WireInputLayout{});
   pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
   pipeline_->SetRenderPass(*pass_);
+  
+  api::BlendState* blend_state = GMNew api::BlendState(*device_);
+  blend_state->AddAttachmentDescription(0)
+    .SetEnabled(false)
+    .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A);
+  blend_state->Finalize();
+
+  pipeline_->SetBlendState(*blend_state);
   pipeline_->Compile();
 }
 

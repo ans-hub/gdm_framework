@@ -184,9 +184,20 @@ void gdm::GbufferPass::CreatePipeline()
   pipeline_->SetRenderPass(*pass_);
   pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*data_.descriptor_set_layout_});
 
-  const int depth_attachments_cnt = 1;
+  const uint depth_attachments_cnt = 1;
+  
+  api::BlendState* blend_state = GMNew api::BlendState(*device_);
+  
+  for (uint i = 0; i < pass_->GetPassAttachmentsCount() - depth_attachments_cnt; ++i)
+  {
+    blend_state->AddAttachmentDescription(i)
+      .SetEnabled(false)
+      .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A);
+  }
 
-  pipeline_->SetBlendAttachmentsCount(pass_->GetPassAttachmentsCount() - depth_attachments_cnt);
+  blend_state->Finalize();
+
+  pipeline_->SetBlendState(*blend_state);
   pipeline_->Compile();
 }
 

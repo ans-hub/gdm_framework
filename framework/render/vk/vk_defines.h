@@ -326,6 +326,34 @@ enum EBindingFlags : uint
 
 using BindingFlags = uint;
 
+enum EColorComponent : uint
+{
+  R = VK_COLOR_COMPONENT_R_BIT,
+  G = VK_COLOR_COMPONENT_G_BIT,
+  B = VK_COLOR_COMPONENT_B_BIT,
+  A = VK_COLOR_COMPONENT_A_BIT
+
+}; // enum EColorComponent
+
+using ColorComponent = uint;
+
+enum EBlendFactor : uint
+{
+  SRC_ALPHA = VK_BLEND_FACTOR_SRC_ALPHA,
+  ONE_MINUS_SRC_ALPHA = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA
+
+}; // enum EBlendFactor
+
+using BlendFactor = uint;
+
+enum EBlendOp : uint
+{
+  ADD = VK_BLEND_OP_ADD
+
+}; // enum EBlendOp
+
+using BlendOp = uint;
+
 } // namespace gdm::gfx
 
 #endif // GM_VK_DEFINES_H

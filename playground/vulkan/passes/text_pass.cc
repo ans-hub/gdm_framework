@@ -135,6 +135,21 @@ void gdm::TextPass::CreatePipeline()
   pipeline_->SetInputLayout(TextInputLayout{});
   pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
   pipeline_->SetRenderPass(*pass_);
+
+  api::BlendState* blend_state = GMNew api::BlendState(*device_);
+
+  blend_state->AddAttachmentDescription(0)
+    .SetEnabled(true)
+    .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A)
+    .SetSrcColorBlendFactor(gfx::EBlendFactor::SRC_ALPHA)
+    .SetDstColorBlendFactor(gfx::EBlendFactor::ONE_MINUS_SRC_ALPHA)
+    .SetSrcAlphaBlendFactor(gfx::EBlendFactor::SRC_ALPHA)
+    .SetDstAlphaBlendFactor(gfx::EBlendFactor::ONE_MINUS_SRC_ALPHA)
+    .SetColorBlendOp(gfx::EBlendOp::ADD)
+    .SetAlphaBlendOp(gfx::EBlendOp::ADD);
+  blend_state->Finalize();
+
+  pipeline_->SetBlendState(*blend_state);
   pipeline_->Compile();
 }
 

@@ -36,6 +36,7 @@
 #include "vk/vk_render_pass.h"
 #include "vk/vk_framebuffer.h"
 #include "vk/vk_buffer.h"
+#include "vk/vk_blend_state.h"
 #include "vk/vk_descriptor_set.h"
 #endif
 
