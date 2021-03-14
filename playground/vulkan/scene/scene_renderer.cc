@@ -32,7 +32,8 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
 {
-  debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 10);
+  debug_draw_.ToggleActive();
+  debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
   text_pass_.BindFont(debug_draw_.GetFont(), debug_draw_.GetFontView());
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);

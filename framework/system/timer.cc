@@ -36,75 +36,61 @@ static int nanosleep(timespec* ts0, timespec* ts1)
 // --public
 
 gdm::Timer::Timer(int frames_per_sec)
-  : ms_wait_{1000/frames_per_sec}
-  , start_time_{}
-  , end_time_{}
-  , last_dt_{}
+  : wait_mu_{1'000'000 / frames_per_sec}
+  , start_time_mu_{}
+  , end_time_mu_{}
+  , last_dt_mu_{}
 { }
 
 void gdm::Timer::Start()
 {
-  start_time_ = GetCurrentClock();
+  start_time_mu_ = GetCurrentClockMu();
 }
 
 void gdm::Timer::End()
 {
-  end_time_ = GetCurrentClock();
-  last_dt_ = end_time_ - start_time_;
+  end_time_mu_ = GetCurrentClockMu();
+  last_dt_mu_ = end_time_mu_ - start_time_mu_;
 }
 
-auto gdm::Timer::GetStartTime() const -> gdm::Timer::slong
+auto gdm::Timer::GetStartTimeMu() const -> gdm::Timer::slong
 {
-  return start_time_;
+  return start_time_mu_;
 }
 
-auto gdm::Timer::GetEndTime() const -> gdm::Timer::slong
+auto gdm::Timer::GetEndTimeMu() const -> gdm::Timer::slong
 {
-  return end_time_;
+  return end_time_mu_;
 }
 
 float gdm::Timer::GetLastDt() const
 {
-  if (last_dt_ < 1000)
-    return last_dt_ / 1000.f;
+  if (last_dt_mu_ < 1'000'000)
+    return static_cast<float>(last_dt_mu_) / 1'000'000.f;
   else
-    return static_cast<float>(ms_wait_);
+    return static_cast<float>(wait_mu_) / 1'000'000.f;
 }
 
-auto gdm::Timer::GetCurrentClock() const -> gdm::Timer::slong
+auto gdm::Timer::GetCurrentClockMu() const -> gdm::Timer::slong
 {
   return static_cast<slong>(
-    std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::duration_cast<std::chrono::microseconds>(
       std::chrono::high_resolution_clock::now().time_since_epoch()).count()
   );
-}
-
-void gdm::Timer::SetMillisecondsToWait(int ms)
-{
-  ms_wait_ = ms;
 }
 
 // --private
 
 void gdm::Timer::Wait()
 {
-  slong last_dt = end_time_ - start_time_;
-  slong wait_for = ms_wait_ - last_dt > 0 ? ms_wait_ - last_dt : 0;
+  const slong last_dt_mu = end_time_mu_ - start_time_mu_;
+  slong wait_for_mu = wait_mu_ - last_dt_mu;
+  if (wait_for_mu < 0)
+    wait_for_mu = 0;
+
   timespec ts;
-  ts.tv_sec  = wait_for / 1000;
-  ts.tv_nsec = wait_for * 1000000;
-  while ((nanosleep(&ts, &ts) == -1) && (errno == EINTR)) { }
-  end_time_ = GetCurrentClock();
-  last_dt_ = end_time_ - start_time_;
-}
-
-
-// --helpers
-
-void gdm::timer_utils::WaitMs(signed long ms)
-{
-  timespec ts;
-  ts.tv_sec  = ms / 1000;
-  ts.tv_nsec = ms * 1000000;
-  while ((nanosleep(&ts, &ts) == -1) && (errno == EINTR)) { }
+  ts.tv_sec  = wait_for_mu / 1'000'000;
+  ts.tv_nsec = static_cast<long>(wait_for_mu) * 1'000;
+  while(nanosleep(&ts, &ts) == -1) { }
+  [[maybe_unused]] auto have_wait = GetCurrentClockMu() - end_time_mu_;
 }

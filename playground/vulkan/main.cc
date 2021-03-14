@@ -44,6 +44,17 @@
 
 using namespace gdm;
 
+void DrawInfo(SceneRenderer& scene_renderer, const Timer& timer, const FpsCounter& fps, const std::string& cfg_name)
+{
+  DebugDraw& dd = scene_renderer.GetDebugDraw();
+  const float line_height = (float)dd.GetFont()->GetMetrics().font_height_;
+  std::string msg;
+  msg.append("FPS: ");
+  msg.append(std::to_string(fps.ReadPrev()));
+  scene_renderer.GetDebugDraw().DrawString({10.f, 0.f, 0.f}, msg, color::White);
+  scene_renderer.GetDebugDraw().DrawString({10.f, line_height, 0.f}, cfg_name, color::LightGreen);
+}
+
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
 {
   uint width = 800;
@@ -69,7 +80,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   gpu_streamer.CopyModelsToGpu(unique_models);
 
   MSG msg {0};
-  Timer timer {60};
+  Timer timer {};
   FpsCounter fps {};
 
   GDM_PROFILING_ENABLE();
@@ -101,9 +112,13 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
       scene.GetLamps(),
       scene.GetFlashlights());
 
+    DrawInfo(scene_renderer, timer, fps, cfg_name);
+
     timer.End();
-    timer.Wait();  
+    timer.Wait();
+    fps.Advance();
   }
 
   return static_cast<int>(msg.wParam);
 }
+

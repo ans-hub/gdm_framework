@@ -9,10 +9,10 @@
 
 namespace gdm {
 
-class Timer // ms internal dimension, external dt in sec
+class Timer
 {
 public:
-  using slong = signed long;
+  using slong = signed long long;
   
   Timer() = default;
   explicit Timer(int frames_per_sec);
@@ -20,25 +20,18 @@ public:
   void Wait();
   void Start();
   void End();
-  slong GetStartTime() const;
-  slong GetEndTime() const;
-  float GetLastDt() const;
-  slong GetCurrentClock() const;
-  void SetMillisecondsToWait(int ms);
+  auto GetStartTimeMu() const -> slong;
+  auto GetEndTimeMu() const -> slong;
+  auto GetLastDt() const -> float;
+  auto GetCurrentClockMu() const -> slong;
 
 private:
-  int ms_wait_;
-  slong start_time_;
-  slong end_time_;
-  slong last_dt_;
+  slong wait_mu_;
+  slong start_time_mu_;
+  slong end_time_mu_;
+  slong last_dt_mu_;
 
 }; // class Timer 
-
-namespace timer_utils
-{
-  void WaitMs(signed long ms);
-
-} // namespace timer_utils
 
 }  // namespace gdm
 

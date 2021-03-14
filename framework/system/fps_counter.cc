@@ -17,8 +17,8 @@ void gdm::FpsCounter::Advance()
 {
   timer_.End();
   ++curr_;
-  time_passed_ += timer_.GetEndTime() - timer_.GetStartTime();
-  if (time_passed_ >= 1000)
+  time_passed_ += timer_.GetEndTimeMu() - timer_.GetStartTimeMu();
+  if (time_passed_ >= 1'000'000)
   {
     time_passed_ = 0;
     prev_ = curr_;
@@ -28,7 +28,7 @@ void gdm::FpsCounter::Advance()
   timer_.Start(); 
 }
 
-long gdm::FpsCounter::ReadPrev()
+gdm::FpsCounter::slong gdm::FpsCounter::ReadPrev() const
 {
   data_ready_ = false;
   return prev_;
@@ -47,7 +47,7 @@ void gdm::helpers::PrintFps(FpsCounter& fps)
   if (fps.Ready())
   {
     char s[256];
-    sprintf_s(s, 256, "%d\n", fps.ReadPrev());
+    sprintf_s(s, 256, "%lld\n", fps.ReadPrev());
     OutputDebugStringA(s);
   }    
 }

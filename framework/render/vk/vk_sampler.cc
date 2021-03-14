@@ -41,7 +41,7 @@ auto gdm::vk::Sampler::CreateSampler() -> VkSampler
   sampler_create_info.compareEnable = VK_FALSE;
   sampler_create_info.compareOp = static_cast<VkCompareOp>(sampler_state_.comparsion_);
   sampler_create_info.minLod = 0.f;
-  sampler_create_info.maxLod = 0.f;
+  sampler_create_info.maxLod = 1.f;
   sampler_create_info.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
   sampler_create_info.unnormalizedCoordinates = VK_FALSE;
 

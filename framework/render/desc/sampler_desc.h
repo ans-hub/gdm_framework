@@ -29,6 +29,15 @@ struct StdSamplerDesc : public SamplerDesc
   { }
 };
 
+struct TextSamplerDesc : public SamplerDesc
+{
+  TextSamplerDesc() : SamplerDesc({
+    gfx::ETextureAddressMode::WRAP,
+    color::White,
+    gfx::ECompareFunc::NEVER})
+  { }
+};
+
 } // namespace gdm
 
 #endif // SH_STD_SAMPLER_DESC_H

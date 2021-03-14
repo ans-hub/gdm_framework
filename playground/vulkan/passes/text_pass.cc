@@ -102,11 +102,11 @@ void gdm::TextPass::CreatePipeline()
   Shader vx_shader("assets/shaders/text_vert.hlsl", gfx::EShaderType::VX);
   Shader px_shader("assets/shaders/text_frag.hlsl", gfx::EShaderType::PX);
 
-  sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
+  sampler_ = GMNew api::Sampler(*device_, TextSamplerDesc{});
 
   auto* dsl = GMNew api::DescriptorSetLayout(*device_);
 
-  uint pfcb = dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
+  uint pfcb = dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::FRAGMENT_STAGE);
   uint sampler = dsl->AddBinding(1, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
   uint gbuff_pos = dsl->AddBinding(2, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
   
@@ -170,6 +170,7 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
 
   const float w = (float)rdr_->GetSurfaceWidth();
 	const float h = (float)rdr_->GetSurfaceHeight();
+  const float ar = h/w;
   const float prop = 1.f / w * 2.f;
   const float font_height = font_->GetMetrics().font_height_;
 
@@ -182,8 +183,8 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
     {
       const Font::Character& char_data = (*font_)[static_cast<int>(letter)];
 
-      const float x0 = ((x + char_data.coords_.x0) * prop) - 1.f;
-      const float x1 = ((x + char_data.coords_.x1) * prop) - 1.f;
+      const float x0 = ((x + char_data.coords_.x0) * prop * ar) - 1.f;
+      const float x1 = ((x + char_data.coords_.x1) * prop * ar) - 1.f;
       const float y1 = ((y + char_data.coords_.y0) * prop) - 1.f;
       const float y0 = ((y + char_data.coords_.y1) * prop) - 1.f;
       const float u0 = char_data.uv_.u0;
@@ -196,7 +197,7 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
       mapped_data.push_back( Vec4f{ x0, y1, u0, v1 } );
       mapped_data.push_back( Vec4f{ x1, y1, u1, v1 } );
 
-      x += char_data.advance_;
+      x += char_data.advance_ + 1;
     }
 
     strings_.push_back(std::make_pair(uint(data.text_.size()), data.color_));
@@ -223,13 +224,14 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
 
   cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{});      
   cmd.BindPipelineGraphics(*pipeline_);
-  cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
-  cmd.BindVertexBuffer(*data.vertex_buffer_);
-
+  
   uint characters_offset = 0;
 
   for (auto&& [characters_count, color] : strings_)
   {
+    cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+    cmd.BindVertexBuffer(*data.vertex_buffer_);
+
     GDM_EVENT_POINT("DrawString", GDM_LABEL_I(color::LightGray));
 
     TextFs_POCB ub {color};
@@ -237,11 +239,11 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
 
     for (uint i = characters_offset; i < characters_count + characters_offset; ++i)
       cmd.Draw(v_vxs_per_char_, i * v_vxs_per_char_);
-   
+     
     characters_offset += characters_count;
+    cmd.EndRenderPass();
   }
 
-  cmd.EndRenderPass();
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
 
   data.vertex_buffer_->Unmap();

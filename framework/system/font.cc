@@ -70,7 +70,7 @@ void gdm::Font::FillMetrics(NativeFont& ft)
 
   metrics_.texture_width_ = tex_width;
   metrics_.texture_height_ = tex_width;
-  metrics_.font_height_ = ft.face_->size->metrics.height >> 6;  
+  metrics_.font_height_ = ft.face_->size->metrics.height >> 6;
 }
 
 //--public

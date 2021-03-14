@@ -13,18 +13,20 @@ namespace gdm {
 
 struct FpsCounter
 {
+  using slong = signed long long;
+
   FpsCounter() = default;
   
   void Advance();
-  long ReadPrev();
+  auto ReadPrev() const -> slong;
   bool Ready() const;
 
 private:
   Timer timer_;
-  int   curr_;
-  int   prev_;
-  bool  data_ready_;
-  long  time_passed_;
+  int curr_;
+  int prev_;
+  mutable bool data_ready_;
+  slong time_passed_;
   
 }; // struct FpsCounter
 
