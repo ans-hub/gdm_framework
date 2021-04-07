@@ -49,6 +49,8 @@ constexpr const bool v_Windows = false;
 
 constexpr inline static uint v_num_images = 2;
 
+constexpr inline static uint v_max_descriptor_set_alloc = 512; 
+
 enum EResourceType : uint
 {
   UNIFORM_BUFFER = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -320,7 +322,8 @@ using DynamicState = uint;
 enum EBindingFlags : uint
 {
   UPDATE_AFTER_BIND = VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-  VARIABLE_DESCRIPTOR = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT
+  VARIABLE_DESCRIPTOR = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT_EXT,
+  PARTIALLY_BOUND = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT
 
 }; // enum EBindingFlags
 

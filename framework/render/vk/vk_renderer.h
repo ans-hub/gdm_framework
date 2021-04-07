@@ -98,6 +98,7 @@ namespace helpers {
   auto EnumerateInstanceExtensionsProps() -> std::vector<VkExtensionProperties>;
   auto FindUnsupportedLayers(const std::vector<const char*>& layers_info) -> std::vector<size_t>;
   auto FindUnsupportedInstanceExtensions(const std::vector<const char*>& extensions_info) -> std::vector<size_t>;
+  void RemoveUnsupportedLayers(std::vector<const char*>& layers_info);
 
 } // namespace helpers
 

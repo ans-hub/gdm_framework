@@ -48,6 +48,8 @@ gdm::vk::DescriptorSet::operator VkDescriptorSet() const
 
 // --private DescrpitorSet
 
+// https://gist.github.com/NotAPenguin0/284461ecc81267fa41a7fbc472cd3afe
+
 auto gdm::vk::DescriptorSet::Allocate(const DescriptorSetLayout& layout) -> VkDescriptorSet
 {
   VkDescriptorSetAllocateInfo allocate_info = {};

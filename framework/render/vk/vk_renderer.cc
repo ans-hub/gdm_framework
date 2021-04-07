@@ -143,8 +143,11 @@ auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customi
   if (descriptor_pool_ == VK_NULL_HANDLE)
   {
     uint max_sampled_images = phys_device_.info_.device_props_.limits.maxPerStageDescriptorSampledImages; 
-    uint max_dynamic_uniforms = phys_device_.info_.device_props_.limits.maxPerStageDescriptorUniformBuffers; 
+    uint max_dynamic_uniforms = phys_device_.info_.device_props_.limits.maxDescriptorSetUniformBuffers; 
     
+    max_sampled_images = min(max_sampled_images, gfx::v_max_descriptor_set_alloc);
+    max_dynamic_uniforms = min(max_dynamic_uniforms, gfx::v_max_descriptor_set_alloc);
+
     descriptor_pool_ = CreateDescriptorPool(16,
       {
         { gfx::EResourceType::SAMPLER, 6 },
@@ -493,8 +496,7 @@ auto gdm::vk::Renderer::CreateDebugCallbackModern() -> VkDebugUtilsMessengerEXT
       cb_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
       cb_create_info.pNext = nullptr;
       cb_create_info.flags = 0;
-      cb_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+      cb_create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
       cb_create_info.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
@@ -515,11 +517,14 @@ auto gdm::vk::Renderer::FillInstanceLayersInfo() -> std::vector<const char*>
 
   if constexpr (gfx::v_DebugBuild)
   {
-    // instance_layers.push_back("VK_LAYER_LUNARG_standard_validation");
+    instance_layers.push_back("VK_LAYER_LUNARG_standard_validation");
     instance_layers.push_back("VK_LAYER_KHRONOS_validation");
+    
+    helpers::RemoveUnsupportedLayers(instance_layers);
+
+    ASSERT(!instance_layers.empty());
   }
 
-  ASSERT(helpers::FindUnsupportedLayers(instance_layers).empty());
   return instance_layers;
 }
 
@@ -605,6 +610,33 @@ auto gdm::vk::helpers::FindUnsupportedLayers(const std::vector<const char*>& lay
       unsupported.push_back(i);
   }
   return unsupported;
+}
+
+void gdm::vk::helpers::RemoveUnsupportedLayers(std::vector<const char*>& layers_info)
+{
+  uint32_t layers_count = 0;
+  vkEnumerateInstanceLayerProperties(&layers_count, NULL);
+  ASSERTF(layers_count != 0, "Failed to find any layer");
+
+  std::vector<VkLayerProperties> layers_available(layers_count);
+  VkResult res = vkEnumerateInstanceLayerProperties(&layers_count, layers_available.data());
+  ASSERTF(res == VK_SUCCESS, "vkEnumerateInstanceLayerProperties error %d", res);
+
+  int to_remove = 0;
+
+  for (size_t i = 0; i < layers_info.size() - to_remove; ++i)
+  {
+    bool found = false;
+    for (size_t k = 0; k < layers_available.size() && !found; ++k)
+      found = strcmp(layers_info[i], layers_available[k].layerName) == 0;
+    if (!found)
+    {
+      std::swap(layers_info[i], layers_info[layers_info.size() - 1 - to_remove]);
+      --i;
+      ++to_remove;
+    }
+  }
+  layers_info.resize(layers_info.size() - to_remove);
 }
 
 auto gdm::vk::helpers::FindUnsupportedInstanceExtensions(const std::vector<const char*>& extensions_info) -> std::vector<size_t>

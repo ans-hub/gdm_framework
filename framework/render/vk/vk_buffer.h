@@ -39,6 +39,7 @@ private:
   VkBuffer buffer_;
   VkDeviceMemory buffer_memory_;
   void* mapped_region_;
+  VkDeviceSize flush_range_alignment_;
 
 }; // struct Buffer
 

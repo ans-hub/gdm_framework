@@ -180,8 +180,6 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame)
   cmd.EndRenderPass();
 
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
-  
-  rdr_->EndDebugLabel(cmd);
 
   data.vertices_count_ = 0;
 }

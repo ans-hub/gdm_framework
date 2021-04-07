@@ -49,6 +49,5 @@ Output main(Input IN)
   OUT.nm_WS = norm_WS;
   OUT.color = u_color;
   OUT.position = mul(mvp, float4(IN.pos_MS, 1.f));
-
   return OUT;
 }

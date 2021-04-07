@@ -2,7 +2,7 @@ message("* App ${BIN}: adding vulkan package")
 
 include(${GDM_ROOT_DIR}/tools/cmake_includes/framework.cmake)
 
-set(GDM_LIBVK_DIR ${GDM_ROOT_DIR}/3rdparty/vulkan_sdk/1.2.148.1)
+set(GDM_LIBVK_DIR ${GDM_ROOT_DIR}/3rdparty/vulkan_sdk/1.2.170.0)
 
 include_directories(
   ${GDM_LIBVK_DIR}/Include

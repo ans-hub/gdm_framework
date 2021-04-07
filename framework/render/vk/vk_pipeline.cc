@@ -155,7 +155,10 @@ void gdm::vk::Pipeline::Compile()
   viewport.minDepth = viewport_desc_.min_depth_;
   viewport.maxDepth = viewport_desc_.max_depth_;
 
-  VkRect2D scissor = { 0, 0, static_cast<uint32_t>(viewport_desc_.width_), static_cast<uint32_t>(viewport_desc_.height_) };
+  VkRect2D scissor = { 0, 0,
+    static_cast<uint32_t>(abs(viewport_desc_.width_)),
+    static_cast<uint32_t>(abs(viewport_desc_.height_))
+  };
   
   VkPipelineViewportStateCreateInfo viewport_state{};
   viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;

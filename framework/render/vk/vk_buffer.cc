@@ -23,6 +23,7 @@ gdm::vk::Buffer::Buffer(Device* device, uint size, gfx::BufferUsage usage, gfx::
   , buffer_{VK_NULL_HANDLE}
   , buffer_memory_{VK_NULL_HANDLE}
   , mapped_region_{nullptr}
+  , flush_range_alignment_{device->GetPhysicalDevice().info_.device_props_.limits.nonCoherentAtomSize}
 {
   // todo: if uniform ,then assert on alignong
   buffer_info_.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

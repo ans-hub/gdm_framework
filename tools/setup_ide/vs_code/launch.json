@@ -28,11 +28,19 @@
       "stopAtEntry": false,
       "environment": [
         {
-            "justMyCode" : false,
-            "name": "VK_LOADER_DEBUG",
-            "value": "err"
+          "justMyCode" : false,
+          "name": "VK_LAYER_PATH",
+          "value": "${workspaceFolder}\\3rdparty\\vulkan_sdk\\1.2.170.0\\Bin",
+        },
+        {
+          "name": "VK_LOADER_DEBUG",
+          "value": "err"
+        },
+        {
+          "name": "VULKAN_SDK",
+          "value": "${workspaceFolder}\\3rdparty\\vulkan_sdk\\1.2.170.0\\"
         }
-      ],
+      ]
     },
     {
       "name": "DX11 normal_map (debug)",
@@ -43,13 +51,7 @@
       "program": "${workspaceFolder}\\playground\\dx11\\normal_map\\.build\\Debug\\normal_map.exe",
       "cwd": "${workspaceFolder}",
       "args": ["assets/configs/${input:cfgName}"],
-      "stopAtEntry": false,
-      "environment": [
-        {
-            "name": "VK_LOADER_DEBUG",
-            "value": "err"
-        }
-        ],
+      "stopAtEntry": false
     },
     {
       "name": "DX11 shadow_map (debug)",
@@ -59,13 +61,7 @@
       "preLaunchTask": "build_dx11_shadow_map",
       "program": "${workspaceFolder}\\playground\\dx11\\shadow_map\\.build\\Debug\\shadow_map.exe",
       "cwd": "${workspaceFolder}",
-      "stopAtEntry": false,
-      "environment": [
-        {
-            "name": "VK_LOADER_DEBUG",
-            "value": "err"
-        }
-        ],
+      "stopAtEntry": false
     },
     {
       "name": "UT System",
@@ -76,7 +72,7 @@
       "program": "${workspaceFolder}\\framework\\system\\ut\\.build\\Debug\\system_ut.exe",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "environment": [],
+      "environment": []
     },
     {
       "name": "UT Memory",
@@ -87,7 +83,7 @@
       "program": "${workspaceFolder}\\framework\\memory\\ut\\.build\\Debug\\memory_ut.exe",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}\\framework\\memory\\ut\\.build\\Debug\\/",
-      "environment": [],
+      "environment": []
     },
     {
       "name": "UT Threads",
@@ -98,7 +94,7 @@
       "program": "${workspaceFolder}\\framework\\threads\\ut\\threads\\.build\\Debug\\threads_ut.exe",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}\\framework\\threads\\ut\\threads\\.build\\Debug\\",
-      "environment": [],
+      "environment": []
     },
     {
       "name": "UT Primitives",
@@ -109,7 +105,7 @@
       "program": "${workspaceFolder}\\framework\\threads\\ut\\primitives\\.build\\Debug\\primitives_ut.exe",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}\\framework\\threads\\ut\\primitives\\.build\\Debug\\",
-      "environment": [],
+      "environment": []
     },
     {
       "name": "UT Job manager",
@@ -120,7 +116,7 @@
       "program": "${workspaceFolder}\\framework\\threads\\ut\\job_manager\\.build\\Debug\\job_manager_ut.exe",
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}\\framework\\threads\\ut\\job_manager\\.build\\Debug\\",
-      "environment": [],
-    },
-  ],
+      "environment": []
+    }
+  ]
 }

@@ -678,11 +678,11 @@ inline Mat4f matrix::MakePerspectiveRH(float fov_deg, float ar, float z_near, fl
   float fov = fov_deg * 3.1415926535f / 180.f;
   float tan = std::tan(fov / 2.f);
 #if GDM_DIRECT_X == 1
-  res(0,0) = ar / tan;
   res(0,0) = 1.f / (ar * tan);
+  res(1,1) = 1.f / tan;
   res(2,2) = z_far / (z_far - z_near);
   res(2,3) = -1.f;
-  res(3,2) = (z_near * z_far) / (z_far - z_near);
+  res(3,2) = -(z_near * z_far) / (z_far - z_near);
 #else
   // res(0,0) = 1.f / (ar * tan);
   res(0,0) = ar / tan;            // todo: check on opengl

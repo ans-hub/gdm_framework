@@ -149,7 +149,7 @@ void gdm::GbufferPass::CreateDescriptorSet(size_t materials_cnt)
   dsl->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
   dsl->AddBinding(2, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::FRAGMENT_STAGE);
   dsl->AddBinding(3, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  dsl->AddBinding(4, static_cast<uint>(materials_cnt), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::EBindingFlags::VARIABLE_DESCRIPTOR);
+  dsl->AddBinding(4, static_cast<uint>(materials_cnt), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::VARIABLE_DESCRIPTOR | gfx::PARTIALLY_BOUND);
   dsl->Finalize();
 
   data_.sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
