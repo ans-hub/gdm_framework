@@ -88,6 +88,11 @@ auto gdm::vk::helpers::FindPhysicalDeviceId(const std::vector<PhysicalDevice>& d
   DeviceId device_id = -1;
   QueueId queue_id = -1;
 
+  bool has_discrete_gpu = false;
+
+  for (size_t i = 0; i < db.size() && !has_discrete_gpu; ++i)
+    has_discrete_gpu |= (db[i].device_props_.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
+  
   for (size_t i = 0; i < db.size() && device_id == -1; ++i)
   {
     const PhysicalDevice& device = db[i]; 
@@ -96,16 +101,16 @@ auto gdm::vk::helpers::FindPhysicalDeviceId(const std::vector<PhysicalDevice>& d
     {
       bool flags_ok = device.queue_family_props_[j].queueFlags & req_flags;
       bool present_ok = device.queue_supports_present_[j];
+      bool gpu_ok = (!has_discrete_gpu || device.device_props_.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU);
       bool images_ok = true;
       images_ok &= device.surface_caps_.minImageCount <= num_images;
       images_ok &= device.surface_caps_.maxImageCount >= num_images;
 
-      if (flags_ok && present_ok && images_ok)
-      {
-        device_id = static_cast<int>(i);
-        queue_id = static_cast<int>(j);
-        break;
-      }
+      if (!flags_ok || !present_ok || !images_ok || !gpu_ok)
+        continue;
+
+      device_id = static_cast<int>(i);
+      queue_id = static_cast<int>(j);
     }
   }
   
