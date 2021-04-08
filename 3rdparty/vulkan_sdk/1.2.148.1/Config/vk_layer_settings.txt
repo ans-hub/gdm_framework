@@ -129,7 +129,7 @@ khronos_validation.log_filename = stdout
 #khronos_validation.custom_stype_list=1100297000,32,0x478b1428,0x20
 
 # Example entry showing how to limit the number of repeated validation messages
-#khronos_validation.duplicate_message_limit = 25
+khronos_validation.duplicate_message_limit = 1
 
 # Example entry showing how to disable threading checks and validation at DestroyPipeline time
 #khronos_validation.disables = VK_VALIDATION_FEATURE_DISABLE_THREAD_SAFETY_EXT,VALIDATION_CHECK_DISABLE_DESTROY_PIPELINE
