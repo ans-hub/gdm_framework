@@ -78,7 +78,7 @@ void gdm::TextPass::CreateRenderPass()
     .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddLoadOp(gfx::EAttachmentLoadOp::LOAD_OP)
-    .AddStoreOp(gfx::EAttachmentStoreOp::STORE_DONT_CARE);
+    .AddStoreOp(gfx::EAttachmentStoreOp::STORE_OP);
 
   uint subpass_idx = pass_->CreateSubpass(gfx::EQueueType::GRAPHICS);
   pass_->AddSubpassColorAttachments(subpass_idx, api::Attachments{color_idx});
@@ -161,10 +161,6 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
 
   ASSERTF(font_, "Font is not binded");
 
-  auto& vbuf = *data_[curr_frame].vertex_buffer_;
-
-  vbuf.Map();
-
   std::vector<Vec4f> mapped_data;
   mapped_data.reserve(text_data.size() * v_vxs_per_char_);
 
@@ -203,6 +199,9 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
     strings_.push_back(std::make_pair(uint(data.text_.size()), data.color_));
   }
   
+  auto& vbuf = *data_[curr_frame].vertex_buffer_;
+  
+  vbuf.Map();
   vbuf.CopyDataToGpu(mapped_data.data(), 0, mapped_data.size());
   vbuf.Unmap();
 }
@@ -216,8 +215,6 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
 
   GDM_EVENT_POINT("TextPass", GDM_LABEL_S(color::LightYellow));
   
-  data.vertex_buffer_->Map();
-
   cmd.PushBarrier(*data.present_to_write_barrier_);
   
   api::DescriptorSets descriptor_sets {*data_[curr_frame].descriptor_set_};
@@ -241,11 +238,10 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
       cmd.Draw(v_vxs_per_char_, i * v_vxs_per_char_);
      
     characters_offset += characters_count;
-    cmd.EndRenderPass();
   }
 
+  cmd.EndRenderPass();
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
 
-  data.vertex_buffer_->Unmap();
   strings_.clear();
 }

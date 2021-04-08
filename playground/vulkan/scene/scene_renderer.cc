@@ -137,9 +137,9 @@ void gdm::SceneRenderer::Render(
     debug_pass_.UpdateUniformsData(curr_frame, camera);
     debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
     debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetDrawData());
-    debug_pass_.Draw(cmd_debug, curr_frame);
-
     text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetTextData());
+
+    debug_pass_.Draw(cmd_debug, curr_frame);
     text_pass_.Draw(cmd_debug, curr_frame);
 
     submit_fence_.Reset();

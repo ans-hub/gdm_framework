@@ -52,7 +52,9 @@ struct SceneRenderer
               const api::ImageViews& materials,
               std::vector<ModelLight>& lamps,
               std::vector<ModelLight>& flashlights);
+
   auto GetDebugDraw() -> DebugDraw& { return debug_draw_; }
+  auto GetGpuInfo() const -> const api::PhysicalDevice& { return device_.GetPhysicalDevice().info_; }
 
 private:
   api::Renderer& gfx_;

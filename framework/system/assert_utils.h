@@ -44,6 +44,7 @@ void AssertImpl(const char* msg);
 #   define LOGFS(fmt, ...) { char s[CA_SZ]; sprintf(s, CTXT("LOG: %s(): ") CTXT(fmt), __func__, ##__VA_ARGS__); OutputDebugStringA(s); }
 #   define LOGFM(fmt, ...) { char s[CA_SZ]; sprintf(s, CTXT("LOG: %s:%d %s(): ") CTXT(fmt), __FILENAME__, __LINE__, __func__, ##__VA_ARGS__); OutputDebugStringA(s); }
 #   define LOGFF(fmt, ...) { char s[CA_SZ]; sprintf(s, CTXT("LOG: %s:%d %s(): ") CTXT(fmt), __FILE__, __LINE__, __func__, ##__VA_ARGS__); OutputDebugStringA(s); }
+#   define ENSURE(A) { if (!(A)) { char s[CA_SZ]; sprintf(s, CTXT(#A)); MessageBoxA(nullptr, s, CTXT("Ensure"), MB_OK); } }
 #   define ENSUREF(A, M, ...) { if (!(A)) { char s[CA_SZ]; sprintf(s, CTXT(M), ##__VA_ARGS__); MessageBoxA(nullptr, s, CTXT("Ensure"), MB_OK); } }
 #   define ASSERTF(A, M, ...) { if (!(A)) { char s[CA_SZ]; memset(s, 0, CA_SZ); sprintf(s, CTXT("%s\nMessage: ") CTXT(M), CTXT(#A), ##__VA_ARGS__); AssertImpl(s); } }
 #   define ASSERT(A) { if (!(A)) AssertImpl(#A); }
@@ -55,6 +56,7 @@ void AssertImpl(const char* msg);
 #   define LOGFS(...)
 #   define LOGFM(...)
 #   define LOGFF(...)
+#   define ENSURE(...)
 #   define ENSUREF(...)
 #   define ASSERTF(...)
 #   define ASSERT(...)

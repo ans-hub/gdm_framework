@@ -51,8 +51,10 @@ void DrawInfo(SceneRenderer& scene_renderer, const Timer& timer, const FpsCounte
   std::string msg;
   msg.append("FPS: ");
   msg.append(std::to_string(fps.ReadPrev()));
+  std::string gpu_name = scene_renderer.GetGpuInfo().device_props_.deviceName;
   scene_renderer.GetDebugDraw().DrawString({10.f, 0.f, 0.f}, msg, color::White);
   scene_renderer.GetDebugDraw().DrawString({10.f, line_height, 0.f}, cfg_name, color::LightGreen);
+  scene_renderer.GetDebugDraw().DrawString({10.f, line_height * 2, 0.f}, gpu_name, color::LightGreen);
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
