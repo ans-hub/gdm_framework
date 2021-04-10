@@ -6,12 +6,24 @@
 
 #include "main_window.h"
 
+#include <vector>
+
 #include <system/assert_utils.h>
 
 namespace gdm::_private {
 
+thread_local std::vector<WndProcFn> wnd_procs = {};
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+  bool input_processed = false;
+
+  for (size_t i = 0; i < _private::wnd_procs.size() && !input_processed; ++i)
+    input_processed |= _private::wnd_procs[i](hwnd, message, wParam, lParam);
+
+  if (input_processed)
+    return true;
+
   PAINTSTRUCT paint_struct;
   HDC hDC;
   switch (message)
@@ -122,12 +134,6 @@ void gdm::MainWindow::ToggleFullscreen()
   full_screen_ = !full_screen_;
 }
 
-void gdm::MainWindow::ProcessInput(DxInput& input)
-{
-  if (input.IsKeyboardBtnPressed(DIK_ESCAPE))
-    PostMessage(hndl_, WM_DESTROY, 0, 0);
-}
-
 HWND gdm::MainWindow::InitializeWindow()
 {
   WNDCLASSEX wc = {0};
@@ -156,4 +162,19 @@ HWND gdm::MainWindow::InitializeWindow()
                          h_inst_,
                          this      // store this pointer to process it later
   );
+}
+
+void gdm::MainWindow::RegisterAdditionalWndProc(WndProcFn fn)
+{
+  _private::wnd_procs.push_back(fn);
+}
+
+//--public deprecated
+
+// deprecated because here we should capture input instead of passing dx input and process it
+
+void gdm::MainWindow::ProcessInput(DxInput& input)
+{
+  if (input.IsKeyboardBtnPressed(DIK_ESCAPE))
+    PostMessage(hndl_, WM_DESTROY, 0, 0);
 }

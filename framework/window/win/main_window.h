@@ -7,11 +7,15 @@
 #ifndef AH_GDM_WIN_WINDOW_H
 #define AH_GDM_WIN_WINDOW_H
 
+#include <functional>
+
 #include <Windows.h>
 
 #include "window/win/dx_input.h"
 
 namespace gdm {
+
+using WndProcFn = std::function<bool(HWND, UINT, WPARAM, LPARAM)>;
 
 struct MainWindow
 {
@@ -25,7 +29,6 @@ struct MainWindow
   MainWindow(int w, int h, const char* name, unsigned int win_props = 0);
 
   void ToggleFullscreen();
-  void ProcessInput(DxInput& input);
   void SetResized(int w, int h) { width_ = w; height_ = h; resized_ = true; }
   bool IsResized() const { bool r = resized_; resized_ = false; return r; }
   
@@ -33,6 +36,10 @@ struct MainWindow
   auto GetWidth() const -> int { return width_; }
   auto GetHeight() const -> int { return height_; }
   auto GetAspectRatio() const -> float { return (float)width_ / (float)height_; }
+
+  void RegisterAdditionalWndProc(WndProcFn fn);
+
+  [[deprecated]] void ProcessInput(DxInput& input);
 
 private:  
   HWND InitializeWindow();
