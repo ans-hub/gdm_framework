@@ -198,6 +198,12 @@ void gdm::vk::Renderer::SubmitPresentation(uint frame_num, const std::vector<VkS
   ASSERTF(res == VK_SUCCESS, "vkQueuePresentKHR %d\n", res);
 }
 
+void gdm::vk::Renderer::WaitForGpuIdle()
+{
+  VkResult res = vkDeviceWaitIdle(*device_);
+  ASSERTF(res == VK_SUCCESS, "vkDeviceWaitIdle %d\n", res);
+}
+
 void gdm::vk::Renderer::BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color)
 {
   VkDebugUtilsLabelEXT markerInfo = {};
@@ -261,14 +267,15 @@ auto gdm::vk::Renderer::CreateInstance() -> VkInstance
 
 auto gdm::vk::Renderer::CreateSurface(HWND window_handle, VkInstance instance) -> VkSurfaceKHR
 {
-  VkWin32SurfaceCreateInfoKHR surface_create_info = {};
-  surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-  surface_create_info.hinstance = GetModuleHandle(nullptr);
-  surface_create_info.hwnd = window_handle;
+  surface_create_info_ = {};
+
+  surface_create_info_.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+  surface_create_info_.hinstance = GetModuleHandle(nullptr);
+  surface_create_info_.hwnd = window_handle;
   
   VkSurfaceKHR surface;
   
-  VkResult res = vkCreateWin32SurfaceKHR(instance, &surface_create_info, &allocator_, &surface);
+  VkResult res = vkCreateWin32SurfaceKHR(instance, &surface_create_info_, &allocator_, &surface);
   ASSERTF(res == VK_SUCCESS, "vkCreateXcbSurfaceKHR error %d\n", res);
   
   return surface;

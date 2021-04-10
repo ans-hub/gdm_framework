@@ -32,8 +32,10 @@ struct Renderer
   auto GetSurfaceWidth() -> uint;
   auto GetSurfaceHeight() -> uint;
   auto GetSurfaceFormat() const -> gfx::EFormatType;
+  auto GetSurfaceWindow() const -> HWND { return surface_create_info_.hwnd; }
   auto GetPresentImageFormat() const -> VkFormat;
   auto GetDevice() -> Device&;
+  auto GetInstance() const -> VkInstance { return instance_; }
   auto GetDescriptorPool() -> VkDescriptorPool;
   auto GetBackBufferViews() -> std::vector<ImageView*>;
   auto GetBackBufferImages() -> std::vector<VkImage>;
@@ -42,6 +44,7 @@ struct Renderer
   auto AcquireNextFrame(VkSemaphore sem_sig, VkFence fence) -> uint;
   void SubmitCommandLists(const std::vector<VkCommandBuffer>& command_lists, const std::vector<VkSemaphore>& sem_wait, const std::vector<VkSemaphore>& sem_sig, VkFence fence);
   void SubmitPresentation(uint frame_num, const std::vector<VkSemaphore>& sem_wait);
+  void WaitForGpuIdle();
   void BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
   void InsertDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
   void EndDebugLabel(VkCommandBuffer cmd);
@@ -74,6 +77,7 @@ private:
   VkInstance instance_;
   VkDebugUtilsMessengerEXT debug_callback_modern_;
   VkDebugReportCallbackEXT debug_callback_legacy_;
+  VkWin32SurfaceCreateInfoKHR surface_create_info_;
   VkSurfaceKHR surface_;
   VkQueueFlags queue_flags_;
   std::vector<PhysicalDevice> phys_devices_db_;
