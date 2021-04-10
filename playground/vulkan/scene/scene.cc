@@ -14,9 +14,12 @@
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/rasterizer_desc.h"
 
-#include "input_helpers.h"
-#include "data_helpers.h"
-#include "defines.h"
+#include "scene/input_helpers.h"
+#include "scene/data_helpers.h"
+#include "scene/defines.h"
+#include "scene/scene_renderer.h"
+#include "scene/debug_draw.h"
+#include "scene/gui_draw.h"
 
 // --public
 
@@ -34,21 +37,36 @@ gdm::Scene::Scene(Config& cfg, MainWindow& win)
   camera_.LookAt(cfg.Get<Vec3f>("initial_look_at"));
   camera_.SetMoveSpeed(3.f);
 
-  std::vector<ModelInstance> object_models = helpers::LoadObjects(cfg);
-  std::vector<ModelInstance> lamp_models = helpers::LoadLights(cfg);
-  std::vector<ModelInstance> flashlights = helpers::LoadFlashlights(cfg);
+  std::vector<ModelInstance> object_models = data_helpers::LoadObjects(cfg);
+  std::vector<ModelInstance> lamp_models = data_helpers::LoadLights(cfg);
+  std::vector<ModelInstance> flashlights = data_helpers::LoadFlashlights(cfg);
 
-  SetObjects(object_models, helpers::LoadObjectNames(cfg));
+  SetObjects(object_models, data_helpers::LoadObjectNames(cfg));
   SetLamps(lamp_models, flashlights);
 
   cfg_dispatcher_ = cfg::Dispatcher(cfg, GetSceneInstances(), GetSceneInstancesNames());
 }
 
-void gdm::Scene::Update(float dt, MainInput& input, DebugDraw& debug_draw)
+void gdm::Scene::Update(float dt, MainInput& input, SceneRenderer& scene_renderer)
 {
-  helpers::UpdateCamera(camera_, input, dt);
-  helpers::UpdateLamps(camera_, input, GetLamps(), dt);
-  helpers::UpdateFlashlights(camera_, input, GetFlashlights(), dt);
+  GuiDraw& gui_draw = scene_renderer.GetGuiDraw();
+  DebugDraw& debug_draw = scene_renderer.GetDebugDraw();
+
+  if (gui_draw.IsActive(GuiDraw::EStage::WINDOWS))
+    input.PauseCaptureMouse();
+  else
+    input.CaptureMouse();
+
+  input.CaptureKeyboard();
+
+  if (!gui_draw.IsActive(GuiDraw::EStage::WINDOWS))
+    input_helpers::UpdateCameraRotate(camera_, input, dt);
+
+  input_helpers::UpdateCameraMovement(camera_, input, dt);
+  input_helpers::UpdateLamps(camera_, input, GetLamps(), dt);
+  input_helpers::UpdateFlashlights(camera_, input, GetFlashlights(), dt);
+  input_helpers::UpdateDebugDraw(input, debug_draw);
+  input_helpers::UpdateGuiDraw(input, gui_draw);
 
   cfg_dispatcher_.Update(camera_, input, debug_draw, dt);
 }

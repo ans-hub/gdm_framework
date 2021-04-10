@@ -16,7 +16,6 @@
 #include <window/main_input.h>
 #include <scene/debug_draw.h>
 
-
 namespace gdm::cfg {
 
   using Dt = float;

@@ -40,8 +40,5 @@ gdm::cfg::Dispatcher::Dispatcher(Config& cfg, std::vector<ModelInstance*> models
 
 void gdm::cfg::Dispatcher::Update(CameraEul& cam, MainInput& input, DebugDraw& debug, float dt)
 {
-  if (input.IsKeyboardBtnPressed(DIK_TAB))
-    debug.ToggleActive();
-
   return logic_(models_, cam, input, debug, dt);
 }

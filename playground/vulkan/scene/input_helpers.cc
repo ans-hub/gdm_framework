@@ -8,10 +8,19 @@
 
 //--public
 
-void gdm::helpers::UpdateCamera(CameraEul& cam, MainInput& input, float dt)
+void gdm::input_helpers::UpdateCamera(CameraEul& cam, MainInput& input, float dt)
+{
+  UpdateCameraRotate(cam, input, dt);
+  UpdateCameraMovement(cam, input, dt);
+}
+
+void gdm::input_helpers::UpdateCameraRotate(CameraEul& cam, MainInput& input, float dt)
 {
   cam.Rotate(input.GetMouseY(), input.GetMouseX());
+}
 
+void gdm::input_helpers::UpdateCameraMovement(CameraEul& cam, MainInput& input, float dt)
+{
   dt += dt * static_cast<int>(input.IsKeyboardBtnHold(DIK_LSHIFT)) * 2;
 
   if (input.IsKeyboardBtnHold(DIK_W))
@@ -28,7 +37,7 @@ void gdm::helpers::UpdateCamera(CameraEul& cam, MainInput& input, float dt)
     cam.Move(-cam.GetTm().GetCol(1), dt);
 }
 
-void gdm::helpers::UpdateLamps(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lamps, float dt)
+void gdm::input_helpers::UpdateLamps(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lamps, float dt)
 {
   if (input.IsKeyboardBtnPressed(DIK_1) && lamps.size() > 0)
     lamps[0].enabled_ = !lamps[0].enabled_;
@@ -40,11 +49,26 @@ void gdm::helpers::UpdateLamps(CameraEul& cam, MainInput& input, std::vector<Mod
     lamps[3].enabled_ = !lamps[3].enabled_;
 }
 
-void gdm::helpers::UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt)
+void gdm::input_helpers::UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt)
 {
   if (input.IsKeyboardBtnPressed(DIK_0) && flashlights.size() > 0)
     flashlights[0].enabled_ = !flashlights[0].enabled_;
 
   if (flashlights.size() > 0)
     flashlights[0].instance_.tm_ = cam.GetTm();
+}
+
+void gdm::input_helpers::UpdateDebugDraw(MainInput& input, DebugDraw& debug_draw)
+{
+  if (input.IsKeyboardBtnPressed(DIK_F11))
+    debug_draw.ToggleActive();
+}
+
+void gdm::input_helpers::UpdateGuiDraw(MainInput& input, GuiDraw& gui_draw)
+{
+  if (input.IsKeyboardBtnPressed(DIK_F9))
+    gui_draw.ToggleActive(GuiDraw::EStage::BG_TEXT);
+
+  if (input.IsKeyboardBtnPressed(DIK_F10))
+    gui_draw.ToggleActive(GuiDraw::EStage::WINDOWS);
 }

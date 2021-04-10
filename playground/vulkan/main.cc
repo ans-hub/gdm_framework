@@ -36,13 +36,32 @@
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/sampler_desc.h"
 
+#include <scene/scene.h>
 #include <scene/scene_renderer.h>
 #include <scene/gpu_streamer.h>
 #include <scene/cfg_dispatcher.h>
 #include <scene/data_helpers.h>
 #include <scene/debug_draw.h>
+#include <scene/gui_draw.h>
 
 using namespace gdm;
+
+int ProcessMessages(MSG& msg, MainInput& input, MainWindow& win)
+{
+  int exit = -1;
+  
+  while(PeekMessage(&msg, NULL, 0U, 0U, PM_REMOVE))
+  {
+    exit = (msg.message == WM_QUIT) ? static_cast<int>(msg.wParam) : -1;
+    ::TranslateMessage(&msg);
+    ::DispatchMessage(&msg);
+  }
+
+  if (input.IsKeyboardBtnPressed(DIK_ESCAPE))
+    ::PostMessage(win.GetHandle(), WM_DESTROY, 0, 0);
+  
+  return exit;
+}
 
 void DrawInfo(SceneRenderer& scene_renderer, const Timer& timer, const FpsCounter& fps, const std::string& cfg_name)
 {
@@ -51,23 +70,18 @@ void DrawInfo(SceneRenderer& scene_renderer, const Timer& timer, const FpsCounte
   std::string msg;
   msg.append("FPS: ");
   msg.append(std::to_string(fps.ReadPrev()));
-  std::string gpu_name = scene_renderer.GetGpuInfo().device_props_.deviceName;
+  std::string gpu_name;
+  gpu_name.append("GPU: ");
+  gpu_name.append(scene_renderer.GetGpuInfo().device_props_.deviceName);
+  std::string help {"F9 (text), F10 (GUI), F11 (debug)"};
   scene_renderer.GetDebugDraw().DrawString({10.f, 0.f, 0.f}, msg, color::White);
   scene_renderer.GetDebugDraw().DrawString({10.f, line_height, 0.f}, cfg_name, color::LightGreen);
   scene_renderer.GetDebugDraw().DrawString({10.f, line_height * 2, 0.f}, gpu_name, color::LightGreen);
+  scene_renderer.GetDebugDraw().DrawString({10.f, line_height * 3, 0.f}, help, color::LightGreen);
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
 {
-  uint width = 800;
-  uint height = 600;
-
-  auto win = MainWindow(width, height, "Vulkan scenes", MainWindow::CENTERED);
-  auto input = MainInput(win.GetHandle(), hInstance);
-  auto api_renderer = api::Renderer(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);
-  auto gpu_streamer = GpuStreamer(api_renderer);
-  auto scene_renderer = SceneRenderer(api_renderer, gpu_streamer);
-
   ENSUREF(wcslen(cmdLine) != 0, "Config file name is empty");
 
   std::string cfg_name = str::Utf2Ansi(cmdLine);
@@ -76,37 +90,38 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   if (!cfg.IsLoaded())
     return 1;
 
+  const uint width = 800;
+  const uint height = 600;
+
+  auto win = MainWindow(width, height, "Vulkan scenes", MainWindow::CENTERED);
+  auto input = MainInput(win.GetHandle(), hInstance);
+  auto api_renderer = api::Renderer(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);
+  auto gpu_streamer = GpuStreamer(api_renderer);
+  auto scene_renderer = SceneRenderer(api_renderer, gpu_streamer);
   auto scene = Scene(cfg, win);
-  auto unique_models = helpers::GetUniqueModels(scene.GetSceneInstances());  
+  auto unique_models = data_helpers::GetUniqueModels(scene.GetSceneInstances());  
   
   gpu_streamer.CopyModelsToGpu(unique_models);
+  win.RegisterAdditionalWndProc(gui::WinProc);
 
   MSG msg {0};
   Timer timer {};
   FpsCounter fps {};
+  int exit = -1;
 
   GDM_PROFILING_ENABLE();
 
-  int exit = -1;
-
   while(exit == -1)
   {
-    while(PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-    {
-      exit = (msg.message == WM_QUIT) ? static_cast<int>(msg.wParam) : -1;
-      TranslateMessage(&msg);
-      DispatchMessage(&msg);
-    }
+    exit = ProcessMessages(msg, input, win);
 
-    input.Capture();
-    win.ProcessInput(input);
     timer.Start();
     float dt = timer.GetLastDt();
 
     scene.Update(dt,
       input,
-      scene_renderer.GetDebugDraw());
-    
+      scene_renderer);
+
     scene_renderer.Render(dt,
       scene.GetCamera(),
       scene.GetRenderableInstances(),

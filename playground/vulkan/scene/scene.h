@@ -18,14 +18,15 @@
 #include "data/cfg_loader.h"
 
 #include "cfg_dispatcher.h"
-#include "debug_draw.h"
 
 namespace gdm {
+
+struct SceneRenderer;
 
 struct Scene
 {  
   Scene(Config& cfg, MainWindow& win);
-  void Update(float dt, MainInput& input, DebugDraw& debug_draw);
+  void Update(float dt, MainInput& input, SceneRenderer& scene_renderer);
 
 public:
   void SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names);
@@ -49,6 +50,6 @@ private:
   api::ImageView* dummy_view_;
   cfg::Dispatcher cfg_dispatcher_;
 
-};  // struct Scene
+}; // struct Scene
 
 } // namespace gdm

@@ -65,7 +65,7 @@ namespace gdm::_private{
 
 // --public
 
-auto gdm::helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>
+auto gdm::data_helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -84,7 +84,7 @@ auto gdm::helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstan
   return result;
 }
 
-auto gdm::helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
+auto gdm::data_helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -124,7 +124,7 @@ auto gdm::helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
   return result;
 }
 
-auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
+auto gdm::data_helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -149,12 +149,12 @@ auto gdm::helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
   return models;
 }
 
-auto gdm::helpers::LoadObjectNames(const Config& cfg) -> std::vector<std::string>
+auto gdm::data_helpers::LoadObjectNames(const Config& cfg) -> std::vector<std::string>
 {
   return cfg.GetAllKeys<std::string>("model_");
 }
 
-auto gdm::helpers::GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<gdm::ModelHandle>
+auto gdm::data_helpers::GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<gdm::ModelHandle>
 {
   std::set<ModelHandle> to_sort;
   for (const auto& instance : instances)
@@ -165,7 +165,7 @@ auto gdm::helpers::GetUniqueModels(const std::vector<ModelInstance*>& instances)
   return result;
 }
 
-auto gdm::helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>
+auto gdm::data_helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>
 {
   std::vector<MaterialHandle> result;
   for (auto model_handle : handles)
@@ -178,7 +178,7 @@ auto gdm::helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -
   return result;
 }
 
-auto gdm::helpers::ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType
+auto gdm::data_helpers::ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType
 {
   switch(type)
   {

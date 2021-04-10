@@ -13,8 +13,20 @@
 #include "system/diff_utils.h"
 #include "system/event_point.h"
 #include "data/model_factory.h"
+#include "scene/gui_draw.h"
+
+#include "3rdparty/imgui/imgui.h"
+#include "3rdparty/imgui/examples/imgui_impl_vulkan.h"
+#include "3rdparty/imgui/examples/imgui_impl_win32.h"
 
 // --public create
+
+gdm::DebugPass::DebugPass(int frame_count, api::Renderer& rdr)
+  : rdr_{&rdr}
+  , device_{&rdr.GetDevice()}
+  , data_(frame_count, rdr)
+  , gui_draw_callbacks_{}
+{ }
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
@@ -126,6 +138,49 @@ void gdm::DebugPass::CreatePipeline()
   pipeline_->Compile();
 }
 
+void gdm::DebugPass::CreateGui()
+{
+  IMGUI_CHECKVERSION();
+  
+  ASSERT(ImGui::GetCurrentContext() == nullptr);
+ 
+  ImGui::CreateContext();
+  ImGuiIO& io = ImGui::GetIO(); (void)io;
+ 
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+  //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+  ImGui::StyleColorsDark();
+  
+  ImGui_ImplWin32_Init(rdr_->GetSurfaceWindow());
+  io.DisplaySize.x = rdr_->GetSurfaceWidth();
+  io.DisplaySize.y = rdr_->GetSurfaceHeight();
+
+  auto check_vk_result = [](VkResult res) { ASSERT(res == VK_SUCCESS); };
+
+  ImGui_ImplVulkan_InitInfo init_info = {};
+
+  init_info.Instance = rdr_->GetInstance();
+  init_info.PhysicalDevice = rdr_->GetDevice().GetPhysicalDevice().info_.device_;
+  init_info.Device = rdr_->GetDevice();
+  init_info.QueueFamily = rdr_->GetDevice().GetPhysicalDevice().queue_id;
+  init_info.Queue = rdr_->GetDevice().GetQueue(gfx::EQueueType::GRAPHICS);
+  init_info.PipelineCache = VK_NULL_HANDLE;
+  init_info.DescriptorPool = rdr_->GetDescriptorPool();
+  init_info.Allocator = VK_NULL_HANDLE;
+  init_info.MinImageCount = rdr_->GetBackBuffersCount();
+  init_info.ImageCount = init_info.MinImageCount;
+  init_info.CheckVkResultFn = check_vk_result;
+  ImGui_ImplVulkan_Init(&init_info, *pass_);
+
+  auto command_buffer = rdr_->CreateCommandList(GDM_HASH("ImGuiSetup"), gfx::ECommandListFlags::ONCE);
+  ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
+  command_buffer.Finalize();
+  rdr_->SubmitCommandLists(api::CommandLists{command_buffer}, api::Semaphores::empty, api::Semaphores::empty, api::Fence::null);
+  rdr_->WaitForGpuIdle();
+  ImGui_ImplVulkan_DestroyFontUploadObjects();
+}
+
 // --public update
 
 void gdm::DebugPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera)
@@ -158,28 +213,49 @@ void gdm::DebugPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, co
   data_[curr_frame].vertices_count_ = debug_data.size();
 }
 
-void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame)
+void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_stage_active, bool gui_stage_active)
 {
+  GDM_EVENT_POINT("DebugPass", GDM_LABEL_S(color::LightGreen));
+ 
   auto& data = data_[curr_frame];
 
-  if (data.vertices_count_ == 0)
-    return;
-
-  GDM_EVENT_POINT("DebugPass", GDM_LABEL_S(color::LightGreen));
-
-  cmd.PushBarrier(*data.present_to_write_barrier_);
-  
   api::DescriptorSets descriptor_sets {*data_[curr_frame].descriptor_set_};
 
+  cmd.PushBarrier(*data.present_to_write_barrier_);
   cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{});      
   cmd.BindPipelineGraphics(*pipeline_);
-
   cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
-  cmd.BindVertexBuffer(*data.vertex_buffer_);
-  cmd.Draw(data.vertices_count_);
-  cmd.EndRenderPass();
+  
+  if (debug_stage_active && data.vertices_count_ != 0)
+  {
+    GDM_EVENT_POINT("DebugPass (prim)", GDM_LABEL_S(color::LightGreen));
 
-  cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
+    cmd.BindVertexBuffer(*data.vertex_buffer_);
+    cmd.Draw(data.vertices_count_);
+  }
 
   data.vertices_count_ = 0;
+
+  if (gui_stage_active)
+  {
+    GDM_EVENT_POINT("DebugPass (gui)", GDM_LABEL_S(color::LightGreen));
+
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplWin32_NewFrame();
+    ImGui::NewFrame();
+    
+    for (auto&& cb : gui_draw_callbacks_)
+      cb();
+
+    ImGui::Render();
+
+    ImDrawData* draw_data = ImGui::GetDrawData();
+    const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+
+    if (!is_minimized)
+      ImGui_ImplVulkan_RenderDrawData(draw_data, cmd);  
+  }
+
+  cmd.EndRenderPass();
+  cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
 }

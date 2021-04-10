@@ -9,6 +9,7 @@ include(${GDM_ROOT_DIR}/tools/cmake_includes/framework.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/vulkan.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/dxc.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype.cmake)
+include(${GDM_ROOT_DIR}/tools/cmake_includes/imgui.cmake)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
@@ -17,9 +18,10 @@ add_definitions(-DGDM_LABELS_ENABLED) # ANS: please remove it after solve issues
 add_definitions(-DGFX_VK_API) # ANS: looks like hack too
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(VK_API 1)
+set(VK_API 1) # ANS: add version choose
 set(CMAKE_CXX_STANDARD 20)
 set(PROFILING_ENABLED 0)
+# set(PREFER_DISCRET_GPU 1) # ANS: implement
 
 if ("${PROFILING_ENABLED}")
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -36,7 +38,8 @@ else()
   endif()
 endif()
 
-set(SRC main.cc
+set(SRC ${SRC}
+        main.cc
         passes/gbuffer_pass.cc
         passes/deferred_pass.cc
         passes/debug_pass.cc
@@ -47,6 +50,7 @@ set(SRC main.cc
         scene/input_helpers.cc
         scene/scene.cc
         scene/debug_draw.cc
+        scene/gui_draw.cc
         scene/cfg_dispatcher.cc)
 
 if (WIN32)

@@ -8,6 +8,7 @@
 #define GFX_DEBUG_DESC_H
 
 #include <set>
+#include <functional>
 
 #include "render/defines.h"
 #include "render/api.h"
@@ -59,13 +60,11 @@ struct DebugPassData
   DebugVs_PFCB pfcb_data_vs_ = {};
 };
 
+using GuiDrawCallback = std::function<void()>;
+
 struct DebugPass
 {
-  DebugPass(int frame_count, api::Renderer& rdr)
-    : rdr_{&rdr}
-    , device_{&rdr.GetDevice()}
-    , data_(frame_count, rdr)
-  { }
+  DebugPass(int frame_count, api::Renderer& rdr);
 
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;
@@ -81,13 +80,24 @@ struct DebugPass
   void CreateFramebuffer();
   void CreateRenderPass();
   void CreatePipeline();
+  void CreateGui();
   
+  void AddGuiCallback(GuiDrawCallback&& cb) { gui_draw_callbacks_.push_back(cb); }
+
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
   void UpdateUniformsData(uint curr_frame, const CameraEul& camera);
   void UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<DebugData>& debug_data);
 
-  void Draw(api::CommandList& cmd, uint curr_frame);
-};
+  void Draw(api::CommandList& cmd, uint curr_frame, bool debug_stage_active, bool gui_stage_active);
+
+private:
+  void DrawPrimitives(api::CommandList& cmd, uint curr_frame);
+  void DrawGui(api::CommandList& cmd, uint curr_frame);
+
+private:
+  std::vector<GuiDrawCallback> gui_draw_callbacks_;
+
+};  // struct DebugPass
 
 } // namespace gdm
 

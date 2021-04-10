@@ -16,7 +16,6 @@
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/rasterizer_desc.h"
 
-#include "input_helpers.h"
 #include "data_helpers.h"
 #include "defines.h"
 
@@ -27,6 +26,8 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
   , debug_draw_{}
+  , gui_draw_{}
+  , stage_active_(static_cast<int>(EStage::Max), true)
   , gbuffer_pass_(gfx_)
   , deferred_pass_(gfx::v_num_images, gfx_)
   , debug_pass_(gfx::v_num_images, gfx_)
@@ -34,6 +35,8 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
 {
   debug_draw_.ToggleActive();
   debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
+  gui_draw_.ToggleActive(GuiDraw::EStage::BG_TEXT);
+  debug_pass_.AddGuiCallback(gui::GuiExampleCb);
   text_pass_.BindFont(debug_draw_.GetFont(), debug_draw_.GetFontView());
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
@@ -64,6 +67,7 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   }
   
   debug_pass_.CreatePipeline();
+  debug_pass_.CreateGui();
   
   text_pass_.CreateBarriers(setup_list);
   text_pass_.CreateRenderPass();
@@ -85,6 +89,16 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   submit_fence_.Reset();
 }
 
+void gdm::SceneRenderer::ToggleActive(EStage stage)
+{
+  stage_active_[static_cast<int>(stage)] = !stage_active_[static_cast<int>(stage)];
+}
+
+void gdm::SceneRenderer::SetActive(EStage stage, bool is_active)
+{
+  stage_active_[static_cast<int>(stage)] = is_active;
+}
+
 void gdm::SceneRenderer::Render(
   float dt,
   const CameraEul& camera,
@@ -93,6 +107,10 @@ void gdm::SceneRenderer::Render(
   std::vector<ModelLight>& lamps,
   std::vector<ModelLight>& flashlights)
 {
+  SetActive(EStage::TEXT, gui_draw_.IsActive(GuiDraw::EStage::BG_TEXT));
+  SetActive(EStage::GUI, gui_draw_.IsActive(GuiDraw::EStage::WINDOWS));
+  SetActive(EStage::DEBUG, debug_draw_.IsActive());
+
   api::CommandList cmd_gbuffer = gfx_.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
 
   api::Semaphore spresent_done(device_);
@@ -121,32 +139,40 @@ void gdm::SceneRenderer::Render(
   submit_fence_.Reset();
   cmd_deferred.Finalize();
 
-  if (!debug_draw_.IsActive())
-  {
-    gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
-    gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
-    submit_fence_.WaitSignalFromGpu();
-  }
-  else
+  const bool any_debug = IsStageActive(EStage::DEBUG) || IsStageActive(EStage::GUI) || IsStageActive(EStage::TEXT);
+
+  if (any_debug)
   {
     gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
     submit_fence_.WaitSignalFromGpu();
   
     api::CommandList cmd_debug = gfx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
-    debug_pass_.UpdateUniformsData(curr_frame, camera);
-    debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
-    debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetDrawData());
-    text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetTextData());
+    if (IsStageActive(EStage::DEBUG) || IsStageActive(EStage::GUI))
+    {
+      debug_pass_.UpdateUniformsData(curr_frame, camera);
+      debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
+      debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetDrawData());
+      debug_pass_.Draw(cmd_debug, curr_frame, IsStageActive(EStage::DEBUG), IsStageActive(EStage::GUI));
+    }
 
-    debug_pass_.Draw(cmd_debug, curr_frame);
-    text_pass_.Draw(cmd_debug, curr_frame);
+    if (IsStageActive(EStage::TEXT))
+    {
+      text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetTextData());
+      text_pass_.Draw(cmd_debug, curr_frame);
+    }
 
     submit_fence_.Reset();
     cmd_debug.Finalize();
 
     gfx_.SubmitCommandLists(api::CommandLists{cmd_debug}, api::Semaphores{sdeferred_done}, api::Semaphores{sdebug_done}, submit_fence_);
     gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdebug_done});
+    submit_fence_.WaitSignalFromGpu();
+  }
+  else
+  {
+    gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
+    gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
     submit_fence_.WaitSignalFromGpu();
   }
 

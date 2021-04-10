@@ -25,7 +25,7 @@
 #include "data/image_factory.h"
 #include "data/cfg_loader.h"
 
-namespace gdm::helpers {
+namespace gdm::data_helpers {
 
   auto LoadObjects(const Config& cfg) -> std::vector<ModelInstance>;
   auto LoadObjectNames(const Config& cfg) -> std::vector<std::string>;

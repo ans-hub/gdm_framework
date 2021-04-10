@@ -224,11 +224,11 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
   
   uint characters_offset = 0;
 
+  cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  cmd.BindVertexBuffer(*data.vertex_buffer_);
+
   for (auto&& [characters_count, color] : strings_)
   {
-    cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
-    cmd.BindVertexBuffer(*data.vertex_buffer_);
-
     GDM_EVENT_POINT("DrawString", GDM_LABEL_I(color::LightGray));
 
     TextFs_POCB ub {color};

@@ -47,7 +47,7 @@ void gdm::GpuStreamer::CopyModelsToGpu(const std::vector<ModelHandle>& models)
   uint istg = CreateStagingBuffer(32_Mb);
   uint tstg = CreateStagingBuffer(96_Mb);
   
-  std::vector<MaterialHandle> materials = helpers::GetMaterialsToLoad(models);
+  std::vector<MaterialHandle> materials = data_helpers::GetMaterialsToLoad(models);
 
   CopyGeometryToGpu(models, vstg, istg, setup_list);
   CopyMaterialsToGpu(materials, tstg, setup_list);
@@ -208,7 +208,7 @@ uint gdm::GpuStreamer::CopyTextureToStagingBuffer(AbstractTexture* texture, api:
   if (texture->format_ == AbstractTexture::EFormatType::FORMAT_TYPE_MAX)
     texture_format = v_default_texture_fmt;
   else
-    texture_format = helpers::ConvertData2RenderTextureFormat(texture->format_);
+    texture_format = data_helpers::ConvertData2RenderTextureFormat(texture->format_);
 
   api_img->GetProps()
     .AddFormatType(texture_format)

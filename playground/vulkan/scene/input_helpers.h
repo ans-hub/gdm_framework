@@ -13,11 +13,18 @@
 
 #include "data/model_factory.h"
 
-namespace gdm::helpers {
+#include "scene/debug_draw.h"
+#include "scene/gui_draw.h"
+
+namespace gdm::input_helpers {
 
   void UpdateCamera(CameraEul& cam, MainInput& input, float dt);
+  void UpdateCameraRotate(CameraEul& cam, MainInput& input, float dt);
+  void UpdateCameraMovement(CameraEul& cam, MainInput& input, float dt);
   void UpdateLamps(CameraEul& cam, MainInput& input, std::vector<ModelLight>& lamps, float dt);
   void UpdateFlashlights(CameraEul& cam, MainInput& input, std::vector<ModelLight>& flashlights, float dt);
+  void UpdateDebugDraw(MainInput& input, DebugDraw& debug_draw);
+  void UpdateGuiDraw(MainInput& input, GuiDraw& gui);
 
 } // namespace gdm::helpers
 

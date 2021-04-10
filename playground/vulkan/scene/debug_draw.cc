@@ -10,8 +10,13 @@
 #include <math/aabb.h>
 #include <math/sphere.h>
 #include <math/general.h>
+
 #include <system/string_utils.h>
+
 #include <data/texture_factory.h>
+
+#include <render/api.h>
+#include <render/defines.h>
 
 #include "scene/gpu_streamer.h"
 
