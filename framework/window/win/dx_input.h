@@ -21,12 +21,17 @@ struct DxInput
   DxInput(HWND window_hndl, HINSTANCE window_hinst = GetModuleHandle(NULL));
   ~DxInput();
 
-  void Capture();
+  void CaptureKeyboard();
+  void CaptureMouse();
+  void PauseCaptureMouse();
+
   void SetMouseSensitive(float val) { mouse_sensitive_ = val; }
   bool IsKeyboardBtnPressed(BYTE btn) const;
   bool IsKeyboardBtnHold(BYTE btn) const { return kbd_state_[btn] & 0x80; }
   float GetMouseX() const { return pos_x_; }
   float GetMouseY() const { return pos_y_; }
+
+  [[deprecated]] void Capture();
 
 private:
   LPDIRECTINPUT8 direct_input_;

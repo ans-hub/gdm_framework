@@ -53,6 +53,41 @@ gdm::DxInput::~DxInput()
   direct_input_ = nullptr;
 }
 
+void gdm::DxInput::CaptureKeyboard()
+{
+  di_kbd_->Acquire();
+  di_kbd_->GetDeviceState(sizeof(kbd_state_), static_cast<LPVOID>(&kbd_state_));
+
+  for (std::size_t i = 0; i < 256; ++i) // todo: by memcpy
+    kbd_prev_state_[i] = (bool)kbd_prev_state_[i] && (bool)(kbd_state_[i] & 0x80);
+}
+
+void gdm::DxInput::CaptureMouse()
+{
+  di_mouse_->Acquire();
+  di_mouse_->GetDeviceState(sizeof(DIMOUSESTATE), &mouse_state_);
+
+  pos_x_ += static_cast<float>(mouse_state_.lX) * mouse_sensitive_;
+  pos_y_ += static_cast<float>(mouse_state_.lY) * mouse_sensitive_;
+}
+
+void gdm::DxInput::PauseCaptureMouse()
+{
+  di_mouse_->Unacquire();
+}
+
+bool gdm::DxInput::IsKeyboardBtnPressed(BYTE btn) const
+{ 
+  if ((kbd_state_[btn] & 0x80) && !kbd_prev_state_.test(btn))
+  {
+    kbd_prev_state_.set(btn);
+    return true;
+  }
+  return false;
+}
+
+//--public deprecated
+
 void gdm::DxInput::Capture()
 {
   di_kbd_->Acquire();
@@ -67,14 +102,3 @@ void gdm::DxInput::Capture()
   pos_x_ += static_cast<float>(mouse_state_.lX) * mouse_sensitive_;
   pos_y_ += static_cast<float>(mouse_state_.lY) * mouse_sensitive_;
 }
-
-bool gdm::DxInput::IsKeyboardBtnPressed(BYTE btn) const
-{ 
-  if ((kbd_state_[btn] & 0x80) && !kbd_prev_state_.test(btn))
-  {
-    kbd_prev_state_.set(btn);
-    return true;
-  }
-  return false;
-}
-
