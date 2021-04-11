@@ -6,8 +6,8 @@
 
 #include "gui_draw.h"
 
-#include "3rdparty/imgui/examples/imgui_impl_win32.h"
-#include "3rdparty/imgui/examples/imgui_impl_vulkan.h"
+#include "imgui_impl_win32.h"
+#include "imgui_impl_vulkan.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 

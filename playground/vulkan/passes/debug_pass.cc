@@ -15,9 +15,9 @@
 #include "data/model_factory.h"
 #include "scene/gui_draw.h"
 
-#include "3rdparty/imgui/imgui.h"
-#include "3rdparty/imgui/examples/imgui_impl_vulkan.h"
-#include "3rdparty/imgui/examples/imgui_impl_win32.h"
+#include "imgui.h"
+#include "imgui_impl_vulkan.h"
+#include "imgui_impl_win32.h"
 
 // --public create
 

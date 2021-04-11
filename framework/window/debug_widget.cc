@@ -6,7 +6,7 @@
 
 #include "debug_widget.h"
 
-#include <3rdparty/imgui/imgui.h>
+#include <imgui/imgui.h>
 
 // --public
 

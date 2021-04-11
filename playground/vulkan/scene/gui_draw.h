@@ -9,7 +9,7 @@
 
 #include "Windows.h"
 
-#include "3rdparty/imgui/imgui.h"
+#include "imgui.h"
 
 namespace gdm {
   

@@ -132,7 +132,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
     DrawInfo(scene_renderer, timer, fps, cfg_name);
 
     timer.End();
-    timer.Wait();
+    // timer.Wait();
     fps.Advance();
   }
 

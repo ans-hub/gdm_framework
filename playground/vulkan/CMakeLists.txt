@@ -9,7 +9,7 @@ include(${GDM_ROOT_DIR}/tools/cmake_includes/framework.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/vulkan.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/dxc.cmake)
 include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype.cmake)
-include(${GDM_ROOT_DIR}/tools/cmake_includes/imgui.cmake)
+include(${GDM_ROOT_DIR}/tools/cmake_includes/imgui_docking.cmake)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")

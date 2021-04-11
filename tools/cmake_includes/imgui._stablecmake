@@ -1,0 +1,18 @@
+message("* App ${BIN}: adding imgui (docking stable)")
+
+set(GDM_LIBIMGUI_DIR ${GDM_ROOT_DIR}/3rdparty/imgui/1.79/imgui)
+
+include_directories(
+  ${GDM_LIBIMGUI_DIR}
+  ${GDM_LIBIMGUI_DIR}/examples
+  ${GDM_LIBIMGUI_DIR}/..
+)
+
+set(SRC ${SRC}
+  ${GDM_LIBIMGUI_DIR}/imgui.cpp
+  ${GDM_LIBIMGUI_DIR}/imgui_draw.cpp
+  ${GDM_LIBIMGUI_DIR}/imgui_demo.cpp
+  ${GDM_LIBIMGUI_DIR}/imgui_widgets.cpp
+  ${GDM_LIBIMGUI_DIR}/examples/imgui_impl_vulkan.cpp
+  ${GDM_LIBIMGUI_DIR}/examples/imgui_impl_win32.cpp
+)
