@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    scene_renderer.h
+// File:    playground_renderer.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -18,8 +18,8 @@
                            tex_gnorm
 */
 
-#ifndef GFX_SCENE_RENDERER_H
-#define GFX_SCENE_RENDERER_H
+#ifndef GFX_PLAYGROUND_RENDERER_H
+#define GFX_PLAYGROUND_RENDERER_H
 
 #include "render/defines.h"
 #include "render/api.h"
@@ -31,6 +31,7 @@
 #include "passes/debug_pass.h"
 #include "passes/text_pass.h"
 
+#include "window/main_window.h"
 #include "window/main_input.h"
 
 #include "data/model_factory.h"
@@ -44,7 +45,7 @@
 
 namespace gdm {
 
-struct SceneRenderer
+struct PlaygroundRenderer
 {
   enum class EStage
   {
@@ -56,7 +57,7 @@ struct SceneRenderer
     Max
   }; // enum class EStage
 
-  SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer);
+  PlaygroundRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, MainWindow& win);
 
   void Render(float dt,
               const CameraEul& camera,
@@ -88,8 +89,8 @@ private:
   DebugPass debug_pass_;
   TextPass text_pass_;
 
-};  // struct Renderer
+};  // struct PlaygroundRenderer
 
 } // namespace gdm
 
-#endif // GFX_SCENE_RENDERER_H
+#endif // GFX_PLAYGROUND_RENDERER_H

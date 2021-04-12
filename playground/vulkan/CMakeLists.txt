@@ -45,10 +45,10 @@ set(SRC ${SRC}
         passes/debug_pass.cc
         passes/text_pass.cc
         scene/gpu_streamer.cc
-        scene/scene_renderer.cc
+        scene/playground_renderer.cc
+        scene/playground_scene.cc
         scene/data_helpers.cc
         scene/input_helpers.cc
-        scene/scene.cc
         scene/debug_draw.cc
         scene/gui_draw.cc
         scene/cfg_dispatcher.cc)

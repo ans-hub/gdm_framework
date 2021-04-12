@@ -1,10 +1,10 @@
 // *************************************************************
-// File:    scene_renderer.cc
+// File:    playground_renderer.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "scene_renderer.h"
+#include "playground_renderer.h"
 
 #include "system/diff_utils.h"
 #include "system/literals.h"
@@ -21,7 +21,11 @@
 
 // --public
 
-gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
+gdm::PlaygroundRenderer::PlaygroundRenderer(
+  api::Renderer& gfx,
+  GpuStreamer& gpu_streamer,
+  MainWindow& win
+)
   : gfx_{ gfx }
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
@@ -33,10 +37,15 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
 {
+  win.RegisterAdditionalWndProc(gui::WinProc);
+
   debug_draw_.ToggleActive();
   debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
   gui_draw_.ToggleActive(GuiDraw::EStage::BG_TEXT);
-  debug_pass_.AddGuiCallback(gui::GuiExampleCb);
+  debug_pass_.RegisterGuiCallback(GDM_HASH("ImGuiExample"), gui::GuiExampleCb);
+  debug_pass_.RegisterGuiCallback(GDM_HASH("ImGuiDocking"), gui::GuiDockingCb);
+  debug_pass_.ChangeGuiCallbackStatus(GDM_HASH("ImGuiExample"), true);
+  debug_pass_.ChangeGuiCallbackStatus(GDM_HASH("ImGuiDocking"), true);
   text_pass_.BindFont(debug_draw_.GetFont(), debug_draw_.GetFontView());
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
@@ -89,17 +98,17 @@ gdm::SceneRenderer::SceneRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer)
   submit_fence_.Reset();
 }
 
-void gdm::SceneRenderer::ToggleActive(EStage stage)
+void gdm::PlaygroundRenderer::ToggleActive(EStage stage)
 {
   stage_active_[static_cast<int>(stage)] = !stage_active_[static_cast<int>(stage)];
 }
 
-void gdm::SceneRenderer::SetActive(EStage stage, bool is_active)
+void gdm::PlaygroundRenderer::SetActive(EStage stage, bool is_active)
 {
   stage_active_[static_cast<int>(stage)] = is_active;
 }
 
-void gdm::SceneRenderer::Render(
+void gdm::PlaygroundRenderer::Render(
   float dt,
   const CameraEul& camera,
   const std::vector<ModelInstance*>& models,

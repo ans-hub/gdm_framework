@@ -1,10 +1,10 @@
 // *************************************************************
-// File:    scene.cc
+// File:    playground_scene.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "scene.h"
+#include "playground_scene.h"
 
 #include "system/diff_utils.h"
 
@@ -17,13 +17,12 @@
 #include "scene/input_helpers.h"
 #include "scene/data_helpers.h"
 #include "scene/defines.h"
-#include "scene/scene_renderer.h"
 #include "scene/debug_draw.h"
 #include "scene/gui_draw.h"
 
 // --public
 
-gdm::Scene::Scene(Config& cfg, MainWindow& win)
+gdm::PlaygroundScene::PlaygroundScene(Config& cfg, MainWindow& win)
   : camera_{cfg::v_fov, win.GetAspectRatio(), cfg::v_znear, cfg::v_zfar}
   , models_{}
   , models_names_{}
@@ -47,11 +46,8 @@ gdm::Scene::Scene(Config& cfg, MainWindow& win)
   cfg_dispatcher_ = cfg::Dispatcher(cfg, GetSceneInstances(), GetSceneInstancesNames());
 }
 
-void gdm::Scene::Update(float dt, MainInput& input, SceneRenderer& scene_renderer)
+void gdm::PlaygroundScene::Update(float dt, MainInput& input, GuiDraw& gui_draw, DebugDraw& debug_draw)
 {
-  GuiDraw& gui_draw = scene_renderer.GetGuiDraw();
-  DebugDraw& debug_draw = scene_renderer.GetDebugDraw();
-
   if (gui_draw.IsActive(GuiDraw::EStage::WINDOWS))
     input.PauseCaptureMouse();
   else
@@ -71,7 +67,7 @@ void gdm::Scene::Update(float dt, MainInput& input, SceneRenderer& scene_rendere
   cfg_dispatcher_.Update(camera_, input, debug_draw, dt);
 }
 
-void gdm::Scene::SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names)
+void gdm::PlaygroundScene::SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names)
 {
   for (auto [instance, name] : range::ZipSpan(objs, names))
   {
@@ -80,7 +76,7 @@ void gdm::Scene::SetObjects(const std::vector<ModelInstance>& objs, const std::v
   }
 }
 
-void gdm::Scene::SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
+void gdm::PlaygroundScene::SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
 {
   for (auto instance : lamps)
   {
@@ -99,7 +95,7 @@ void gdm::Scene::SetLamps(const std::vector<ModelInstance>& lamps, const std::ve
   }
 }
 
-auto gdm::Scene::GetRenderableInstances() -> std::vector<ModelInstance*>
+auto gdm::PlaygroundScene::GetRenderableInstances() -> std::vector<ModelInstance*>
 {
   std::vector<ModelInstance*> renderables;
  
@@ -109,7 +105,7 @@ auto gdm::Scene::GetRenderableInstances() -> std::vector<ModelInstance*>
   return renderables;
 }
 
-auto gdm::Scene::GetSceneInstances() -> std::vector<ModelInstance*>
+auto gdm::PlaygroundScene::GetSceneInstances() -> std::vector<ModelInstance*>
 {
   std::vector<ModelInstance*> scene_models;
  
@@ -119,12 +115,12 @@ auto gdm::Scene::GetSceneInstances() -> std::vector<ModelInstance*>
   return scene_models;
 }
 
-auto gdm::Scene::GetSceneInstancesNames() const -> const std::vector<std::string>&
+auto gdm::PlaygroundScene::GetSceneInstancesNames() const -> const std::vector<std::string>&
 {
   return models_names_;
 }
 
-auto gdm::Scene::GetRenderableMaterials() -> const api::ImageViews&
+auto gdm::PlaygroundScene::GetRenderableMaterials() -> const api::ImageViews&
 {
   if (!dummy_view_)
   {

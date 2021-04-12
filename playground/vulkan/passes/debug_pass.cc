@@ -25,7 +25,7 @@ gdm::DebugPass::DebugPass(int frame_count, api::Renderer& rdr)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
   , data_(frame_count, rdr)
-  , gui_draw_callbacks_{}
+  , gui_callbacks_{}
 { }
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
@@ -145,8 +145,11 @@ void gdm::DebugPass::CreateGui()
   ASSERT(ImGui::GetCurrentContext() == nullptr);
  
   ImGui::CreateContext();
-  ImGuiIO& io = ImGui::GetIO(); (void)io;
+  ImGuiIO& io = ImGui::GetIO(); (void)io; 
  
+ #ifdef IMGUI_HAS_DOCK
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+#endif
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
   //io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
@@ -244,8 +247,8 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_sta
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
     
-    for (auto&& cb : gui_draw_callbacks_)
-      cb();
+    for (auto&& [name, cb] : gui_callbacks_)
+      cb.cb_();
 
     ImGui::Render();
 
@@ -258,4 +261,14 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_sta
 
   cmd.EndRenderPass();
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
+}
+
+void gdm::DebugPass::RegisterGuiCallback(Hash name, GuiCallback::Fn&& fn)
+{
+  gui_callbacks_[name] = GuiCallback{fn, false};
+}
+
+void gdm::DebugPass::ChangeGuiCallbackStatus(Hash name, bool is_active)
+{
+  gui_callbacks_[name].active_ = is_active;
 }

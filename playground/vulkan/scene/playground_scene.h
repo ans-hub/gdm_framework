@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    scene.h
+// File:    playground_scene.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -21,12 +21,10 @@
 
 namespace gdm {
 
-struct SceneRenderer;
-
-struct Scene
-{  
-  Scene(Config& cfg, MainWindow& win);
-  void Update(float dt, MainInput& input, SceneRenderer& scene_renderer);
+struct PlaygroundScene
+{
+  PlaygroundScene(Config& cfg, MainWindow& win);
+  void Update(float dt, MainInput& input, GuiDraw& gui_draw, DebugDraw& debug_draw);
 
 public:
   void SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names);
@@ -50,6 +48,6 @@ private:
   api::ImageView* dummy_view_;
   cfg::Dispatcher cfg_dispatcher_;
 
-}; // struct Scene
+}; // struct PlaygroundScene
 
 } // namespace gdm

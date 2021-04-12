@@ -7,7 +7,7 @@
 #ifndef GFX_DEBUG_DESC_H
 #define GFX_DEBUG_DESC_H
 
-#include <set>
+#include <map>
 #include <functional>
 
 #include "render/defines.h"
@@ -58,9 +58,18 @@ struct DebugPassData
   size_t vertices_count_ = 0;
 
   DebugVs_PFCB pfcb_data_vs_ = {};
-};
 
-using GuiDrawCallback = std::function<void()>;
+}; // struct DebugPassData
+
+
+struct GuiCallback
+{
+  using Fn = std::function<void()>;
+  
+  Fn cb_;
+  bool active_;
+
+}; // struct GuiCallback
 
 struct DebugPass
 {
@@ -82,7 +91,8 @@ struct DebugPass
   void CreatePipeline();
   void CreateGui();
   
-  void AddGuiCallback(GuiDrawCallback&& cb) { gui_draw_callbacks_.push_back(cb); }
+  void RegisterGuiCallback(Hash name, GuiCallback::Fn&& fn);
+  void ChangeGuiCallbackStatus(Hash name, bool cb);
 
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
   void UpdateUniformsData(uint curr_frame, const CameraEul& camera);
@@ -95,9 +105,9 @@ private:
   void DrawGui(api::CommandList& cmd, uint curr_frame);
 
 private:
-  std::vector<GuiDrawCallback> gui_draw_callbacks_;
+  std::map<Hash, GuiCallback> gui_callbacks_;
 
-};  // struct DebugPass
+}; // struct DebugPass
 
 } // namespace gdm
 

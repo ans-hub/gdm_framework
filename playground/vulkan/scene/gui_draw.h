@@ -38,6 +38,7 @@ namespace gdm::gui {
 
   bool WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
   void GuiExampleCb();
+  void GuiDockingCb();
 
 } // namespace gdm::gui
 
