@@ -55,7 +55,7 @@ __declspec(align(64)) struct DeferredPs_PFCB
 
 struct DeferredPassData
 {
-  DeferredPassData(api::Renderer& rdr) : rdr_{&rdr}, device_{device_} { }
+  DeferredPassData(api::Renderer& rdr);
 
   api::Renderer* rdr_;
   api::Device* device_;
@@ -75,11 +75,10 @@ struct DeferredPassData
 
 struct DeferredPass
 {
-  DeferredPass(int frame_count, api::Renderer& rdr)
-    : rdr_{&rdr}
-    , device_{&rdr.GetDevice()}
-    , data_(frame_count, rdr)
-  { }
+  DeferredPass(int frame_count, api::Renderer& rdr);
+  ~DeferredPass();
+
+  void Cleanup();
   
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;

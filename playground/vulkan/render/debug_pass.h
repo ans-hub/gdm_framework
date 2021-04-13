@@ -42,7 +42,7 @@ __declspec(align(64)) struct DebugVs_PFCB
 
 struct DebugPassData
 {
-  DebugPassData(api::Renderer& rdr) : rdr_{&rdr}, device_{device_} { }
+  DebugPassData(api::Renderer& rdr);
 
   api::Renderer* rdr_;
   api::Device* device_;
@@ -54,7 +54,6 @@ struct DebugPassData
   api::Buffer* vertex_buffer_;
   api::ImageBarrier* present_to_read_barrier_;
   api::ImageBarrier* present_to_write_barrier_;
-  api::DescriptorSetLayout* descriptor_set_layout_;
   api::DescriptorSet* descriptor_set_;  
   size_t vertices_count_ = 0;
 
@@ -65,6 +64,9 @@ struct DebugPassData
 struct DebugPass
 {
   DebugPass(int frame_count, api::Renderer& rdr);
+  ~DebugPass();
+
+  void Cleanup();
 
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;

@@ -23,6 +23,13 @@ gdm::GpuStreamer::GpuStreamer(api::Renderer& gfx)
   staging_buffers_.reserve(v_max_buffers_);
 }
 
+gdm::GpuStreamer::~GpuStreamer()
+{
+  for (auto&& buffer : staging_buffers_)
+    GMDelete(buffer);
+  // todo: release images and buffers
+}
+
 auto gdm::GpuStreamer::CreateStagingBuffer(uint bytes) -> uint
 {
   auto buffer = GMNew api::Buffer(&device_, bytes, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);

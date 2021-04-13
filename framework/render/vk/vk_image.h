@@ -19,6 +19,7 @@ struct Image
   using self = Image&;
 
   Image(Device* device, uint width, uint height);
+  ~Image() {}
 
   Image(const Image&) = delete;
   Image& operator=(const Image&) = delete;

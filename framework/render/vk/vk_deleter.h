@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    vk_deleter.handle
+// File:    vk_deleter.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************

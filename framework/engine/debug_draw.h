@@ -41,6 +41,10 @@ struct TextData
 
 struct DebugDraw
 {
+  ~DebugDraw();
+
+  void Cleanup();
+
   void AddFont(GpuStreamer& gpu_streamer, const std::string& font_path, int size_pt);
 
   void DrawString(Vec3f pos, const std::string& text, Vec4f color);

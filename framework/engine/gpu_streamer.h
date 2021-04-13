@@ -19,6 +19,7 @@ namespace gdm {
 struct GpuStreamer
 {
   GpuStreamer(api::Renderer& gfx);
+  ~GpuStreamer();
 
   uint CreateStagingBuffer(uint bytes);
   auto FindStagingBuffer(uint min_size) -> int;
@@ -42,6 +43,8 @@ private:
   api::Renderer& gfx_;
   api::Device& device_;
   std::vector<api::Buffer*> staging_buffers_;
+  std::vector<api::Image2D*> images_;
+  std::vector<api::ImageView*> image_views_;
 
 };  // struct GpuStreamer
 

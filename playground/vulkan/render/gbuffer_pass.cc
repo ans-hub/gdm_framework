@@ -13,7 +13,51 @@
 #include "system/event_point.h"
 #include "data/model_factory.h"
 
-// --public create
+// --public
+
+gdm::GbufferPass::GbufferPass(api::Renderer& rdr)
+  : rdr_{&rdr}
+  , device_{&rdr.GetDevice()}
+  , data_()
+{ }
+
+gdm::GbufferPass::~GbufferPass()
+{
+  Cleanup();
+}
+
+void gdm::GbufferPass::Cleanup()
+{
+  GMDelete(data_.pfcb_staging_vs_);
+  GMDelete(data_.pocb_staging_ps_);
+  GMDelete(data_.pfcb_uniform_vs_);
+  GMDelete(data_.pocb_uniform_vs_);
+  GMDelete(data_.pocb_uniform_ps_);
+
+  for (auto* barrier : data_.to_read_barriers_)
+    GMDelete(barrier);
+  for (auto* barrier : data_.to_write_barriers_)
+    GMDelete(barrier);
+
+  GMDelete(data_.sampler_);
+
+  for (auto* image : data_.images_)
+    GMDelete(image);
+  for (auto* image_view : data_.image_views_)
+    GMDelete(image_view);
+  for (auto* barrier : data_.image_barriers_to_read_)
+    GMDelete(barrier);
+  for (auto* barrier : data_.image_barriers_to_write_)
+    GMDelete(barrier);
+
+  GMDelete(data_.fb_);
+  GMDelete(data_.descriptor_set_layout_);
+  GMDelete(data_.descriptor_set_);
+
+  GMDelete(sampler_);
+  GMDelete(pass_);
+  GMDelete(pipeline_);
+}
 
 void gdm::GbufferPass::CreateUniforms(api::CommandList& cmd, uint max_objects)
 {

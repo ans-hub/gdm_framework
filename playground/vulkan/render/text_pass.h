@@ -37,17 +37,13 @@ __declspec(align(64)) struct TextFs_POCB
 
 struct TextPassData
 {
-  TextPassData(api::Renderer& rdr)
-    : rdr_{&rdr}
-    , device_{device_}
-  { }
+  TextPassData(api::Renderer& rdr);
 
   api::Renderer* rdr_;
   api::Device* device_;
   api::Buffer* pocb_uniform_fs_;
   api::Framebuffer* fb_;
   api::Buffer* vertex_buffer_;
-  api::DescriptorSetLayout* descriptor_set_layout_;
   api::DescriptorSet* descriptor_set_;
   api::ImageBarrier* present_to_read_barrier_;
   api::ImageBarrier* present_to_write_barrier_;
@@ -70,16 +66,10 @@ class TextPass
   std::vector<std::pair<uint, Vec4f>> strings_ = {};
 
 public:
-  TextPass(int frame_count, api::Renderer& rdr)
-    : rdr_{&rdr}
-    , device_{&rdr.GetDevice()}
-    , data_(frame_count, rdr)
-    , font_{nullptr}
-    , font_texture_{nullptr}
-    , strings_{}
-  { }
+  TextPass(int frame_count, api::Renderer& rdr);
+  ~TextPass();
 
-  [[deprecated]] void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
+  void Cleanup();
 
   void BindFont(const Font* font, const api::ImageView* font_texture);
   
@@ -92,6 +82,8 @@ public:
 
   void UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<TextData>& text_data);
   void Draw(api::CommandList& cmd, uint curr_frame);
+
+  [[deprecated]] void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
 };
 
 } // namespace gdm

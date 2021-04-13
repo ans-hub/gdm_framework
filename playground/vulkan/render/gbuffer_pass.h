@@ -79,16 +79,15 @@ struct GbufferPassData
 
   GbufferVs_PFCB pfcb_data_vs_;
   std::vector<GbufferVs_POCB> pocb_data_vs_;
-  std::vector<GbufferPs_POCB> pocb_data_ps_; 
+  std::vector<GbufferPs_POCB> pocb_data_ps_;
 };
 
 struct GbufferPass
 {
-  GbufferPass(api::Renderer& rdr)
-    : rdr_{&rdr}
-    , device_{&rdr.GetDevice()}
-    , data_()
-  { }
+  GbufferPass(api::Renderer& rdr);
+  ~GbufferPass();
+  
+  void Cleanup();
 
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;

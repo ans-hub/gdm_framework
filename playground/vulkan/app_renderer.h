@@ -54,6 +54,7 @@ struct PlaygroundRenderer
   }; // enum class EStage
 
   PlaygroundRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, const DebugDraw& debug_draw);
+  ~PlaygroundRenderer() { }
 
   void Render(float dt,
               const DebugDraw& debug_draw,

@@ -23,6 +23,7 @@ struct DescriptorSetLayout;
 struct DescriptorSet
 {
   DescriptorSet(VkDevice device, const DescriptorSetLayout& layout, VkDescriptorPool pool);
+  ~DescriptorSet();
 
   template<gfx::EResourceType Type, class...Args>
   void UpdateContent(uint num, const Args&...args);

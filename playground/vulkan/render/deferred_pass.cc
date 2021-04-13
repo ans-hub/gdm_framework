@@ -10,7 +10,44 @@
 #include "system/diff_utils.h"
 #include "system/event_point.h"
 
-// --public create
+// --public
+
+gdm::DeferredPassData::DeferredPassData(api::Renderer& rdr)
+: rdr_{&rdr}
+, device_{device_}
+{ }
+
+gdm::DeferredPass::DeferredPass(int frame_count, api::Renderer& rdr)
+  : rdr_{&rdr}
+  , device_{&rdr.GetDevice()}
+  , data_(frame_count, rdr)
+{ }
+
+gdm::DeferredPass::~DeferredPass()
+{
+  Cleanup();
+}
+
+void gdm::DeferredPass::Cleanup()
+{
+  for (auto&& data : data_)
+  {
+    GMDelete(data.pfcb_staging_ps_);
+    GMDelete(data.pfcb_uniform_ps_);
+    GMDelete(data.pfcb_to_write_barrier_);
+    GMDelete(data.pfcb_to_read_barrier_);
+    GMDelete(data.depth_image_);
+    GMDelete(data.depth_image_view_);
+    GMDelete(data.fb_);
+    GMDelete(data.descriptor_set_);
+    GMDelete(data.present_to_read_barrier_);
+    GMDelete(data.present_to_write_barrier_);
+  }
+
+  GMDelete(sampler_);
+  GMDelete(pass_);
+  GMDelete(pipeline_);
+}
 
 void gdm::DeferredPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {

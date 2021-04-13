@@ -18,13 +18,43 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_impl_win32.h"
 
-// --public create
+// --public
+
+gdm::DebugPassData::DebugPassData(api::Renderer& rdr)
+  : rdr_{&rdr}
+  , device_{device_}
+{ }
 
 gdm::DebugPass::DebugPass(int frame_count, api::Renderer& rdr)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
   , data_(frame_count, rdr)
 { }
+
+gdm::DebugPass::~DebugPass()
+{
+  Cleanup();
+}
+
+void gdm::DebugPass::Cleanup()
+{
+  for (auto&& data : data_)
+  {
+    GMDelete(data.pfcb_staging_vs_);
+    GMDelete(data.pfcb_uniform_vs_);
+    GMDelete(data.pfcb_to_write_barrier_);
+    GMDelete(data.pfcb_to_read_barrier_);
+    GMDelete(data.fb_);
+    GMDelete(data.vertex_buffer_);
+    GMDelete(data.present_to_read_barrier_);
+    GMDelete(data.present_to_write_barrier_);
+    GMDelete(data.descriptor_set_);
+  }
+
+  GMDelete(sampler_);
+  GMDelete(pass_);
+  GMDelete(pipeline_);
+}
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
@@ -134,6 +164,8 @@ void gdm::DebugPass::CreatePipeline()
 
   pipeline_->SetBlendState(*blend_state);
   pipeline_->Compile();
+
+  GMDelete(dsl);
 }
 
 void gdm::DebugPass::CreateGui()

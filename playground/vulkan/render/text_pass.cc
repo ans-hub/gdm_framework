@@ -29,6 +29,42 @@ void gdm::TextPass::BindFramebuffer(api::Framebuffer* fb, uint frame_num)
 
 // --public create
 
+gdm::TextPassData::TextPassData(api::Renderer& rdr)
+  : rdr_{&rdr}
+  , device_{device_}
+{ }
+
+gdm::TextPass::TextPass(int frame_count, api::Renderer& rdr)
+  : rdr_{&rdr}
+  , device_{&rdr.GetDevice()}
+  , data_(frame_count, rdr)
+  , font_{nullptr}
+  , font_texture_{nullptr}
+  , strings_{}
+{ }
+
+gdm::TextPass::~TextPass()
+{
+  Cleanup();
+}
+
+void gdm::TextPass::Cleanup()
+{
+  for (auto&& data : data_)
+  {
+    GMDelete(data.pocb_uniform_fs_);
+    GMDelete(data.fb_);
+    GMDelete(data.vertex_buffer_);
+    GMDelete(data.descriptor_set_);
+    GMDelete(data.present_to_read_barrier_);
+    GMDelete(data.present_to_write_barrier_);
+  }
+
+  GMDelete(sampler_);
+  GMDelete(pass_);
+  GMDelete(pipeline_);
+}
+
 void gdm::TextPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
   data_[frame_num].pocb_uniform_fs_ = GMNew api::Buffer(device_, sizeof(TextFs_POCB) * 1, gfx::UNIFORM, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
@@ -151,6 +187,8 @@ void gdm::TextPass::CreatePipeline()
 
   pipeline_->SetBlendState(*blend_state);
   pipeline_->Compile();
+
+  GMDelete(dsl);
 }
 
 // --public update

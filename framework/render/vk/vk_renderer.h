@@ -83,7 +83,7 @@ private:
   std::vector<PhysicalDevice> phys_devices_db_;
   PhysicalDeviceId phys_device_;  
   Device* device_;
-  Fence submit_fence_;
+  Fence* submit_fence_;
   VkSwapchainKHR swapchain_;
   std::vector<VkImage> present_images_;
   std::vector<ImageView*> present_images_views_;

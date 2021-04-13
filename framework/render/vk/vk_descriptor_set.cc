@@ -25,6 +25,11 @@ gdm::vk::DescriptorSet::DescriptorSet(VkDevice device, const DescriptorSetLayout
   , descriptor_set_{ Allocate(layout) }
 { }
 
+gdm::vk::DescriptorSet::~DescriptorSet()
+{
+  vkFreeDescriptorSets(device_, pool_, 1, &descriptor_set_);
+}
+
 void gdm::vk::DescriptorSet::Finalize()
 {
   ASSERTF(!explicitly_finalized_, "Trying to finalize already finalized set");

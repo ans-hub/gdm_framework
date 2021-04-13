@@ -72,7 +72,7 @@ gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
   , phys_devices_db_{ helpers::EnumeratePhysicalDevices(instance_, surface_) }
   , phys_device_{ helpers::FindPhysicalDeviceId(phys_devices_db_, queue_flags_, v_num_images_) }
   , device_{ CreateDevice(phys_device_) }
-  , submit_fence_(*device_)
+  , submit_fence_(GMNew Fence(*device_))
   , swapchain_{ CreateSwapChain(phys_device_.info_, v_num_images_) }
   , present_images_{ CreatePresentImages() }
   , present_images_views_{ CreatePresentImagesView() }
@@ -366,9 +366,9 @@ void gdm::vk::Renderer::InitializePresentImages()
       list.PushBarrier(barrier);
       list.Finalize();
 
-      SubmitCommandLists(vk::CommandLists{list}, vk::Semaphores{present_complete_sem}, vk::Semaphores::empty, submit_fence_);
-      submit_fence_.WaitSignalFromGpu();
-      submit_fence_.Reset();
+      SubmitCommandLists(vk::CommandLists{list}, vk::Semaphores{present_complete_sem}, vk::Semaphores::empty, *submit_fence_);
+      submit_fence_->WaitSignalFromGpu();
+      submit_fence_->Reset();
       
       transition_done[frame_num] = true;
       ++transitions_total;
@@ -441,7 +441,8 @@ auto gdm::vk::Renderer::CreateDescriptorPool(int max_sets, const std::vector<std
   pool_create_info.maxSets = max_sets;
   pool_create_info.poolSizeCount = static_cast<uint>(pools.size());
   pool_create_info.pPoolSizes = pools.data();
-  pool_create_info.flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+  pool_create_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT |
+                           VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT ;
     
   VkDescriptorPool descriptor_pool;
   VkResult res = vkCreateDescriptorPool(*device_, &pool_create_info, NULL, &descriptor_pool);
@@ -570,14 +571,19 @@ void gdm::vk::Renderer::Cleanup()
   for (auto view : present_images_views_)
     vkDestroyImageView(*device_, *view, &allocator_);
   for (auto command_buffer : frame_command_buffers_)
-    vkResetCommandBuffer(command_buffer, {});
+    vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+  for (auto&& [name, command_buffer] : setup_command_buffers_)
+    vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
 
   vkDestroyCommandPool(*device_, setup_command_pool_, &allocator_);
+  vkDestroyCommandPool(*device_, frame_command_pool_, &allocator_);
+
   vkDestroySwapchainKHR(*device_, swapchain_, &allocator_);
   vkDestroySurfaceKHR(instance_, surface_, &allocator_);
 
+  GMDelete(submit_fence_);
   GMDelete(device_);
-
+  
   vkDestroyInstance(instance_, &allocator_);
 }
 
