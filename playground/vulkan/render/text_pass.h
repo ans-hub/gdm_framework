@@ -11,7 +11,7 @@
 #include "render/api.h"
 #include "render/renderer.h"
 #include "render/shader.h"
-#include "render/camera_eul.h"
+#include "engine/camera_eul.h"
 
 #include "math/matrix.h"
 #include "math/vector4.h"
@@ -22,7 +22,7 @@
 #include "render/desc/rasterizer_desc.h"
 #include "render/desc/input_layout_desc.h"
 
-#include "scene/debug_draw.h"
+#include "engine/debug_draw.h"
 
 namespace gdm {
 
@@ -66,7 +66,7 @@ class TextPass
 
   std::vector<TextPassData> data_ = {};
   const Font* font_ = nullptr;
-  api::ImageView* font_texture_ = nullptr;
+  const api::ImageView* font_texture_ = nullptr;
   std::vector<std::pair<uint, Vec4f>> strings_ = {};
 
 public:
@@ -81,7 +81,7 @@ public:
 
   [[deprecated]] void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
 
-  void BindFont(const Font* font, api::ImageView* font_texture);
+  void BindFont(const Font* font, const api::ImageView* font_texture);
   
   void CreateUniforms(api::CommandList& cmd, uint frame_num);
   void CreateVertexBuffer(api::CommandList& cmd, uint frame_num);

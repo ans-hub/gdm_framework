@@ -1,10 +1,10 @@
 // *************************************************************
-// File:    playground_renderer.cc
+// File:    app_renderer.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "playground_renderer.h"
+#include "app_renderer.h"
 
 #include "system/diff_utils.h"
 #include "system/literals.h"
@@ -16,37 +16,26 @@
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/rasterizer_desc.h"
 
-#include "data_helpers.h"
-#include "defines.h"
+#include "app_helpers.h"
+#include "app_defines.h"
 
 // --public
 
 gdm::PlaygroundRenderer::PlaygroundRenderer(
   api::Renderer& gfx,
   GpuStreamer& gpu_streamer,
-  MainWindow& win
+  const DebugDraw& debug_draw
 )
   : gfx_{ gfx }
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
-  , debug_draw_{}
-  , gui_draw_{}
   , stage_active_(static_cast<int>(EStage::Max), true)
   , gbuffer_pass_(gfx_)
   , deferred_pass_(gfx::v_num_images, gfx_)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
-{
-  win.RegisterAdditionalWndProc(gui::WinProc);
-
-  debug_draw_.ToggleActive();
-  debug_draw_.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
-  gui_draw_.ToggleActive(GuiDraw::EStage::BG_TEXT);
-  debug_pass_.RegisterGuiCallback(GDM_HASH("ImGuiExample"), gui::GuiExampleCb);
-  debug_pass_.RegisterGuiCallback(GDM_HASH("ImGuiDocking"), gui::GuiDockingCb);
-  debug_pass_.ChangeGuiCallbackStatus(GDM_HASH("ImGuiExample"), true);
-  debug_pass_.ChangeGuiCallbackStatus(GDM_HASH("ImGuiDocking"), true);
-  text_pass_.BindFont(debug_draw_.GetFont(), debug_draw_.GetFontView());
+{  
+  text_pass_.BindFont(debug_draw.GetFont(), debug_draw.GetFontView());
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
 
@@ -98,28 +87,16 @@ gdm::PlaygroundRenderer::PlaygroundRenderer(
   submit_fence_.Reset();
 }
 
-void gdm::PlaygroundRenderer::ToggleActive(EStage stage)
-{
-  stage_active_[static_cast<int>(stage)] = !stage_active_[static_cast<int>(stage)];
-}
-
-void gdm::PlaygroundRenderer::SetActive(EStage stage, bool is_active)
-{
-  stage_active_[static_cast<int>(stage)] = is_active;
-}
-
 void gdm::PlaygroundRenderer::Render(
   float dt,
+  const DebugDraw& debug_draw,
   const CameraEul& camera,
   const std::vector<ModelInstance*>& models,
   const api::ImageViews& materials,
-  std::vector<ModelLight>& lamps,
-  std::vector<ModelLight>& flashlights)
+  const std::vector<ModelLight>& lamps,
+  const std::vector<ModelLight>& flashlights,
+  const std::vector<GuiCallback>& gui_callbacks)
 {
-  SetActive(EStage::TEXT, gui_draw_.IsActive(GuiDraw::EStage::BG_TEXT));
-  SetActive(EStage::GUI, gui_draw_.IsActive(GuiDraw::EStage::WINDOWS));
-  SetActive(EStage::DEBUG, debug_draw_.IsActive());
-
   api::CommandList cmd_gbuffer = gfx_.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
 
   api::Semaphore spresent_done(device_);
@@ -147,27 +124,33 @@ void gdm::PlaygroundRenderer::Render(
 
   submit_fence_.Reset();
   cmd_deferred.Finalize();
+ 
+  bool active_gui = false;
+  
+  for (auto&& cb : gui_callbacks)
+    active_gui |= cb.active_;
+ 
+  const bool active_wire = debug_draw.IsActiveWire();
+  const bool active_text = debug_draw.IsActiveText();
 
-  const bool any_debug = IsStageActive(EStage::DEBUG) || IsStageActive(EStage::GUI) || IsStageActive(EStage::TEXT);
-
-  if (any_debug)
+  if (active_gui || active_wire || active_text)
   {
     gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
     submit_fence_.WaitSignalFromGpu();
   
     api::CommandList cmd_debug = gfx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
-    if (IsStageActive(EStage::DEBUG) || IsStageActive(EStage::GUI))
+    if (active_wire || active_gui)
     {
       debug_pass_.UpdateUniformsData(curr_frame, camera);
       debug_pass_.UpdateUniforms(cmd_debug, curr_frame);
-      debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetDrawData());
-      debug_pass_.Draw(cmd_debug, curr_frame, IsStageActive(EStage::DEBUG), IsStageActive(EStage::GUI));
+      debug_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw.GetDrawData());
+      debug_pass_.Draw(cmd_debug, curr_frame, active_wire, active_gui, gui_callbacks);
     }
 
-    if (IsStageActive(EStage::TEXT))
+    if (active_text)
     {
-      text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw_.GetTextData());
+      text_pass_.UpdateVertexData(cmd_debug, curr_frame, debug_draw.GetTextData());
       text_pass_.Draw(cmd_debug, curr_frame);
     }
 
@@ -184,6 +167,4 @@ void gdm::PlaygroundRenderer::Render(
     gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
     submit_fence_.WaitSignalFromGpu();
   }
-
-  debug_draw_.Clear();
 }

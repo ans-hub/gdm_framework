@@ -9,12 +9,12 @@
 
 #include <functional>
 
-#include "render/camera_eul.h"
+#include "engine/camera_eul.h"
 #include "window/main_input.h"
 #include "data/model_factory.h"
 #include "data/cfg_loader.h"
+#include "engine/debug_draw.h"
 
-#include "debug_draw.h"
 #include "defines.h"
 
 namespace gdm::cfg {
@@ -24,7 +24,7 @@ struct Dispatcher
   Dispatcher();
   Dispatcher(Config& cfg, std::vector<ModelInstance*> models, const std::vector<std::string>& names);
 
-  void Update(CameraEul& cam, MainInput& input, DebugDraw& debug, float dt);
+  void Update(CameraEul& cam, const MainInput& input, DebugDraw& debug, float dt);
 
 private:
   Callback logic_;  

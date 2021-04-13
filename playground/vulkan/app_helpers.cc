@@ -1,10 +1,10 @@
 // *************************************************************
-// File:    data_helpers.cc
+// File:    app_helpers.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "data_helpers.h"
+#include "app_helpers.h"
 
 #include "data/cfg_loader.h"
 
@@ -65,7 +65,7 @@ namespace gdm::_private{
 
 // --public
 
-auto gdm::data_helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>
+auto gdm::app_helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -84,7 +84,7 @@ auto gdm::data_helpers::LoadFlashlights(const Config& cfg) -> std::vector<ModelI
   return result;
 }
 
-auto gdm::data_helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
+auto gdm::app_helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -124,7 +124,7 @@ auto gdm::data_helpers::LoadLights(const Config& cfg) -> std::vector<ModelInstan
   return result;
 }
 
-auto gdm::data_helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
+auto gdm::app_helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInstance>
 {
   static const bool registered = _private::RegisterFactoryPathes(cfg);
 
@@ -149,12 +149,12 @@ auto gdm::data_helpers::LoadObjects(const Config& cfg) -> std::vector<ModelInsta
   return models;
 }
 
-auto gdm::data_helpers::LoadObjectNames(const Config& cfg) -> std::vector<std::string>
+auto gdm::app_helpers::LoadObjectNames(const Config& cfg) -> std::vector<std::string>
 {
   return cfg.GetAllKeys<std::string>("model_");
 }
 
-auto gdm::data_helpers::GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<gdm::ModelHandle>
+auto gdm::app_helpers::GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<gdm::ModelHandle>
 {
   std::set<ModelHandle> to_sort;
   for (const auto& instance : instances)
@@ -163,40 +163,4 @@ auto gdm::data_helpers::GetUniqueModels(const std::vector<ModelInstance*>& insta
   for(auto handle : to_sort)
     result.push_back(handle);
   return result;
-}
-
-auto gdm::data_helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>
-{
-  std::vector<MaterialHandle> result;
-  for (auto model_handle : handles)
-  {
-    AbstractModel* model = ModelFactory::Get(model_handle);
-    for (auto material_handle : model->materials_)
-      if (!MaterialFactory::ImplementationLoaded(material_handle))
-        result.push_back(material_handle);
-  }
-  return result;
-}
-
-auto gdm::data_helpers::ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType
-{
-  switch(type)
-  {
-    case AbstractTexture::EFormatType::F1: return gfx::EFormatType::F1;
-    case AbstractTexture::EFormatType::F2: return gfx::EFormatType::F2;
-    case AbstractTexture::EFormatType::F3: return gfx::EFormatType::F3;
-    case AbstractTexture::EFormatType::F4: return gfx::EFormatType::F4;
-    case AbstractTexture::EFormatType::F4HALF: return gfx::EFormatType::F4HALF;
-    case AbstractTexture::EFormatType::SRGB4: return gfx::EFormatType::SRGB4;
-    case AbstractTexture::EFormatType::UNORM4: return gfx::EFormatType::UNORM4;
-    case AbstractTexture::EFormatType::D24_UNORM_S8_UINT: return gfx::EFormatType::D24_UNORM_S8_UINT;
-    case AbstractTexture::EFormatType::D32_SFLOAT_S8_UINT: return gfx::EFormatType::D32_SFLOAT_S8_UINT;
-    case AbstractTexture::EFormatType::R8_UNORM: return gfx::EFormatType::R8_UNORM;
-    case AbstractTexture::EFormatType::D16_UNORM: return gfx::EFormatType::D16_UNORM;
-    default:
-    {
-      ASSERTF(false, "No association with texture type");
-      return gfx::EFormatType::FORMAT_TYPE_MAX;
-    }
-  }
 }

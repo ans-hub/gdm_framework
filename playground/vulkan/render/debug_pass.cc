@@ -13,7 +13,6 @@
 #include "system/diff_utils.h"
 #include "system/event_point.h"
 #include "data/model_factory.h"
-#include "scene/gui_draw.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
@@ -25,7 +24,6 @@ gdm::DebugPass::DebugPass(int frame_count, api::Renderer& rdr)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
   , data_(frame_count, rdr)
-  , gui_callbacks_{}
 { }
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
@@ -216,7 +214,7 @@ void gdm::DebugPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, co
   data_[curr_frame].vertices_count_ = debug_data.size();
 }
 
-void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_stage_active, bool gui_stage_active)
+void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool wire_stage_active, bool gui_stage_active, const std::vector<GuiCallback>& gui_callbacks)
 {
   GDM_EVENT_POINT("DebugPass", GDM_LABEL_S(color::LightGreen));
  
@@ -229,9 +227,9 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_sta
   cmd.BindPipelineGraphics(*pipeline_);
   cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
   
-  if (debug_stage_active && data.vertices_count_ != 0)
+  if (wire_stage_active && data.vertices_count_ != 0)
   {
-    GDM_EVENT_POINT("DebugPass (prim)", GDM_LABEL_S(color::LightGreen));
+    GDM_EVENT_POINT("DebugPass (wire)", GDM_LABEL_S(color::LightGreen));
 
     cmd.BindVertexBuffer(*data.vertex_buffer_);
     cmd.Draw(data.vertices_count_);
@@ -247,8 +245,9 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_sta
     ImGui_ImplWin32_NewFrame();
     ImGui::NewFrame();
     
-    for (auto&& [name, cb] : gui_callbacks_)
-      cb.cb_();
+    for (auto&& cb : gui_callbacks)
+      if (cb.active_)
+        cb.fn_();
 
     ImGui::Render();
 
@@ -261,14 +260,4 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool debug_sta
 
   cmd.EndRenderPass();
   cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
-}
-
-void gdm::DebugPass::RegisterGuiCallback(Hash name, GuiCallback::Fn&& fn)
-{
-  gui_callbacks_[name] = GuiCallback{fn, false};
-}
-
-void gdm::DebugPass::ChangeGuiCallbackStatus(Hash name, bool is_active)
-{
-  gui_callbacks_[name].active_ = is_active;
 }

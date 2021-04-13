@@ -10,7 +10,7 @@
 #include <ecs/component.h>
 #include <ecs/manager.h>
 
-#include <render/camera_eul.h>
+#include <engine/camera_eul.h>
 
 #include "transform.ecs.h"
 #include "input.ecs.h"

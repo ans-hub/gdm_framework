@@ -4,7 +4,7 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "scene/defines.h"
+#include "app_defines.h"
 
 // todo:
 /*
@@ -36,7 +36,7 @@ make single main.cc, where we call dx/vk/gl implementation
 
 namespace gdm::_private
 {
-  static void UpdateSpatial(cfg::Models& models, CameraEul& cam, MainInput& input, DebugDraw& debug, float dt)
+  static void UpdateSpatial(cfg::Models& models, CameraEul& cam, const MainInput& input, DebugDraw& debug, float dt)
   {
     static ModelInstance& ball_instance = *models["model_ball"];
     // static ModelInstance& table_instance = *models["model_table"];

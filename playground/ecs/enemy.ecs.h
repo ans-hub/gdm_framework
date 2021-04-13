@@ -14,7 +14,7 @@
 
 #include <math/vector3.h>
 
-#include <render/camera_eul.h>
+#include <engine/camera_eul.h>
 
 #include "transform.ecs.h"
 #include "render.ecs.h"

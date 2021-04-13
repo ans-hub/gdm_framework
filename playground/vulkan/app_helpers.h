@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    data_helpers.h
+// File:    app_helpers.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -10,7 +10,7 @@
 #include <set>
 #include <unordered_map>
 
-#include "render/camera_eul.h"
+#include "engine/camera_eul.h"
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
@@ -25,15 +25,13 @@
 #include "data/image_factory.h"
 #include "data/cfg_loader.h"
 
-namespace gdm::data_helpers {
+namespace gdm::app_helpers {
 
   auto LoadObjects(const Config& cfg) -> std::vector<ModelInstance>;
   auto LoadObjectNames(const Config& cfg) -> std::vector<std::string>;
   auto LoadLights(const Config& cfg) -> std::vector<ModelInstance>;
   auto LoadFlashlights(const Config& cfg) -> std::vector<ModelInstance>;
   auto GetUniqueModels(const std::vector<ModelInstance*>& instances) -> std::vector<ModelHandle>;
-  auto GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>;
-  auto ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType;
 
 } // namespace gdm::helpers
 

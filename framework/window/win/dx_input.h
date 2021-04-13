@@ -21,6 +21,8 @@ struct DxInput
   DxInput(HWND window_hndl, HINSTANCE window_hinst = GetModuleHandle(NULL));
   ~DxInput();
 
+  DxInput(const DxInput&) =delete;
+
   void CaptureKeyboard();
   void CaptureMouse();
   void PauseCaptureMouse();

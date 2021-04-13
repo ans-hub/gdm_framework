@@ -4,7 +4,7 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "scene/debug_draw.h"
+#include "engine/debug_draw.h"
 
 #include <math/obb.h>
 #include <math/aabb.h>
@@ -18,7 +18,7 @@
 #include <render/api.h>
 #include <render/defines.h>
 
-#include "scene/gpu_streamer.h"
+#include "engine/gpu_streamer.h"
 
 //--public
 
@@ -54,7 +54,7 @@ void gdm::DebugDraw::DrawString(Vec3f pos, const std::string& text, Vec4f color)
 
 void gdm::DebugDraw::DrawCross(Vec3f point, float len, Vec4f color)
 {
-  if (!is_active_)
+  if (!is_active_wire_)
     return;
 
   Vec3f r (1.f, 0.f, 0.f);
@@ -77,7 +77,7 @@ void gdm::DebugDraw::DrawCross(Vec3f point, float len, Vec4f color)
 
 void gdm::DebugDraw::DrawLine(Vec3f begin, Vec3f end, Vec4f color)
 {
-  if (!is_active_)
+  if (!is_active_wire_)
     return;
 
   draw_data_.push_back({begin, color});
@@ -86,7 +86,7 @@ void gdm::DebugDraw::DrawLine(Vec3f begin, Vec3f end, Vec4f color)
 
 void gdm::DebugDraw::DrawBasis(Vec3f wpos, Vec3f right, Vec3f up, Vec3f fwd, float len)
 {
-  if (!is_active_)
+  if (!is_active_wire_)
     return;
 
   draw_data_.push_back({wpos, color::LightRed});
@@ -99,7 +99,7 @@ void gdm::DebugDraw::DrawBasis(Vec3f wpos, Vec3f right, Vec3f up, Vec3f fwd, flo
 
 void gdm::DebugDraw::DrawBasis(const Mat4f& mx, float len)
 {
-  if (!is_active_)
+  if (!is_active_wire_)
     return;
 
   DrawBasis(mx.GetCol(3), mx.GetCol(0), mx.GetCol(1), mx.GetCol(2), len);
@@ -107,7 +107,7 @@ void gdm::DebugDraw::DrawBasis(const Mat4f& mx, float len)
 
 void gdm::DebugDraw::DrawBox(const Vec3f& wpos, const Vec3f& half_sizes, Vec4f color)
 {
-  if (!is_active_)
+  if (!is_active_wire_)
     return;
 
   float x = wpos.x;
@@ -144,7 +144,7 @@ void gdm::DebugDraw::DrawBox(const Vec3f& wpos, const Vec3f& half_sizes, Vec4f c
 
 void gdm::DebugDraw::DrawSphere(const Vec3f& wpos, float radius, Vec4f color)
 {
-  if (!is_active_)
+  if (!is_active_wire_)
     return;
 
   static constexpr int v_step = 15;

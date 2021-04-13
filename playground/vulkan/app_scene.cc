@@ -1,24 +1,22 @@
 // *************************************************************
-// File:    playground_scene.cc
+// File:    app_scene.cc
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "playground_scene.h"
+#include "app_scene.h"
 
 #include "system/diff_utils.h"
 
 #include "render/shader.h"
-
 #include "render/desc/sampler_desc.h"
 #include "render/desc/input_layout_desc.h"
 #include "render/desc/rasterizer_desc.h"
+#include "engine/debug_draw.h"
 
-#include "scene/input_helpers.h"
-#include "scene/data_helpers.h"
-#include "scene/defines.h"
-#include "scene/debug_draw.h"
-#include "scene/gui_draw.h"
+#include "app_input.h"
+#include "app_helpers.h"
+#include "app_defines.h"
 
 // --public
 
@@ -36,35 +34,38 @@ gdm::PlaygroundScene::PlaygroundScene(Config& cfg, MainWindow& win)
   camera_.LookAt(cfg.Get<Vec3f>("initial_look_at"));
   camera_.SetMoveSpeed(3.f);
 
-  std::vector<ModelInstance> object_models = data_helpers::LoadObjects(cfg);
-  std::vector<ModelInstance> lamp_models = data_helpers::LoadLights(cfg);
-  std::vector<ModelInstance> flashlights = data_helpers::LoadFlashlights(cfg);
+  std::vector<ModelInstance> object_models = app_helpers::LoadObjects(cfg);
+  std::vector<ModelInstance> lamp_models = app_helpers::LoadLights(cfg);
+  std::vector<ModelInstance> flashlights = app_helpers::LoadFlashlights(cfg);
 
-  SetObjects(object_models, data_helpers::LoadObjectNames(cfg));
+  SetObjects(object_models, app_helpers::LoadObjectNames(cfg));
   SetLamps(lamp_models, flashlights);
 
   cfg_dispatcher_ = cfg::Dispatcher(cfg, GetSceneInstances(), GetSceneInstancesNames());
 }
 
-void gdm::PlaygroundScene::Update(float dt, MainInput& input, GuiDraw& gui_draw, DebugDraw& debug_draw)
+void gdm::PlaygroundScene::Update(float dt,
+  PlaygroundInput& input_mgr,
+  GuiManager& gui,
+  DebugDraw& debug_draw)
 {
-  if (gui_draw.IsActive(GuiDraw::EStage::WINDOWS))
-    input.PauseCaptureMouse();
+  input_mgr.GetRawInput().CaptureKeyboard();
+  
+  if (!gui.IsActiveAnyWindow())
+  {
+    input_mgr.GetRawInput().CaptureMouse();
+    input_mgr.UpdateCameraRotate(camera_, dt);
+  }
   else
-    input.CaptureMouse();
+    input_mgr.GetRawInput().PauseCaptureMouse();
 
-  input.CaptureKeyboard();
+  input_mgr.UpdateCameraMovement(camera_, dt);
+  input_mgr.UpdateLamps(camera_, GetLamps(), dt);
+  input_mgr.UpdateFlashlights(camera_, GetFlashlights(), dt);
+  input_mgr.UpdateDebugDraw(debug_draw);
+  input_mgr.UpdateGui(gui);
 
-  if (!gui_draw.IsActive(GuiDraw::EStage::WINDOWS))
-    input_helpers::UpdateCameraRotate(camera_, input, dt);
-
-  input_helpers::UpdateCameraMovement(camera_, input, dt);
-  input_helpers::UpdateLamps(camera_, input, GetLamps(), dt);
-  input_helpers::UpdateFlashlights(camera_, input, GetFlashlights(), dt);
-  input_helpers::UpdateDebugDraw(input, debug_draw);
-  input_helpers::UpdateGuiDraw(input, gui_draw);
-
-  cfg_dispatcher_.Update(camera_, input, debug_draw, dt);
+  cfg_dispatcher_.Update(camera_, input_mgr.GetRawInput(), debug_draw, dt);
 }
 
 void gdm::PlaygroundScene::SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names)

@@ -14,7 +14,7 @@
 #include "render/api.h"
 #include "render/renderer.h"
 #include "render/shader.h"
-#include "render/camera_eul.h"
+#include "engine/camera_eul.h"
 
 #include "math/matrix.h"
 #include "math/vector4.h"
@@ -26,7 +26,8 @@
 #include "render/desc/rasterizer_desc.h"
 #include "render/desc/input_layout_desc.h"
 
-#include "scene/debug_draw.h"
+#include "engine/debug_draw.h"
+#include "engine/gui_manager.h"
 
 namespace gdm {
 
@@ -61,16 +62,6 @@ struct DebugPassData
 
 }; // struct DebugPassData
 
-
-struct GuiCallback
-{
-  using Fn = std::function<void()>;
-  
-  Fn cb_;
-  bool active_;
-
-}; // struct GuiCallback
-
 struct DebugPass
 {
   DebugPass(int frame_count, api::Renderer& rdr);
@@ -91,21 +82,15 @@ struct DebugPass
   void CreatePipeline();
   void CreateGui();
   
-  void RegisterGuiCallback(Hash name, GuiCallback::Fn&& fn);
-  void ChangeGuiCallbackStatus(Hash name, bool cb);
-
   void UpdateUniforms(api::CommandList& cmd, uint frame_num);
   void UpdateUniformsData(uint curr_frame, const CameraEul& camera);
   void UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<DebugData>& debug_data);
 
-  void Draw(api::CommandList& cmd, uint curr_frame, bool debug_stage_active, bool gui_stage_active);
+  void Draw(api::CommandList& cmd, uint curr_frame, bool debug_stage_active, bool gui_stage_active, const std::vector<GuiCallback>& gui_callbacks);
 
 private:
   void DrawPrimitives(api::CommandList& cmd, uint curr_frame);
   void DrawGui(api::CommandList& cmd, uint curr_frame);
-
-private:
-  std::map<Hash, GuiCallback> gui_callbacks_;
 
 }; // struct DebugPass
 

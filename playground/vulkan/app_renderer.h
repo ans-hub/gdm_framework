@@ -1,5 +1,5 @@
 // *************************************************************
-// File:    playground_renderer.h
+// File:    app_renderer.h
 // Author:  Novoselov Anton @ 2020
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
@@ -26,22 +26,18 @@
 #include "render/renderer.h"
 #include "render/desc/viewport_desc.h"
 
-#include "passes/deferred_pass.h"
-#include "passes/gbuffer_pass.h"
-#include "passes/debug_pass.h"
-#include "passes/text_pass.h"
+#include "render/deferred_pass.h"
+#include "render/gbuffer_pass.h"
+#include "render/debug_pass.h"
+#include "render/text_pass.h"
 
-#include "window/main_window.h"
 #include "window/main_input.h"
-
 #include "data/model_factory.h"
 #include "data/cfg_loader.h"
-
 #include "system/font.h"
 
-#include "gpu_streamer.h"
-#include "debug_draw.h"
-#include "gui_draw.h"
+#include "engine/gui_manager.h"
+#include "engine/gpu_streamer.h"
 
 namespace gdm {
 
@@ -57,30 +53,23 @@ struct PlaygroundRenderer
     Max
   }; // enum class EStage
 
-  PlaygroundRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, MainWindow& win);
+  PlaygroundRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, const DebugDraw& debug_draw);
 
   void Render(float dt,
+              const DebugDraw& debug_draw,
               const CameraEul& camera,
               const std::vector<ModelInstance*>& models,
               const api::ImageViews& materials,
-              std::vector<ModelLight>& lamps,
-              std::vector<ModelLight>& flashlights);
+              const std::vector<ModelLight>& lamps,
+              const std::vector<ModelLight>& flashlights,
+              const std::vector<GuiCallback>& gui_callbacks);
 
-  void SetActive(EStage stage, bool is_active);
-  void ToggleActive(EStage stage);
-  auto IsStageActive(EStage stage) const -> int { return stage_active_[static_cast<int>(stage)]; };
-
-  auto GetDebugDraw() -> DebugDraw& { return debug_draw_; }
-  auto GetGuiDraw() -> GuiDraw& { return gui_draw_; }
   auto GetGpuInfo() const -> const api::PhysicalDevice& { return device_.GetPhysicalDevice().info_; }
 
 private:
   api::Renderer& gfx_;
   api::Device& device_;
   api::Fence submit_fence_;
-
-  DebugDraw debug_draw_;
-  GuiDraw gui_draw_;
 
   std::vector<bool> stage_active_;
 

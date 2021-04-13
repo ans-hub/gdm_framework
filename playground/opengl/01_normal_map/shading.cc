@@ -25,9 +25,9 @@
 #include <render/gl_utils.h>
 #include <render/texture.h>
 #include <render/shader.h>
-#include <render/camera_eul.h>
+#include <engine/camera_eul.h>
 #include <render/mesh.h>
-#include <render/debug_draw.h>
+#include <engine/debug_draw.h>
 #include <render/fx_colors.h>
 
 #include <libs/window/gl_window.h>

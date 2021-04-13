@@ -13,7 +13,7 @@
 #include "render/api.h"
 #include "render/renderer.h"
 #include "render/shader.h"
-#include "render/camera_eul.h"
+#include "engine/camera_eul.h"
 
 #include "math/matrix.h"
 #include "math/vector4.h"

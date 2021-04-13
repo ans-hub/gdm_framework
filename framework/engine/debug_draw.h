@@ -16,7 +16,7 @@
 #include <render/renderer.h>
 #include <system/font.h>
 
-#include "gpu_streamer.h"
+#include "engine/gpu_streamer.h"
 
 namespace gdm {
 
@@ -54,11 +54,14 @@ struct DebugDraw
   auto GetDrawData() const -> std::vector<DebugData> { return draw_data_; } 
   auto GetTextData() const -> std::vector<TextData> { return text_data_; }
   auto GetFont() const -> const Font* { return font_.get(); }
-  auto GetFontView() -> api::ImageView* { return font_view_; }
+  auto GetFontView() const -> const api::ImageView* { return font_view_; }
+  void Update() { Clear(); }
   void Clear() { draw_data_.clear(); text_data_.clear(); }
 
-  bool IsActive() const { return is_active_; }
-  void ToggleActive() { is_active_ ^= true; }
+  bool IsActiveWire() const { return is_active_wire_; }
+  bool IsActiveText() const { return is_active_text_; }
+  void ToggleActivateWire() { is_active_wire_ ^= true; }
+  void ToggleActivateText() { is_active_text_ ^= true; }
 
 private:
   std::vector<DebugData> draw_data_ = {};
@@ -66,7 +69,8 @@ private:
   std::unique_ptr<Font> font_ = nullptr;
   api::ImageView* font_view_ = nullptr;
 
-  bool is_active_ = false;
+  bool is_active_wire_ = false;
+  bool is_active_text_ = false;
 
 }; // struct DebugDraw
 

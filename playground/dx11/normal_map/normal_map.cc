@@ -42,8 +42,9 @@
 #include <render/desc/sampler_desc.h>
 #include <render/vertex_shader.h>
 #include <render/pixel_shader.h>
-#include <render/camera_eul.h>
 #include <render/colors.h>
+
+#include <engine/camera_eul.h>
 
 #include "shaders/flat_vert.h"
 #include "shaders/nmap_vert.h"
@@ -505,7 +506,7 @@ void PrintLog(Scene& scene, FpsCounter& fps, const DxInput& input)
   fps.Advance();
   if (fps.Ready())
   {
-    LOGF("Fps: %d, mouse x %f, y %f, cam %.02f %.02f %.02f\n", fps.ReadPrev(), input.GetMouseX(), input.GetMouseY(),
+    LOGF("Fps: %d, mouse x %f, y %f, cam %.02f %.02f %.02f\n", (int)fps.ReadPrev(), input.GetMouseX(), input.GetMouseY(),
           scene.camera_.GetPos().x, scene.camera_.GetPos().y, scene.camera_.GetPos().z);
   }
 }

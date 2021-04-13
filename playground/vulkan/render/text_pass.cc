@@ -16,7 +16,7 @@
 
 // --public different
 
-void gdm::TextPass::BindFont(const Font* font, api::ImageView* font_texture)
+void gdm::TextPass::BindFont(const Font* font, const api::ImageView* font_texture)
 {
   font_ = font;
   font_texture_ = font_texture;

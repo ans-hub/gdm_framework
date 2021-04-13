@@ -12,7 +12,7 @@
 
 #include <ecs/component.h>
 
-#include <render/camera_eul.h>
+#include <engine/camera_eul.h>
 
 using namespace gdm;
 

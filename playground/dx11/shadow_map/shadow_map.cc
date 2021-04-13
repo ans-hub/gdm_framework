@@ -36,11 +36,12 @@
 #include "render/input_layout.h"
 #include <render/vertex_shader.h>
 #include <render/pixel_shader.h>
-#include <render/camera_eul.h>
 #include <render/colors.h>
 #include <render/desc/rasterizer_desc.h>
 #include <render/desc/input_layout_desc.h>
 #include <render/desc/sampler_desc.h>
+
+#include <engine/camera_eul.h>
 
 #include "desc/vert_sh_buffers.h"
 #include "desc/frag_sh_buffers.h"

@@ -14,7 +14,7 @@
 #include "render/renderer.h"
 #include "render/colors.h"
 #include "render/shader.h"
-#include "render/camera_eul.h"
+#include "engine/camera_eul.h"
 
 #include "data/material_factory.h"
 #include "data/model_factory.h"

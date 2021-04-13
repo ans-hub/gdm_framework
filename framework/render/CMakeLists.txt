@@ -69,8 +69,7 @@ else()
 endif()
 
 set(SRC_FILES
-  ${SRC_FILES}
-  camera_eul.cc)
+  ${SRC_FILES})
 
 if ("${VK_API}")
   add_definitions(-DVK_PROTOTYPES)

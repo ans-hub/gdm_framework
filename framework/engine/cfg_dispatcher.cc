@@ -17,7 +17,7 @@
 
 namespace gdm::_private
 {
-  static void UpdateDummy(cfg::Models&, CameraEul&, MainInput&, DebugDraw&, float) { }
+  static void UpdateDummy(cfg::Models&, CameraEul&, const MainInput&, DebugDraw&, float) { }
 }
 
 //--public
@@ -38,7 +38,7 @@ gdm::cfg::Dispatcher::Dispatcher(Config& cfg, std::vector<ModelInstance*> models
     logic_ = &gdm::_private::UpdateSpatial;
 }
 
-void gdm::cfg::Dispatcher::Update(CameraEul& cam, MainInput& input, DebugDraw& debug, float dt)
+void gdm::cfg::Dispatcher::Update(CameraEul& cam, const MainInput& input, DebugDraw& debug, float dt)
 {
   return logic_(models_, cam, input, debug, dt);
 }

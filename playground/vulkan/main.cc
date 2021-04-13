@@ -13,7 +13,13 @@
 #include "render/renderer.h"
 #include "render/colors.h"
 #include "render/shader.h"
-#include "render/camera_eul.h"
+#include "engine/gpu_streamer.h"
+#include "engine/debug_draw.h"
+
+#include "engine/gui_manager.h"
+#include "engine/cfg_dispatcher.h"
+#include "engine/gui_manager.h"
+#include "engine/camera_eul.h"
 
 #include "memory/defines.h"
 
@@ -32,21 +38,15 @@
 #include "system/profiler.h"
 #include "system/font.h"
 
-#include "render/desc/rasterizer_desc.h"
-#include "render/desc/input_layout_desc.h"
-#include "render/desc/sampler_desc.h"
-
-#include <scene/playground_scene.h>
-#include <scene/playground_renderer.h>
-#include <scene/gpu_streamer.h>
-#include <scene/cfg_dispatcher.h>
-#include <scene/data_helpers.h>
-#include <scene/debug_draw.h>
-#include <scene/gui_draw.h>
+#include "app_gui.h"
+#include "app_scene.h"
+#include "app_renderer.h"
+#include "app_input.h"
+#include "app_helpers.h"
 
 using namespace gdm;
 
-int ProcessMessages(MSG& msg, MainInput& input, MainWindow& win)
+int ProcessMessages(MSG& msg, const MainInput& input, MainWindow& win)
 {
   int exit = -1;
   
@@ -63,21 +63,20 @@ int ProcessMessages(MSG& msg, MainInput& input, MainWindow& win)
   return exit;
 }
 
-void DrawInfo(PlaygroundRenderer& renderer, const Timer& timer, const FpsCounter& fps, const std::string& cfg_name)
+void DrawInfo(DebugDraw& debug_draw, PlaygroundRenderer& renderer, const Timer& timer, const FpsCounter& fps, const std::string& cfg_name)
 {
-  DebugDraw& dd = renderer.GetDebugDraw();
-  const float line_height = (float)dd.GetFont()->GetMetrics().font_height_;
+  const float line_height = (float)debug_draw.GetFont()->GetMetrics().font_height_;
   std::string msg;
   msg.append("FPS: ");
   msg.append(std::to_string(fps.ReadPrev()));
   std::string gpu_name;
   gpu_name.append("GPU: ");
   gpu_name.append(renderer.GetGpuInfo().device_props_.deviceName);
-  std::string help {"F9 (text), F10 (GUI), F11 (debug)"};
-  renderer.GetDebugDraw().DrawString({10.f, 0.f, 0.f}, msg, color::White);
-  renderer.GetDebugDraw().DrawString({10.f, line_height, 0.f}, cfg_name, color::LightGreen);
-  renderer.GetDebugDraw().DrawString({10.f, line_height * 2, 0.f}, gpu_name, color::LightGreen);
-  renderer.GetDebugDraw().DrawString({10.f, line_height * 3, 0.f}, help, color::LightGreen);
+  std::string help {"F7-F8 (gui), F9 (wire), F11 (text)"};
+  debug_draw.DrawString({10.f, 0.f, 0.f}, msg, color::White);
+  debug_draw.DrawString({10.f, line_height, 0.f}, cfg_name, color::LightGreen);
+  debug_draw.DrawString({10.f, line_height * 2, 0.f}, gpu_name, color::LightGreen);
+  debug_draw.DrawString({10.f, line_height * 3, 0.f}, help, color::LightGreen);
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine, int cmdShow)
@@ -94,13 +93,30 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   const uint height = 600;
 
   auto win = MainWindow(width, height, "Vulkan scenes", MainWindow::CENTERED);
-  auto input = MainInput(win.GetHandle(), hInstance);
+  win.RegisterAdditionalWndProc(gui::WinProc);
+
   auto api_renderer = api::Renderer(win.GetHandle(), gfx::DEBUG_DEVICE | gfx::PROFILE_MARKS);
   auto gpu_streamer = GpuStreamer(api_renderer);
-  auto renderer = PlaygroundRenderer(api_renderer, gpu_streamer, win);
-  
+
+  auto gui = GuiManager();
+  int gui_cb_example = gui.RegisterGuiCallback(gui::GuiExampleCb);
+  int gui_cb_docking = gui.RegisterGuiCallback(gui::GuiDockingCb);
+
+  auto input = PlaygroundInput(win.GetHandle(), hInstance);
+  input.SetGuiButton(gui_cb_example, DIK_F7);
+  input.SetGuiButton(gui_cb_docking, DIK_F8);
+  input.SetWireButton(DIK_F9);
+  input.SetTextButton(DIK_F11);
+  // input.SetCameraMoveButton() and others
+
+  auto debug_draw = DebugDraw{};
+  debug_draw.AddFont(gpu_streamer, "assets/fonts/arial.ttf", 14);
+  debug_draw.ToggleActivateWire();
+  debug_draw.ToggleActivateText();
+
+  auto renderer = PlaygroundRenderer(api_renderer, gpu_streamer, debug_draw);
   auto scene = PlaygroundScene(cfg, win);
-  auto unique_models = data_helpers::GetUniqueModels(scene.GetSceneInstances());
+  auto unique_models = app_helpers::GetUniqueModels(scene.GetSceneInstances());
   gpu_streamer.CopyModelsToGpu(unique_models);
 
   MSG msg {0};
@@ -112,26 +128,31 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
   while(exit == -1)
   {
-    exit = ProcessMessages(msg, input, win);
+    exit = ProcessMessages(msg, input.GetRawInput(), win);
 
     timer.Start();
     float dt = timer.GetLastDt();
 
-    scene.Update(dt,
-      input,
-      renderer.GetGuiDraw(),
-      renderer.GetDebugDraw()
-    );
+    input.Update();
+    debug_draw.Update();
 
-    renderer.Render(dt,
+    scene.Update(
+      dt,
+      input,
+      gui,
+      debug_draw);
+
+    DrawInfo(debug_draw, renderer, timer, fps, cfg_name);
+    
+    renderer.Render(
+      dt,
+      debug_draw,
       scene.GetCamera(),
       scene.GetRenderableInstances(),
       scene.GetRenderableMaterials(),
       scene.GetLamps(),
-      scene.GetFlashlights()
-    );
-
-    DrawInfo(renderer, timer, fps, cfg_name);
+      scene.GetFlashlights(),
+      gui.GetGuiCallbacks());
 
     timer.End();
     timer.Wait();

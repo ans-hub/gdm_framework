@@ -40,18 +40,15 @@ endif()
 
 set(SRC ${SRC}
         main.cc
-        passes/gbuffer_pass.cc
-        passes/deferred_pass.cc
-        passes/debug_pass.cc
-        passes/text_pass.cc
-        scene/gpu_streamer.cc
-        scene/playground_renderer.cc
-        scene/playground_scene.cc
-        scene/data_helpers.cc
-        scene/input_helpers.cc
-        scene/debug_draw.cc
-        scene/gui_draw.cc
-        scene/cfg_dispatcher.cc)
+        render/gbuffer_pass.cc
+        render/deferred_pass.cc
+        render/debug_pass.cc
+        render/text_pass.cc
+        app_gui.cc
+        app_input.cc
+        app_renderer.cc
+        app_scene.cc
+        app_helpers.cc)
 
 if (WIN32)
   set(CMAKE_CXX_FLAGS
@@ -66,13 +63,14 @@ add_subdirectory(${GDM_FRAMEWORK_DIR}/math/ static_libs/math)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/data/ static_libs/data)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/window/ static_libs/window)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/render/ static_libs/render)
+add_subdirectory(${GDM_FRAMEWORK_DIR}/engine/ static_libs/engine)
 add_subdirectory(${GDM_FRAMEWORK_DIR}/threads/ static_libs/threads)
 
 message("* App ${BIN}: adding executable")
 add_executable(${BIN} ${SRC})
 
 message("* App ${BIN}: linking 3rd libraries")
-target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} math system data window render threads)
+target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} math system data window render engine threads)
 target_link_libraries(${BIN} winmm dxgi dinput8 dxguid)
 if(WIN32)
   target_link_libraries(${BIN} wsock32 ws2_32)

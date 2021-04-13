@@ -6,11 +6,12 @@
 
 #include "gpu_streamer.h"
 
+#include <set>
+
 #include "system/literals.h"
 #include "system/diff_utils.h"
 
-#include "scene/data_helpers.h"
-#include "scene/defines.h"
+#include "defines.h"
 
 // --public
 
@@ -47,7 +48,7 @@ void gdm::GpuStreamer::CopyModelsToGpu(const std::vector<ModelHandle>& models)
   uint istg = CreateStagingBuffer(32_Mb);
   uint tstg = CreateStagingBuffer(96_Mb);
   
-  std::vector<MaterialHandle> materials = data_helpers::GetMaterialsToLoad(models);
+  std::vector<MaterialHandle> materials = helpers::GetMaterialsToLoad(models);
 
   CopyGeometryToGpu(models, vstg, istg, setup_list);
   CopyMaterialsToGpu(materials, tstg, setup_list);
@@ -208,7 +209,7 @@ uint gdm::GpuStreamer::CopyTextureToStagingBuffer(AbstractTexture* texture, api:
   if (texture->format_ == AbstractTexture::EFormatType::FORMAT_TYPE_MAX)
     texture_format = v_default_texture_fmt;
   else
-    texture_format = data_helpers::ConvertData2RenderTextureFormat(texture->format_);
+    texture_format = helpers::ConvertData2RenderTextureFormat(texture->format_);
 
   api_img->GetProps()
     .AddFormatType(texture_format)
@@ -281,4 +282,42 @@ void gdm::GpuStreamer::CreateDummyView(api::CommandList& cmd)
   cmd.PushBarrier(barrier_undef_to_srv);
   dummy_texture->SetApiImage(api_img);
   dummy_texture->SetApiImageView(api_img_view);
+}
+
+//--helpers
+
+auto gdm::helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>
+{
+  std::vector<MaterialHandle> result;
+  for (auto model_handle : handles)
+  {
+    AbstractModel* model = ModelFactory::Get(model_handle);
+    for (auto material_handle : model->materials_)
+      if (!MaterialFactory::ImplementationLoaded(material_handle))
+        result.push_back(material_handle);
+  }
+  return result;
+}
+
+auto gdm::helpers::ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType
+{
+  switch(type)
+  {
+    case AbstractTexture::EFormatType::F1: return gfx::EFormatType::F1;
+    case AbstractTexture::EFormatType::F2: return gfx::EFormatType::F2;
+    case AbstractTexture::EFormatType::F3: return gfx::EFormatType::F3;
+    case AbstractTexture::EFormatType::F4: return gfx::EFormatType::F4;
+    case AbstractTexture::EFormatType::F4HALF: return gfx::EFormatType::F4HALF;
+    case AbstractTexture::EFormatType::SRGB4: return gfx::EFormatType::SRGB4;
+    case AbstractTexture::EFormatType::UNORM4: return gfx::EFormatType::UNORM4;
+    case AbstractTexture::EFormatType::D24_UNORM_S8_UINT: return gfx::EFormatType::D24_UNORM_S8_UINT;
+    case AbstractTexture::EFormatType::D32_SFLOAT_S8_UINT: return gfx::EFormatType::D32_SFLOAT_S8_UINT;
+    case AbstractTexture::EFormatType::R8_UNORM: return gfx::EFormatType::R8_UNORM;
+    case AbstractTexture::EFormatType::D16_UNORM: return gfx::EFormatType::D16_UNORM;
+    default:
+    {
+      ASSERTF(false, "No association with texture type");
+      return gfx::EFormatType::FORMAT_TYPE_MAX;
+    }
+  }
 }

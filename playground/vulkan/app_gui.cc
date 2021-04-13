@@ -1,38 +1,20 @@
 // *************************************************************
-// File:    gui_draw.cc
+// File:    app_gui.cc
 // Author:  Novoselov Anton @ 2021
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#include "gui_draw.h"
+#include "app_gui.h"
 
 #include "imgui_impl_win32.h"
+
+#if defined (GFX_VK_API)
 #include "imgui_impl_vulkan.h"
+#else
+#include "imgui_impl_dx11.h"
+#endif
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-
-//-- public
-
-gdm::GuiDraw::GuiDraw()
-  : is_active_{false}
-{ }
-
-//-- helpers
-
-bool gdm::gui::WinProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-  if (ImGui::GetCurrentContext() == NULL)
-      return false;
-
-  ImGuiIO& io = ImGui::GetIO();
-  
-  if (io.WantCaptureKeyboard || io.WantCaptureMouse) 
-  {
-    ImGui_ImplWin32_WndProcHandler(hwnd, msg, wParam, lParam);
-    return true;
-  }
-  return false;
-};
 
 void gdm::gui::GuiExampleCb()
 {

@@ -4,23 +4,16 @@
 // URL:     https://github.com/ans-hub/gdm_framework
 // *************************************************************
 
-#ifndef GFX_DEFINES_H
-#define GFX_DEFINES_H
-
-#include <unordered_map>
-#include <functional>
+#ifndef GFX_APP_DEFINES_H
+#define GFX_APP_DEFINES_H
 
 #include <data/model_factory.h>
-#include <render/camera_eul.h>
+#include <engine/camera_eul.h>
 #include <render/defines.h>
 #include <window/main_input.h>
-#include <scene/debug_draw.h>
+#include <engine/debug_draw.h>
 
 namespace gdm::cfg {
-
-  using Dt = float;
-  using Models = std::unordered_map<std::string, ModelInstance*>;
-  using Callback = std::function<void(Models&, CameraEul&, MainInput&, DebugDraw&, Dt)>;
 
   constexpr static float v_znear = 0.1f;
   constexpr static float v_zfar = 100.f;
@@ -31,8 +24,7 @@ namespace gdm::cfg {
   constexpr static uint v_diff_offset = 0;
   constexpr static uint v_norm_offset = 1;
   constexpr static uint v_spec_offset = 2;
-  constexpr static const char* v_dummy_image = "dummy_handle";
 
 } // namespace gdm::cfg
 
-#endif // GFX_DEFINES_H
+#endif // GFX_APP_DEFINES_H

@@ -9,7 +9,8 @@
 #include <unordered_map>
 
 #include <data/model_factory.h>
-#include <render/camera_eul.h>
+#include <engine/camera_eul.h>
+#include "engine/debug_draw.h"
 #include <window/main_input.h>
 #include <system/diff_utils.h>
 #include <math/vector3.h>
@@ -18,8 +19,7 @@
 #include <math/intersection.h>
 #include <math/sphere.h>
 
-#include "scene/debug_draw.h"
-#include "scene/defines.h"
+#include "app_defines.h"
 
 //--private
 
@@ -111,7 +111,7 @@ namespace gdm::_private
     debug.DrawCross(col.closest_point, 0.05f, color::LightGray);
   }
 
-  static void UpdateTable(Table& table, MainInput& input, DebugDraw& debug, float dt)
+  static void UpdateTable(Table& table, const MainInput& input, DebugDraw& debug, float dt)
   {
     Vec3f fwd = table.tm_.GetCol(2);
     float vel_sign = 0.f;
@@ -157,7 +157,7 @@ namespace gdm::_private
     debug.DrawBox(table.tm_.GetColRef(3), table.bounding_box_.half_sizes_, color::LightYellow);
   }
 
-  static void UpdateTennis(cfg::Models& models, CameraEul& cam, MainInput& input, DebugDraw& debug, float dt)
+  static void UpdateTennis(cfg::Models& models, CameraEul& cam, const MainInput& input, DebugDraw& debug, float dt)
   {
     static ModelInstance& ball_instance = *models["model_ball"];
     static ModelInstance& table_instance = *models["model_table"];
