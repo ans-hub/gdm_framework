@@ -16,11 +16,13 @@
 #include <windows.h>
 #endif
 
-#include "threads/thread.h"
-#include "threads/spin_lock.h"
-
 #include <vector>
 #include <iostream>
+
+#include "3rdparty/catch/catch.hpp"
+
+#include "threads/thread.h"
+#include "threads/spin_lock.h"
 
 struct S
 {
@@ -31,35 +33,64 @@ struct S
       (void)ch;
       std::cout << "T5\n";
       std::this_thread::sleep_for(std::chrono::seconds(1));
-      break;
     }
     std::cout << "End\n";
   }
 };
 
-int main()
+TEST_CASE("Threads")
 {
+  const int max_iters = 128;
   gdm::SpinLock cs;
   
-  auto func = ([&cs](int thread_num){
-    while(1)
+  auto print_repeat = ([&cs, &max_iters](){
+    int iter = 0;
+    while(iter < max_iters)
     {
       cs.Lock();
-      std::cout << "Thread " << thread_num << " on CPU " << ::GetCurrentProcessorNumber() << ", "
+      std::cout << "Thread " << gdm::Thread::GetId() << " on CPU " << ::GetCurrentProcessorNumber() << ", "
                 << "priority " << ::GetThreadPriority(::GetCurrentThread()) << '\n'; // sched_getcpu()
+      ++iter;
       cs.Unlock();
     }
   });
-  gdm::Thread t3 (func, 1);
-  gdm::Thread t4 (func, 2);
+  
+  auto print_once = ([&cs](){
+    cs.Lock();
+    std::cout << "Thread " << gdm::Thread::GetId() << " " << std::this_thread::get_id() << " on CPU " << ::GetCurrentProcessorNumber() << ", "
+              << "priority " << ::GetThreadPriority(::GetCurrentThread()) << '\n'; // sched_getcpu()
+    cs.Unlock();
+  });
 
-  S s;
-  gdm::Thread t5 (&S::Call, s, 'q');
-  t5.Detach();
+  SECTION("Lambda")
+  {
+    gdm::Thread t3 (print_repeat);
+    gdm::Thread t4 (print_repeat);
+    t3.SetAffinity(1ull << 3);
+    t4.SetAffinity((1ull << 2) - 1);
+    t3.Join();
+    t4.Join();
+  }
 
-  t3.SetAffinity(1ull << 3);
-  t4.SetAffinity((1ull << 2) - 1);
-  t3.Join();
-  t4.Join();
-  return 0;
-} 
+  SECTION("Member function")
+  {
+    S s;
+    gdm::Thread t5 (&S::Call, s, 'q');
+    t5.Detach();
+  }
+
+  SECTION("ThreadId")
+  {
+    const int thread_cnt = 8;
+    int iter = 0;
+    while(iter < max_iters)
+    {
+      std::vector<gdm::Thread> threads;
+      for (int i = 0; i < thread_cnt; ++i)
+        threads.emplace_back(print_once);
+      for (int i = 0; i < thread_cnt; ++i)
+        threads[i].Join();
+      ++iter;
+    }
+  }
+}

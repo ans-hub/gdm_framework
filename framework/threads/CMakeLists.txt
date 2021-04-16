@@ -31,6 +31,7 @@ set(SRC_FILES
     job_manager.cc
     spin_lock.cc
     semaphore.cc
+    fence.cc
     thread.cc)
 
 # --

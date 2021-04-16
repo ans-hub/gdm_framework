@@ -15,11 +15,69 @@
 #include <sched.h>
 #endif
 
+#include <atomic>
 #include <cassert>
 
-// --private
+//--private
 
-static int s_thread_number_ctor = -1;
+namespace gdm::_private
+{
+  static std::atomic<int> v_thread_ids[core::v_max_thread_id] = {};
+  static const std::hash<std::thread::id> hash_thread_id = {};
+
+  static int MapThreadIdToInteger()
+  {
+    const std::thread::id thread_id = std::this_thread::get_id();
+    const int clamped_thread_id = hash_thread_id(thread_id) % INT_MAX;
+    const int reserved_word = INT_MAX;
+
+    int new_index = -1;
+    int existed_index = -1;
+
+    for(int i = 0; i < core::v_max_thread_id && existed_index == -1; ++i)
+    {
+      int expected = 0;
+      if (new_index == -1 && v_thread_ids[i].compare_exchange_strong(expected, reserved_word))
+        new_index = i;
+      if (v_thread_ids[i] == clamped_thread_id)
+        existed_index = i;
+    }
+
+    assert(new_index != -1 || existed_index != -1);
+    
+    if (existed_index == -1)
+    {
+      v_thread_ids[new_index] = clamped_thread_id;
+      return new_index;
+    }
+    else
+    {
+      v_thread_ids[new_index] = -1;
+      return existed_index;
+    }
+  }
+
+  static void UnmapThreadId()
+  {
+    const std::thread::id thread_id = std::this_thread::get_id();
+    const int clamped_thread_id = hash_thread_id(thread_id) % INT_MAX;
+
+    for(int i = 0; i < core::v_max_thread_id; ++i)
+    {
+      if (v_thread_ids[i] == clamped_thread_id)
+        v_thread_ids[i] = 0;
+    }
+  }
+
+  struct ThreadIdWrapper
+  {
+    ThreadIdWrapper() { index = _private::MapThreadIdToInteger(); }
+    ~ThreadIdWrapper() { _private::UnmapThreadId(); }
+
+    int index = -1;
+
+  } thread_local v_thread_id_wrapper;
+}
 
 // --public
 
@@ -27,10 +85,7 @@ gdm::Thread::Thread()
   : is_running_{true}
   , thread_{}
   , native_handle_{}
-  , thread_id_{-1}
-{
-  Init();
-}
+{ }
 
 void gdm::Thread::Join()
 {
@@ -146,9 +201,12 @@ bool gdm::Thread::IsRunning() const
   return is_running_;
 }
 
-// --private
+//--static
 
-void gdm::Thread::Init()
+auto gdm::Thread::GetId() -> int
 {
-  thread_id_ = ++s_thread_number_ctor;
+  if (_private::v_thread_id_wrapper.index == -1)
+    _private::v_thread_id_wrapper.index = _private::MapThreadIdToInteger();
+
+  return _private::v_thread_id_wrapper.index;
 }

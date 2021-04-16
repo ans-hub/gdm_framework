@@ -6,6 +6,7 @@ project("gdm/framework/threads/ut/job_manager")
 add_definitions(-DGDM_UNIT_TEST)
 
 set(BIN job_manager_ut)
+set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../..)
 
 message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")

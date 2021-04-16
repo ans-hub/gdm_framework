@@ -36,6 +36,9 @@ namespace core {
   }; // enum EPriority
 
   using Priority = int;
+  using ThreadId = std::thread::id;
+
+  constexpr const int v_max_thread_id = 32;
 
 } // namespace core
 
@@ -43,10 +46,14 @@ struct Thread
 {
   using uint_t = unsigned;
   using dword_t = unsigned long long;
-
+  
 public:
   Thread();
   Thread(const std::thread& rhs) = delete;
+  Thread& operator=(const std::thread& rhs) = delete;
+  Thread(Thread&& rhs) = default;
+  Thread& operator=(std::thread&& rhs) = delete;
+  Thread(const Thread& rhs) = delete;
   template <class Fx, class... Args>
   explicit Thread(Fx&& fx, Args&&... args);
 
@@ -64,14 +71,17 @@ public:
   auto GetPriority() const -> core::Priority;
   bool IsRunning() const;
 
+public:
+  static auto GetId() -> int;
+
 private:
   void Init();
+  void Deinit();
 
 private:
   bool is_running_;
   mutable std::thread thread_;
   std::thread::native_handle_type native_handle_;
-  int thread_id_;
 
 }; // struct Thread
 

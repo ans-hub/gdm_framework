@@ -11,6 +11,11 @@ message("* App ${BIN}: ${CMAKE_PROJECT_NAME} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
 
 # --
+set(GDM_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../..)
+
+include(${GDM_ROOT_DIR}/tools/cmake_includes/framework.cmake)
+include(${GDM_ROOT_DIR}/tools/cmake_includes/freetype.cmake)
+include(${GDM_ROOT_DIR}/tools/cmake_includes/catch2.cmake)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -51,6 +56,7 @@ find_package(Threads)
 
 message("* App ${BIN}: adding subdirectories")
 add_subdirectory(../../../../framework/threads/ static_libs/threads)
+add_subdirectory(${GDM_LIBCATCH_DIR} gdm_libs/catch)
 
 message("* App ${BIN}: adding executable")
 add_executable(${BIN} ${SRC_FILES} threads_ut.cc)
@@ -58,7 +64,7 @@ add_executable(${BIN} ${SRC_FILES} threads_ut.cc)
 # --
 
 message("* App ${BIN}: linking 3rd libraries")
-target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} threads)
+target_link_libraries(${BIN} ${CMAKE_THREAD_LIBS_INIT} threads catch)
 if(WIN32)
   target_link_libraries(${BIN} wsock32 ws2_32)
 endif()
