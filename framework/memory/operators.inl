@@ -13,6 +13,7 @@ void gdm::DeletePlaced(T* mem) noexcept
     return;
   mem->~T();
   ::operator delete(mem, sizeof(T));
+  mem = nullptr;
 }
 
 template <class T>
@@ -22,4 +23,5 @@ void gdm::DeleteTracked(T* mem, gdm::MemoryTagValue tag) noexcept
     return;
   mem->~T();
   ::operator delete(mem, sizeof(T), tag);
+  mem = nullptr;
 }

@@ -21,7 +21,7 @@ using uint = unsigned int;
 #define GB(x) x * 1024 * 1024 * 1024
 
 #define GMNew new
-#define GMDelete(ptr) delete(ptr)
+#define GMDelete(ptr) { delete(ptr); ptr = nullptr; }
 #define GMNewTracked(tag) new(tag)
 #define GMDeleteTracked(tag, ptr) gdm::DeleteTracked(ptr, tag)
 #define GMNewPlaced(ptr) new(ptr)
