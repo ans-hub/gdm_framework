@@ -46,7 +46,8 @@ private:
   void CenterWindow(); 
 
 private:
-  const unsigned int k_dx_icon_ = 102;  // question icon
+  const unsigned int k_question_icon = 102;
+  const unsigned int k_dx_icon_ = k_question_icon;
   const char* k_class_name_ = "MainWindow class";
   LONG hwnd_style = 0;
   LONG hwnd_style_ex = 0;
