@@ -69,7 +69,8 @@ public:
   TextPass(int frame_count, api::Renderer& rdr);
   ~TextPass();
 
-  void Cleanup();
+  void CleanupInternals();
+  void CleanupPipeline();
 
   void BindFont(const Font* font, const api::ImageView* font_texture);
   
@@ -82,6 +83,7 @@ public:
 
   void UpdateVertexData(api::CommandList& cmd, uint curr_frame, const std::vector<TextData>& text_data);
   void Draw(api::CommandList& cmd, uint curr_frame);
+  void DestroyBarriers();
 
   [[deprecated]] void BindFramebuffer(api::Framebuffer* fb, uint frame_num);
 };

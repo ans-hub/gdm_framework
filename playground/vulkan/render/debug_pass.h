@@ -66,7 +66,8 @@ struct DebugPass
   DebugPass(int frame_count, api::Renderer& rdr);
   ~DebugPass();
 
-  void Cleanup();
+  void CleanupInternals();
+  void CleanupPipeline();
 
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;

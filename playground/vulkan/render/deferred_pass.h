@@ -55,10 +55,6 @@ __declspec(align(64)) struct DeferredPs_PFCB
 
 struct DeferredPassData
 {
-  DeferredPassData(api::Renderer& rdr);
-
-  api::Renderer* rdr_;
-  api::Device* device_;
   api::Buffer* pfcb_staging_ps_;
   api::Buffer* pfcb_uniform_ps_;
   api::BufferBarrier* pfcb_to_write_barrier_;
@@ -75,11 +71,26 @@ struct DeferredPassData
 
 struct DeferredPass
 {
-  DeferredPass(int frame_count, api::Renderer& rdr);
+  DeferredPass(int frames_count, api::Renderer& rdr);
   ~DeferredPass();
 
-  void Cleanup();
+  void Update(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights);
+
+public:
+  void Render(api::CommandList& cmd, uint frame_num);
+
+public:
+  void CreateUniforms(api::CommandList& cmd, uint frame_num);
+  void CreateImages(api::CommandList& cmd);
+  void CreateFramebuffer();
+  void CreateRenderPass();
+  void CreatePipeline(const api::ImageViews& gbuffer_image_views_);
   
+public:
+  void CleanupInternals();
+  void CleanupPipeline();
+
+private:
   api::Renderer* rdr_ = nullptr;
   api::Device* device_ = nullptr;
   api::Sampler* sampler_ = nullptr;
@@ -87,18 +98,6 @@ struct DeferredPass
   api::Pipeline* pipeline_ = nullptr;
   
   std::vector<DeferredPassData> data_;
-
-  auto GetFramebuffer(uint frame_num) -> api::Framebuffer* { return data_[frame_num].fb_; }
-
-  void CreateUniforms(api::CommandList& cmd, uint frame_num);
-  void CreateImages(api::CommandList& cmd);
-  void CreateFramebuffer();
-  void CreateRenderPass();
-  void CreatePipeline(const api::ImageViews& gbuffer_image_views_);
-  
-  void UpdateUniforms(api::CommandList& cmd, uint frame_num);
-  void UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights);
-  void Draw(api::CommandList& cmd, uint frame_num);
 };
 
 } // namespace gdm

@@ -33,7 +33,6 @@ gdm::vk::CommandList::~CommandList()
 {
   if (!explicitly_finalized_)
     Finalize();
-  Reset();
 }
 
 void gdm::vk::CommandList::Finalize()
@@ -42,13 +41,8 @@ void gdm::vk::CommandList::Finalize()
 
   VkResult res = vkEndCommandBuffer(command_buffer_);
   ASSERTF(res == VK_SUCCESS, "vkEndCommandBuffer %d", res);
+  
   explicitly_finalized_ = true;
-}
-
-void gdm::vk::CommandList::Reuse()
-{
-  Reset();
-  Begin();
 }
 
 void gdm::vk::CommandList::PushBarrier(const ImageBarrier& barrier)
@@ -210,7 +204,11 @@ void gdm::vk::CommandList::DrawDummy()
 
 gdm::vk::CommandList::operator VkCommandBuffer()
 {
-  // ASSERTF(explicitly_finalized_, "Trying to access underlying data while command list not finalized");
+  return command_buffer_;
+}
+
+gdm::vk::CommandList::operator VkCommandBuffer() const
+{
   return command_buffer_;
 }
 
@@ -228,10 +226,4 @@ void gdm::vk::CommandList::Begin()
 {
   VkResult res = vkBeginCommandBuffer(command_buffer_, &begin_info_);
   ASSERTF(res == VK_SUCCESS, "vkBeginCommandBuffer %d", res);
-}
-
-void gdm::vk::CommandList::Reset()
-{
-  explicitly_finalized_ = false;
-  vkResetCommandBuffer(command_buffer_, 0);
 }

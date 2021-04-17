@@ -8,6 +8,8 @@
 #define GM_VK_RENDERER_H
 
 #include <map>
+#include <vector>
+#include <functional>
 
 #include "render/defines.h"
 
@@ -21,11 +23,18 @@
 #include "vk_fence.h"
 
 #include "system/hash_utils.h"
+#include "threads/fence.h"
 
 namespace gdm::vk {
 
 struct Renderer
 {
+  enum class Event : uint
+  {
+    SwapchainRecreated = 0,
+    Max
+  }; // enum class Event
+
   Renderer(HWND window_handle, gfx::DeviceProps flags = 0);
   ~Renderer();
 
@@ -45,15 +54,18 @@ struct Renderer
   void SubmitCommandLists(const std::vector<VkCommandBuffer>& command_lists, const std::vector<VkSemaphore>& sem_wait, const std::vector<VkSemaphore>& sem_sig, VkFence fence);
   void SubmitPresentation(uint frame_num, const std::vector<VkSemaphore>& sem_wait);
   void WaitForGpuIdle();
+  void FlushGpuEvents(std::vector<Event>& out) { out.insert(out.end(), gpu_events_.begin(), gpu_events_.end()); gpu_events_.clear(); } 
+
   void BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
   void InsertDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
   void EndDebugLabel(VkCommandBuffer cmd);
-
-  constexpr auto GetBackBuffersCount() const -> uint { return v_num_images_; };
+  
+  auto GetBackBuffersCount() const -> uint { return v_num_images_; };
 
 private:
   auto CreateInstance() -> VkInstance;
-  auto CreateSurface(HWND window_handle, VkInstance instance) -> VkSurfaceKHR;
+  auto CreateSurfaceInfo(HWND window_handle) -> VkWin32SurfaceCreateInfoKHR;
+  auto CreateSurface(VkInstance instance) -> VkSurfaceKHR;
   auto CreateDevice(PhysicalDeviceId phys_device) -> Device*;
   auto CreateSwapChain(const PhysicalDevice& phys_device, unsigned num_images) -> VkSwapchainKHR;
   auto CreatePresentImages() -> std::vector<VkImage>;
@@ -67,8 +79,11 @@ private:
   auto FillInstanceLayersInfo() -> std::vector<const char*>;
   auto FillInstanceExtensionsInfo() -> std::vector<const char*>;
   void ValidateSetup();
-  void Cleanup();
-  
+  void CleanupSwapChain();
+  void CleanupCommandPools();
+  void RecreateSwapChain();
+  void UpdatePhysicalDevicesInfo();
+
 private:
   unsigned v_num_images_;
   VkAllocationCallbacks allocator_;
@@ -80,20 +95,26 @@ private:
   VkWin32SurfaceCreateInfoKHR surface_create_info_;
   VkSurfaceKHR surface_;
   VkQueueFlags queue_flags_;
-  std::vector<PhysicalDevice> phys_devices_db_;
-  PhysicalDeviceId phys_device_;  
-  Device* device_;
-  Fence* submit_fence_;
+  std::vector<api::PhysicalDevice> phys_devices_db_;
+  api::PhysicalDeviceId phys_device_;  
+  api::Device* device_;
+  api::Fence* submit_fence_;
   VkSwapchainKHR swapchain_;
   std::vector<VkImage> present_images_;
-  std::vector<ImageView*> present_images_views_;
+  std::vector<api::ImageView*> present_images_views_;
+  std::vector<Event> gpu_events_; 
 
 private:
-  static thread_local VkCommandPool setup_command_pool_;
-  static thread_local VkCommandPool frame_command_pool_;
-  static thread_local std::vector<VkCommandBuffer> frame_command_buffers_;
-  static thread_local std::map<Hash, VkCommandBuffer> setup_command_buffers_;
-  static thread_local VkDescriptorPool descriptor_pool_;
+  struct Tls
+  {
+    VkCommandPool setup_command_pool_;
+    VkCommandPool frame_command_pool_;
+    std::map<Hash, VkCommandBuffer> setup_command_buffers_;
+    std::vector<VkCommandBuffer> frame_command_buffers_;
+    VkDescriptorPool descriptor_pool_;
+  };
+
+  std::vector<Tls> tls_;
 
 }; // struct Renderer
 

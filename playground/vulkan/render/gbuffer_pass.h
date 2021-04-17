@@ -84,7 +84,7 @@ struct GbufferPassData
 
 struct GbufferPass
 {
-  GbufferPass(api::Renderer& rdr);
+  GbufferPass(api::Renderer& rdr, int width, int height);
   ~GbufferPass();
   
   void Cleanup();
@@ -96,6 +96,9 @@ struct GbufferPass
   api::Pipeline* pipeline_ = nullptr;
 
   GbufferPassData data_;
+
+  int w_;
+  int h_;
 
   void CreateUniforms(api::CommandList& cmd, uint max_objects);
   void CreateImages(api::CommandList& cmd);

@@ -45,24 +45,40 @@ gdm::TextPass::TextPass(int frame_count, api::Renderer& rdr)
 
 gdm::TextPass::~TextPass()
 {
-  Cleanup();
+  CleanupInternals();
+  CleanupPipeline();
 }
 
-void gdm::TextPass::Cleanup()
+void gdm::TextPass::CleanupInternals()
 {
   for (auto&& data : data_)
   {
     GMDelete(data.pocb_uniform_fs_);
-    GMDelete(data.fb_);
     GMDelete(data.vertex_buffer_);
-    GMDelete(data.descriptor_set_);
+  }
+}
+
+void gdm::TextPass::CleanupPipeline()
+{
+  for (auto&& data : data_)
+  {
+    GMDelete(data.fb_);
     GMDelete(data.present_to_read_barrier_);
     GMDelete(data.present_to_write_barrier_);
+    GMDelete(data.descriptor_set_);
   }
-
   GMDelete(sampler_);
   GMDelete(pass_);
   GMDelete(pipeline_);
+}
+
+void gdm::TextPass::DestroyBarriers()
+{
+  for(auto&& data : data_)
+  {
+    GMDelete(data.present_to_read_barrier_);
+    GMDelete(data.present_to_write_barrier_);
+  }
 }
 
 void gdm::TextPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
@@ -140,17 +156,17 @@ void gdm::TextPass::CreatePipeline()
 
   sampler_ = GMNew api::Sampler(*device_, TextSamplerDesc{});
 
-  auto* dsl = GMNew api::DescriptorSetLayout(*device_);
+  auto dsl = api::DescriptorSetLayout(*device_);
 
-  uint pfcb = dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::FRAGMENT_STAGE);
-  uint sampler = dsl->AddBinding(1, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  uint gbuff_pos = dsl->AddBinding(2, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint pfcb = dsl.AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint sampler = dsl.AddBinding(1, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint gbuff_pos = dsl.AddBinding(2, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
   
-  dsl->Finalize();
+  dsl.Finalize();
 
   for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
   {
-    auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
+    auto* descriptor_set = GMNew api::DescriptorSet(*device_, dsl, rdr_->GetDescriptorPool());
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_[i].pocb_uniform_fs_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(1, *sampler_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(2, *font_texture_);
@@ -169,12 +185,12 @@ void gdm::TextPass::CreatePipeline()
   pipeline_->SetViewportState(vp);
   pipeline_->SetRasterizerState(StdRasterizerDesc{});
   pipeline_->SetInputLayout(TextInputLayout{});
-  pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
+  pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{dsl});
   pipeline_->SetRenderPass(*pass_);
 
-  api::BlendState* blend_state = GMNew api::BlendState(*device_);
+  auto blend_state = api::BlendState(*device_);
 
-  blend_state->AddAttachmentDescription(0)
+  blend_state.AddAttachmentDescription(0)
     .SetEnabled(true)
     .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A)
     .SetSrcColorBlendFactor(gfx::EBlendFactor::SRC_ALPHA)
@@ -183,12 +199,10 @@ void gdm::TextPass::CreatePipeline()
     .SetDstAlphaBlendFactor(gfx::EBlendFactor::ONE_MINUS_SRC_ALPHA)
     .SetColorBlendOp(gfx::EBlendOp::ADD)
     .SetAlphaBlendOp(gfx::EBlendOp::ADD);
-  blend_state->Finalize();
+  blend_state.Finalize();
 
-  pipeline_->SetBlendState(*blend_state);
+  pipeline_->SetBlendState(blend_state);
   pipeline_->Compile();
-
-  GMDelete(dsl);
 }
 
 // --public update

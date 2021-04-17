@@ -21,7 +21,7 @@
 
 // --public
 
-gdm::PlaygroundRenderer::PlaygroundRenderer(
+gdm::AppRenderer::AppRenderer(
   api::Renderer& gfx,
   GpuStreamer& gpu_streamer,
   const DebugDraw& debug_draw
@@ -29,11 +29,13 @@ gdm::PlaygroundRenderer::PlaygroundRenderer(
   : gfx_{ gfx }
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
-  , stage_active_(static_cast<int>(EStage::Max), true)
-  , gbuffer_pass_(gfx_)
+  , gbuffer_pass_(gfx_, gfx_.GetSurfaceWidth(), gfx_.GetSurfaceHeight())
   , deferred_pass_(gfx::v_num_images, gfx_)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
+  , thread_command_lists_{}
+  , thread_command_lists_cs_{}
+  , gpu_events_{}
 {  
   text_pass_.BindFont(debug_draw.GetFont(), debug_draw.GetFontView());
 
@@ -87,7 +89,7 @@ gdm::PlaygroundRenderer::PlaygroundRenderer(
   submit_fence_.Reset();
 }
 
-void gdm::PlaygroundRenderer::Render(
+void gdm::AppRenderer::Render(
   float dt,
   const DebugDraw& debug_draw,
   const CameraEul& camera,
@@ -97,6 +99,11 @@ void gdm::PlaygroundRenderer::Render(
   const std::vector<ModelLight>& flashlights,
   const std::vector<GuiCallback>& gui_callbacks)
 {
+  std::vector<api::Renderer::Event> gpu_events;
+
+  gfx_.FlushGpuEvents(gpu_events);
+  ProcessGpuEvents(gpu_events);
+
   api::CommandList cmd_gbuffer = gfx_.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
 
   api::Semaphore spresent_done(device_);
@@ -118,9 +125,8 @@ void gdm::PlaygroundRenderer::Render(
   
   api::CommandList cmd_deferred = gfx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
-  deferred_pass_.UpdateUniformsData(curr_frame, camera, lamps, flashlights);
-  deferred_pass_.UpdateUniforms(cmd_deferred, curr_frame);
-  deferred_pass_.Draw(cmd_deferred, curr_frame);
+  deferred_pass_.Update(curr_frame, camera, lamps, flashlights);
+  deferred_pass_.Render(cmd_deferred, curr_frame);
 
   submit_fence_.Reset();
   cmd_deferred.Finalize();
@@ -167,4 +173,59 @@ void gdm::PlaygroundRenderer::Render(
     gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
     submit_fence_.WaitSignalFromGpu();
   }
+}
+
+// todo: for future submit from threads
+void gdm::AppRenderer::EnqueueCommandList(const api::CommandList& cmd)
+{
+  std::unique_lock<std::mutex> lock(thread_command_lists_cs_);
+  thread_command_lists_.push_back(cmd);
+}
+
+void gdm::AppRenderer::ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_events)
+{
+  for (auto&& gpu_event : gpu_events)
+  {
+    switch(gpu_event)
+    {
+      case api::Renderer::Event::SwapchainRecreated:
+      {
+        // todo: add sync - stop all threads
+        api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+
+        deferred_pass_.CleanupPipeline();
+        deferred_pass_.CreateImages(setup_list);
+        deferred_pass_.CreateRenderPass();
+        deferred_pass_.CreateFramebuffer();
+        deferred_pass_.CreatePipeline(gbuffer_pass_.data_.image_views_);
+
+        text_pass_.CleanupPipeline();
+        text_pass_.CreateBarriers(setup_list);
+        text_pass_.CreateRenderPass();
+        text_pass_.CreateFramebuffer();
+
+        for (uint i = 0; i < gfx::v_num_images; ++i)
+        {
+          text_pass_.CreateUniforms(setup_list, i);
+          text_pass_.CreateVertexBuffer(setup_list, i);
+        }
+        text_pass_.CreatePipeline();
+
+        debug_pass_.CleanupPipeline();
+        debug_pass_.CreateBarriers(setup_list);
+        debug_pass_.CreateRenderPass();
+        debug_pass_.CreateFramebuffer();        
+        debug_pass_.CreatePipeline();
+      
+        submit_fence_.Reset();
+        setup_list.Finalize();
+        gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
+        submit_fence_.WaitSignalFromGpu();
+        submit_fence_.Reset();
+      }
+
+
+    }
+  }
+  gpu_events_.clear();
 }

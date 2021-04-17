@@ -21,6 +21,9 @@
 #ifndef GFX_PLAYGROUND_RENDERER_H
 #define GFX_PLAYGROUND_RENDERER_H
 
+#include <mutex>
+#include <vector>
+
 #include "render/defines.h"
 #include "render/api.h"
 #include "render/renderer.h"
@@ -41,7 +44,7 @@
 
 namespace gdm {
 
-struct PlaygroundRenderer
+struct AppRenderer
 {
   enum class EStage
   {
@@ -53,8 +56,8 @@ struct PlaygroundRenderer
     Max
   }; // enum class EStage
 
-  PlaygroundRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, const DebugDraw& debug_draw);
-  ~PlaygroundRenderer() { }
+  AppRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, const DebugDraw& debug_draw);
+  ~AppRenderer() { }
 
   void Render(float dt,
               const DebugDraw& debug_draw,
@@ -66,20 +69,26 @@ struct PlaygroundRenderer
               const std::vector<GuiCallback>& gui_callbacks);
 
   auto GetGpuInfo() const -> const api::PhysicalDevice& { return device_.GetPhysicalDevice().info_; }
+  void EnqueueCommandList(const api::CommandList& cmd);
+  
+private:
+  void ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_events);
 
 private:
   api::Renderer& gfx_;
   api::Device& device_;
   api::Fence submit_fence_;
 
-  std::vector<bool> stage_active_;
-
   GbufferPass gbuffer_pass_;
   DeferredPass deferred_pass_;
   DebugPass debug_pass_;
   TextPass text_pass_;
 
-};  // struct PlaygroundRenderer
+  api::CommandLists thread_command_lists_;
+  std::mutex thread_command_lists_cs_;
+  std::vector<api::Renderer::Event> gpu_events_;
+
+};  // struct AppRenderer
 
 } // namespace gdm
 

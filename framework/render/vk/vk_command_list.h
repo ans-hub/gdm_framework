@@ -29,7 +29,6 @@ struct CommandList
   ~CommandList();
 
   void Finalize();
-  void Reuse();
   void PushBarrier(const ImageBarrier& image_barrier);
   void PushBarrier(const BufferBarrier& buffer_barrier);
   void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint src_offset, uint dst_offset, uint size);
@@ -49,11 +48,11 @@ struct CommandList
 
   bool IsFinalized() const { return explicitly_finalized_; }
   operator VkCommandBuffer();
+  operator VkCommandBuffer() const;
 
 private:
   auto CreateBeginInfo(gfx::CommandListFlags flags) -> VkCommandBufferBeginInfo;
   void Begin();
-  void Reset();
 
 private:
   VkDevice device_;

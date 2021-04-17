@@ -6,8 +6,11 @@
 
 #include "vk_renderer.h"
 
+#include <threads/thread.h> 
+
 #include <memory/defines.h>
 #include <system/assert_utils.h>
+#include <system/diff_utils.h>
 #include <render/vk/vk_defines.h>
 #include <render/vk/vk_command_list.h>
 #include <render/vk/vk_host_allocator.h>
@@ -51,12 +54,6 @@ namespace gdm::_private {
 
 } // namespace gdm::_private
 
-thread_local VkCommandPool gdm::vk::Renderer::setup_command_pool_ = VK_NULL_HANDLE;
-thread_local VkCommandPool gdm::vk::Renderer::frame_command_pool_ = VK_NULL_HANDLE;
-thread_local std::vector<VkCommandBuffer> gdm::vk::Renderer::frame_command_buffers_ = {};
-thread_local std::map<gdm::Hash, VkCommandBuffer> gdm::vk::Renderer::setup_command_buffers_ = {};
-thread_local VkDescriptorPool gdm::vk::Renderer::descriptor_pool_ = VK_NULL_HANDLE;
-
 // --public
 
 gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
@@ -67,15 +64,25 @@ gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
   , instance_{ CreateInstance() }
   , debug_callback_modern_{ CreateDebugCallbackModern() }
   , debug_callback_legacy_{ debug_callback_modern_ ? nullptr : CreateDebugCallbackLegacy() }
-  , surface_{ CreateSurface(window_handle, instance_) }
+  , surface_create_info_ { CreateSurfaceInfo(window_handle) }
+  , surface_{ CreateSurface(instance_) }
   , queue_flags_{ VK_QUEUE_GRAPHICS_BIT }
   , phys_devices_db_{ helpers::EnumeratePhysicalDevices(instance_, surface_) }
   , phys_device_{ helpers::FindPhysicalDeviceId(phys_devices_db_, queue_flags_, v_num_images_) }
   , device_{ CreateDevice(phys_device_) }
-  , submit_fence_(GMNew Fence(*device_))
+  , submit_fence_( GMNew Fence(*device_) )
   , swapchain_{ CreateSwapChain(phys_device_.info_, v_num_images_) }
   , present_images_{ CreatePresentImages() }
   , present_images_views_{ CreatePresentImagesView() }
+  , gpu_events_{}
+  , tls_(
+      core::v_max_thread_id, {
+        .setup_command_pool_= VK_NULL_HANDLE,
+        .frame_command_pool_ = VK_NULL_HANDLE,
+        .setup_command_buffers_ = {},
+        .frame_command_buffers_ = {},
+        .descriptor_pool_ = VK_NULL_HANDLE
+      })
 { 
   InitializePresentImages();
   GatherAdditionalVulkanFunctionPtrs(*device_);
@@ -84,7 +91,12 @@ gdm::vk::Renderer::Renderer(HWND window_handle, gfx::DeviceProps flags /*=0*/)
 
 gdm::vk::Renderer::~Renderer()
 {
-  Cleanup();
+  CleanupSwapChain();
+  CleanupCommandPools();
+
+  GMDelete(submit_fence_);
+  GMDelete(device_);  
+  vkDestroyInstance(instance_, &allocator_);
 }
 
 auto gdm::vk::Renderer::GetSurfaceWidth() -> uint
@@ -120,27 +132,44 @@ auto gdm::vk::Renderer::GetBackBufferImages() -> std::vector<VkImage>
 
 auto gdm::vk::Renderer::CreateFrameCommandList(uint frame_num, gfx::CommandListFlags flags) -> CommandList
 {
-  if (frame_command_pool_ == VK_NULL_HANDLE)
+  const int tid = Thread::GetId();
+
+  auto& pool = tls_[tid].frame_command_pool_;
+  auto& buffers = tls_[tid].frame_command_buffers_;
+
+  if (pool == VK_NULL_HANDLE)
   {
-    frame_command_pool_ = CreateCommandPool(true, phys_device_.queue_id, static_cast<VkCommandPoolCreateFlagBits>(0));
-    frame_command_buffers_ = CreateCommandBuffers(frame_command_pool_, v_num_images_);
+    pool = CreateCommandPool(true, phys_device_.queue_id, static_cast<VkCommandPoolCreateFlagBits>(0));
+    buffers = CreateCommandBuffers(pool, v_num_images_);
   }
-  return CommandList(*device_, frame_command_buffers_[frame_num], flags);
+  return CommandList(*device_, buffers[frame_num], flags);
 }
 
 auto gdm::vk::Renderer::CreateCommandList(Hash name, gfx::CommandListFlags flags) -> CommandList
 {
-  if (setup_command_pool_ == VK_NULL_HANDLE)
-    setup_command_pool_ = CreateCommandPool(true, phys_device_.queue_id, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-  if (setup_command_buffers_.find(name) == setup_command_buffers_.end())
-    setup_command_buffers_[name] = CreateCommandBuffers(setup_command_pool_, 1).back();
+  const int tid = Thread::GetId();
 
-  return CommandList(*device_, setup_command_buffers_[name], flags);
+  auto& pool = tls_[tid].setup_command_pool_;
+  auto& buffers = tls_[tid].setup_command_buffers_;
+
+  if (pool == VK_NULL_HANDLE)
+    pool = CreateCommandPool(true, phys_device_.queue_id, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+  if (buffers.find(name) == buffers.end())
+    buffers[name] = CreateCommandBuffers(pool, 1).back();
+
+  VkResult res = vkResetCommandBuffer(buffers[name], 0);
+  ASSERTF(res == VK_SUCCESS, "vkResetCommandBuffer %d", res);
+
+  return CommandList(*device_, buffers[name], flags);
 }
 
 auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customize
 {
-  if (descriptor_pool_ == VK_NULL_HANDLE)
+  const int tid = Thread::GetId();
+
+  auto& pool = tls_[tid].descriptor_pool_;
+
+  if (pool == VK_NULL_HANDLE)
   {
     uint max_sampled_images = phys_device_.info_.device_props_.limits.maxPerStageDescriptorSampledImages; 
     uint max_dynamic_uniforms = phys_device_.info_.device_props_.limits.maxDescriptorSetUniformBuffers; 
@@ -148,7 +177,7 @@ auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customi
     max_sampled_images = min(max_sampled_images, gfx::v_max_descriptor_set_alloc);
     max_dynamic_uniforms = min(max_dynamic_uniforms, gfx::v_max_descriptor_set_alloc);
 
-    descriptor_pool_ = CreateDescriptorPool(16,
+    pool = CreateDescriptorPool(16,
       {
         { gfx::EResourceType::SAMPLER, 6 },
         { gfx::EResourceType::SAMPLED_IMAGE, max_sampled_images },
@@ -156,14 +185,21 @@ auto gdm::vk::Renderer::GetDescriptorPool() -> VkDescriptorPool // todo: customi
       }
     );
   }
-  return descriptor_pool_;
+  return pool;
 }
 
 auto gdm::vk::Renderer::AcquireNextFrame(VkSemaphore sem_sig, VkFence fence) -> uint
 {
   uint curr_image = 0;
   VkResult res = vkAcquireNextImageKHR(*device_, swapchain_, UINT64_MAX, sem_sig, NULL, &curr_image);
-  ASSERTF(res == VK_SUCCESS, "vkAcquireNextImageKHR %d\n", res);
+
+  if (res == VK_ERROR_OUT_OF_DATE_KHR)
+  {
+    gpu_events_.push_back(Event::SwapchainRecreated);
+    RecreateSwapChain();
+  }
+
+  ASSERTF(res == VK_SUCCESS || res == VK_ERROR_OUT_OF_DATE_KHR  || res == VK_SUBOPTIMAL_KHR, "vkAcquireNextImageKHR %d\n", res);
   return curr_image;
 }
 
@@ -195,7 +231,13 @@ void gdm::vk::Renderer::SubmitPresentation(uint frame_num, const std::vector<VkS
   present_info.pImageIndices = &frame_num;
   
   VkResult res = vkQueuePresentKHR(device_->GetQueue(gfx::PRESENTATION), &present_info);   // queue image for presentation  
-  ASSERTF(res == VK_SUCCESS, "vkQueuePresentKHR %d\n", res);
+  ASSERTF(res == VK_SUCCESS || res == VK_ERROR_OUT_OF_DATE_KHR  || res == VK_SUBOPTIMAL_KHR, "vkQueuePresentKHR %d\n", res);
+  
+  if (res == VK_ERROR_OUT_OF_DATE_KHR || res == VK_SUBOPTIMAL_KHR)
+  {
+    RecreateSwapChain();
+    gpu_events_.push_back(Event::SwapchainRecreated);
+  }
 }
 
 void gdm::vk::Renderer::WaitForGpuIdle()
@@ -265,18 +307,24 @@ auto gdm::vk::Renderer::CreateInstance() -> VkInstance
   return instance;
 }
 
-auto gdm::vk::Renderer::CreateSurface(HWND window_handle, VkInstance instance) -> VkSurfaceKHR
+auto gdm::vk::Renderer::CreateSurfaceInfo(HWND window_handle) -> VkWin32SurfaceCreateInfoKHR
 {
-  surface_create_info_ = {};
+  VkWin32SurfaceCreateInfoKHR surface_create_info = {};
 
-  surface_create_info_.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-  surface_create_info_.hinstance = GetModuleHandle(nullptr);
-  surface_create_info_.hwnd = window_handle;
+  surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+  surface_create_info.hinstance = GetModuleHandle(nullptr);
+  surface_create_info.hwnd = window_handle;
+  surface_create_info.flags = 0;
   
+  return surface_create_info;
+}
+
+auto gdm::vk::Renderer::CreateSurface(VkInstance instance) -> VkSurfaceKHR
+{
   VkSurfaceKHR surface;
   
   VkResult res = vkCreateWin32SurfaceKHR(instance, &surface_create_info_, &allocator_, &surface);
-  ASSERTF(res == VK_SUCCESS, "vkCreateXcbSurfaceKHR error %d\n", res);
+  ASSERTF(res == VK_SUCCESS, "vkCreateWin32SurfaceKHR error %d\n", res);
   
   return surface;
 }
@@ -294,6 +342,11 @@ auto gdm::vk::Renderer::CreateSwapChain(const PhysicalDevice& phys_device, unsig
   ASSERTF(surface_caps.currentExtent.width != -1, "Surface capabilities == -1");
   ASSERTF(surface_caps.minImageCount <= static_cast<unsigned>(num_images), "Incompatible min images count");
   ASSERTF(surface_caps.maxImageCount >= static_cast<unsigned>(num_images), "Incompatible max images count");
+
+  VkBool32 supported = false;
+  VkResult res = vkGetPhysicalDeviceSurfaceSupportKHR(phys_device_.info_.device_, phys_device_.queue_id, surface_, &supported);
+  ASSERTF(res == VK_SUCCESS, "vkGetPhysicalDeviceSurfaceSupportKHR error %d\n", res);
+  ASSERTF(supported, "vkGetPhysicalDeviceSurfaceSupportKHR supported false\n");
 
   VkSwapchainCreateInfoKHR swapchain_create_info = {};
     
@@ -321,7 +374,7 @@ auto gdm::vk::Renderer::CreateSwapChain(const PhysicalDevice& phys_device, unsig
   swapchain_create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;  
 
   VkSwapchainKHR swapchain {};
-  VkResult res = vkCreateSwapchainKHR(*device_, &swapchain_create_info, &allocator_, &swapchain);
+  res = vkCreateSwapchainKHR(*device_, &swapchain_create_info, &allocator_, &swapchain);
   ASSERTF(res == VK_SUCCESS, "vkCreateSwapchainKHR error %d\n", res);
 
   return swapchain;
@@ -350,8 +403,10 @@ void gdm::vk::Renderer::InitializePresentImages()
   while (transitions_total != transition_done.size())
   {
     Semaphore present_complete_sem(*device_);
-    uint frame_num = AcquireNextFrame(present_complete_sem, vk::Fence::null);
+    int frame_num = AcquireNextFrame(present_complete_sem, vk::Fence::null);
     
+    ASSERTF(frame_num != -1, "InitializePresentImages can be called only while init/recreate");
+
     if (!transition_done[frame_num])
     {
       ImageBarrier barrier;
@@ -566,25 +621,75 @@ auto gdm::vk::Renderer::FillInstanceExtensionsInfo() -> std::vector<const char*>
   return instance_extensions;
 }
 
-void gdm::vk::Renderer::Cleanup()
+void gdm::vk::Renderer::CleanupSwapChain()
 {
-  for (auto view : present_images_views_)
-    vkDestroyImageView(*device_, *view, &allocator_);
-  for (auto command_buffer : frame_command_buffers_)
-    vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-  for (auto&& [name, command_buffer] : setup_command_buffers_)
-    vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
-
-  vkDestroyCommandPool(*device_, setup_command_pool_, &allocator_);
-  vkDestroyCommandPool(*device_, frame_command_pool_, &allocator_);
-
   vkDestroySwapchainKHR(*device_, swapchain_, &allocator_);
   vkDestroySurfaceKHR(instance_, surface_, &allocator_);
 
-  GMDelete(submit_fence_);
-  GMDelete(device_);
+  for (auto view : present_images_views_)
+    vkDestroyImageView(*device_, *view, &allocator_);
   
-  vkDestroyInstance(instance_, &allocator_);
+  surface_ = VK_NULL_HANDLE;
+  swapchain_ = VK_NULL_HANDLE;
+  present_images_.clear();
+  present_images_views_.clear();
+}
+
+void gdm::vk::Renderer::CleanupCommandPools()
+{
+  for (auto&& tls : tls_)
+  {
+    for (auto command_buffer : tls.frame_command_buffers_)
+      vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+    for (auto&& [name, command_buffer] : tls.setup_command_buffers_)
+      vkResetCommandBuffer(command_buffer, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT);
+
+    tls.setup_command_buffers_.clear();
+    tls.frame_command_buffers_.clear();
+
+    if (tls.setup_command_pool_ != VK_NULL_HANDLE)
+    {
+      vkDestroyCommandPool(*device_, tls.setup_command_pool_, &allocator_);
+      tls.setup_command_pool_ = VK_NULL_HANDLE;
+    }
+    if (tls.frame_command_pool_ != VK_NULL_HANDLE)
+    {
+      vkDestroyCommandPool(*device_, tls.frame_command_pool_, &allocator_);
+      tls.frame_command_pool_ = VK_NULL_HANDLE;
+    }
+  }
+}
+
+void gdm::vk::Renderer::UpdatePhysicalDevicesInfo()
+{
+  for (auto&& phys_device : phys_devices_db_)
+  {
+    VkSurfaceCapabilitiesKHR surface_caps = {};
+    VkResult res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_device.device_, surface_, &surface_caps);
+
+    ASSERTF(res == VK_SUCCESS, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR error %d\n", res);
+
+    phys_device.surface_caps_ = surface_caps;
+  }
+}
+
+void gdm::vk::Renderer::RecreateSwapChain()
+{
+  // todo: wait events while minimized (w&&h==0)
+
+  WaitForGpuIdle();  
+  CleanupSwapChain();
+
+  surface_ = CreateSurface(instance_);
+
+  UpdatePhysicalDevicesInfo();  
+  CleanupCommandPools();
+
+  swapchain_ = CreateSwapChain(phys_device_.info_, v_num_images_);
+  present_images_ = CreatePresentImages();
+  present_images_views_ = CreatePresentImagesView();
+
+  InitializePresentImages();
 }
 
 // --helpers

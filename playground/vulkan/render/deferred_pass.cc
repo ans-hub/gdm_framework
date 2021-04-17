@@ -10,25 +10,21 @@
 #include "system/diff_utils.h"
 #include "system/event_point.h"
 
-// --public
-
-gdm::DeferredPassData::DeferredPassData(api::Renderer& rdr)
-: rdr_{&rdr}
-, device_{device_}
-{ }
+//--public
 
 gdm::DeferredPass::DeferredPass(int frame_count, api::Renderer& rdr)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
-  , data_(frame_count, rdr)
+  , data_(frame_count, DeferredPassData{})
 { }
 
 gdm::DeferredPass::~DeferredPass()
 {
-  Cleanup();
+  CleanupInternals();
+  CleanupPipeline();
 }
 
-void gdm::DeferredPass::Cleanup()
+void gdm::DeferredPass::CleanupInternals()
 {
   for (auto&& data : data_)
   {
@@ -36,14 +32,20 @@ void gdm::DeferredPass::Cleanup()
     GMDelete(data.pfcb_uniform_ps_);
     GMDelete(data.pfcb_to_write_barrier_);
     GMDelete(data.pfcb_to_read_barrier_);
+  }
+}
+
+void gdm::DeferredPass::CleanupPipeline()
+{
+  for (auto&& data : data_)
+  {
+    GMDelete(data.descriptor_set_);
     GMDelete(data.depth_image_);
     GMDelete(data.depth_image_view_);
-    GMDelete(data.fb_);
-    GMDelete(data.descriptor_set_);
     GMDelete(data.present_to_read_barrier_);
     GMDelete(data.present_to_write_barrier_);
+    GMDelete(data.fb_);
   }
-
   GMDelete(sampler_);
   GMDelete(pass_);
   GMDelete(pipeline_);
@@ -55,6 +57,7 @@ void gdm::DeferredPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
   data_[frame_num].pfcb_uniform_ps_ = GMNew api::Buffer(device_, sizeof(DeferredPs_PFCB) * 1, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
   data_[frame_num].pfcb_to_read_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_ps_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
   data_[frame_num].pfcb_to_write_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_ps_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
 }
 
@@ -143,20 +146,20 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
   Shader vx_shader("assets/shaders/deferred_vert.hlsl", gfx::EShaderType::VX);
   Shader px_shader("assets/shaders/deferred_frag.hlsl", gfx::EShaderType::PX);
 
-  auto* dsl = GMNew api::DescriptorSetLayout(*device_);
+  auto dsl = api::DescriptorSetLayout(*device_);
 
-  uint pfcb_lights = dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::FRAGMENT_STAGE);
-  uint sampler     = dsl->AddBinding(1, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
-  uint gbuff_pos   = dsl->AddBinding(2, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
-  uint gbuff_diff  = dsl->AddBinding(3, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
-  uint gbuff_norm  = dsl->AddBinding(4, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
-  dsl->Finalize();
+  uint pfcb_lights = dsl.AddBinding(0, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint sampler     = dsl.AddBinding(1, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint gbuff_pos   = dsl.AddBinding(2, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint gbuff_diff  = dsl.AddBinding(3, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
+  uint gbuff_norm  = dsl.AddBinding(4, 1, gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE);
+  dsl.Finalize();
 
   sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
 
   for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
   {
-    auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
+    auto* descriptor_set = GMNew api::DescriptorSet(*device_, dsl, rdr_->GetDescriptorPool());
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(0, *data_[i].pfcb_uniform_ps_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(1, *sampler_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(2, *gbuffer_image_views[0]);
@@ -177,33 +180,21 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
   pipeline_->SetRasterizerState(ReverseRasterizerDesc{});
   pipeline_->SetInputLayout(EmptyInputLayout{});
   pipeline_->SetRenderPass(*pass_);
-  pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
+  pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{dsl});
 
-  api::BlendState* blend_state = GMNew api::BlendState(*device_);
-  blend_state->AddAttachmentDescription(0)
+  api::BlendState blend_state = api::BlendState(*device_);
+  blend_state.AddAttachmentDescription(0)
     .SetEnabled(false)
     .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A);
-  blend_state->Finalize();
+  blend_state.Finalize();
 
-  pipeline_->SetBlendState(*blend_state);
+  pipeline_->SetBlendState(blend_state);
   pipeline_->Compile();
 }
 
 // --public update
 
-void gdm::DeferredPass::UpdateUniforms(api::CommandList& cmd, uint frame_num)
-{
-  GDM_EVENT_POINT("DeferredUniforms", GDM_LABEL_S(color::Blue));
-
-  cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
-  data_[frame_num].pfcb_staging_ps_->Map();
-  data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 0, 1);
-  data_[frame_num].pfcb_staging_ps_->Unmap();
-  cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_ps_, *data_[frame_num].pfcb_uniform_ps_, sizeof(DeferredPs_PFCB));
-  cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
-}
-
-void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights)
+void gdm::DeferredPass::Update(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights)
 {
   data_[curr_frame].pfcb_data_ps_.camera_pos_ = Vec4f(camera.GetPos(), 1.f);
   data_[curr_frame].pfcb_data_ps_.global_ambient_ = Vec4f(0.4f);
@@ -234,18 +225,28 @@ void gdm::DeferredPass::UpdateUniformsData(uint curr_frame, const CameraEul& cam
   }
 }
 
-void gdm::DeferredPass::Draw(api::CommandList& cmd, uint curr_frame)
+void gdm::DeferredPass::Render(api::CommandList& cmd, uint frame_num)
 {
-  GDM_EVENT_POINT("DeferredPass", GDM_LABEL_S(color::Blue));
+  {
+    GDM_EVENT_POINT("DeferredUniforms", GDM_LABEL_S(color::Blue));
 
-  cmd.PushBarrier(*data_[curr_frame].present_to_write_barrier_);    
+    cmd.PushBarrier(*data_[frame_num].pfcb_to_write_barrier_);
+    data_[frame_num].pfcb_staging_ps_->Map();
+    data_[frame_num].pfcb_staging_ps_->CopyDataToGpu(&data_[frame_num].pfcb_data_ps_, 0, 1);
+    data_[frame_num].pfcb_staging_ps_->Unmap();
+    cmd.CopyBufferToBuffer(*data_[frame_num].pfcb_staging_ps_, *data_[frame_num].pfcb_uniform_ps_, sizeof(DeferredPs_PFCB));
+    cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
+  }
+  {
+    GDM_EVENT_POINT("DeferredPass", GDM_LABEL_S(color::Blue));
 
-  api::DescriptorSets descriptor_sets {*data_[curr_frame].descriptor_set_};
-  cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{0});      
-  cmd.BindPipelineGraphics(*pipeline_);
-  cmd.BeginRenderPass(*pass_, *data_[curr_frame].fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
-  cmd.DrawDummy();
-  cmd.EndRenderPass();
-
-  cmd.PushBarrier(*data_[curr_frame].present_to_read_barrier_);
+    api::DescriptorSets descriptor_sets {*data_[frame_num].descriptor_set_};
+    cmd.PushBarrier(*data_[frame_num].present_to_write_barrier_);    
+    cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{0});      
+    cmd.BindPipelineGraphics(*pipeline_);
+    cmd.BeginRenderPass(*pass_, *data_[frame_num].fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+    cmd.DrawDummy();
+    cmd.EndRenderPass();
+    cmd.PushBarrier(*data_[frame_num].present_to_read_barrier_);
+  }
 }

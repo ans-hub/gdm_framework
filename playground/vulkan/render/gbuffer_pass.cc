@@ -15,10 +15,12 @@
 
 // --public
 
-gdm::GbufferPass::GbufferPass(api::Renderer& rdr)
+gdm::GbufferPass::GbufferPass(api::Renderer& rdr, int width, int height)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
   , data_()
+  , w_{width}
+  , h_{height}
 { }
 
 gdm::GbufferPass::~GbufferPass()
@@ -98,7 +100,7 @@ void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
 
   for(int i = 0; i < rw_images; ++i)
   {
-    data_.images_[i] = GMNew api::Image2D(device_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+    data_.images_[i] = GMNew api::Image2D(device_, w_, h_);
     data_.images_[i]->GetProps()
       .AddFormatType(gfx::EFormatType::F4HALF)
       .AddImageUsage(gfx::EImageUsage::COLOR_ATTACHMENT | gfx::EImageUsage::SAMPLED)
@@ -129,7 +131,7 @@ void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
     cmd.PushBarrier(init_barrier);
   }
 
-  api::Image2D* gbuffer_depth = GMNew api::Image2D(device_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  api::Image2D* gbuffer_depth = GMNew api::Image2D(device_, w_, h_);
   data_.images_[3] = gbuffer_depth;
   api::ImageView* gbuffer_depth_view = GMNew api::ImageView(*device_);
   data_.image_views_[3] = gbuffer_depth_view;
@@ -154,9 +156,7 @@ void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
 
 void gdm::GbufferPass::CreateFramebuffer()
 {
-  uint height = rdr_->GetSurfaceHeight();
-  uint width = rdr_->GetSurfaceWidth();
-  data_.fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, data_.image_views_);
+  data_.fb_ = GMNew api::Framebuffer(*device_, w_, h_, *pass_, data_.image_views_);
 }
 
 void gdm::GbufferPass::CreateRenderPass()
@@ -213,10 +213,10 @@ void gdm::GbufferPass::CreatePipeline()
 {
   Shader vx_shader("assets/shaders/gbuffer_vert.hlsl", gfx::EShaderType::VX);
   Shader px_shader("assets/shaders/gbuffer_frag.hlsl", gfx::EShaderType::PX);
-
-  float width = static_cast<float>(rdr_->GetSurfaceWidth());
-  float height = static_cast<float>(rdr_->GetSurfaceHeight());
   
+  float width = (float)w_;
+  float height = (float)h_;
+
   ViewportDesc vp{0, height, width, -height, 0, 1};
 
   pipeline_ = GMNew api::Pipeline(*device_);
@@ -230,18 +230,18 @@ void gdm::GbufferPass::CreatePipeline()
 
   const uint depth_attachments_cnt = 1;
   
-  api::BlendState* blend_state = GMNew api::BlendState(*device_);
+  api::BlendState blend_state = api::BlendState(*device_);
   
   for (uint i = 0; i < pass_->GetPassAttachmentsCount() - depth_attachments_cnt; ++i)
   {
-    blend_state->AddAttachmentDescription(i)
+    blend_state.AddAttachmentDescription(i)
       .SetEnabled(false)
       .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A);
   }
 
-  blend_state->Finalize();
+  blend_state.Finalize();
 
-  pipeline_->SetBlendState(*blend_state);
+  pipeline_->SetBlendState(blend_state);
   pipeline_->Compile();
 }
 

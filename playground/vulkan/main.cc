@@ -63,7 +63,7 @@ int ProcessMessages(MSG& msg, const MainInput& input, MainWindow& win)
   return exit;
 }
 
-void DrawInfo(DebugDraw& debug_draw, PlaygroundRenderer& renderer, const Timer& timer, const FpsCounter& fps, const std::string& cfg_name)
+void DrawInfo(DebugDraw& debug_draw, AppRenderer& renderer, const Timer& timer, const FpsCounter& fps, const std::string& cfg_name)
 {
   const float line_height = (float)debug_draw.GetFont()->GetMetrics().font_height_;
   std::string msg;
@@ -114,7 +114,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   debug_draw.ToggleActivateWire();
   debug_draw.ToggleActivateText();
 
-  auto renderer = PlaygroundRenderer(api_renderer, gpu_streamer, debug_draw);
+  auto renderer = AppRenderer(api_renderer, gpu_streamer, debug_draw);
   auto scene = PlaygroundScene(cfg, win);
   auto unique_models = app_helpers::GetUniqueModels(scene.GetSceneInstances());
   gpu_streamer.CopyModelsToGpu(unique_models);
@@ -132,6 +132,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
 
     timer.Start();
     float dt = timer.GetLastDt();
+
+    // todo: notify renderer
+    // if (win.IsResized())
+    //   api_renderer.RequestSwapChainRecreate();
 
     input.Update();
     debug_draw.Update();

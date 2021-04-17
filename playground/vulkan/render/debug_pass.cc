@@ -33,10 +33,11 @@ gdm::DebugPass::DebugPass(int frame_count, api::Renderer& rdr)
 
 gdm::DebugPass::~DebugPass()
 {
-  Cleanup();
+  CleanupInternals();
+  CleanupPipeline();
 }
 
-void gdm::DebugPass::Cleanup()
+void gdm::DebugPass::CleanupInternals()
 {
   for (auto&& data : data_)
   {
@@ -44,8 +45,16 @@ void gdm::DebugPass::Cleanup()
     GMDelete(data.pfcb_uniform_vs_);
     GMDelete(data.pfcb_to_write_barrier_);
     GMDelete(data.pfcb_to_read_barrier_);
-    GMDelete(data.fb_);
     GMDelete(data.vertex_buffer_);
+  }
+  ImGui_ImplWin32_Shutdown();
+}
+
+void gdm::DebugPass::CleanupPipeline()
+{
+  for (auto&& data : data_)
+  {
+    GMDelete(data.fb_);
     GMDelete(data.present_to_read_barrier_);
     GMDelete(data.present_to_write_barrier_);
     GMDelete(data.descriptor_set_);
@@ -156,13 +165,13 @@ void gdm::DebugPass::CreatePipeline()
   pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
   pipeline_->SetRenderPass(*pass_);
   
-  api::BlendState* blend_state = GMNew api::BlendState(*device_);
-  blend_state->AddAttachmentDescription(0)
+  api::BlendState blend_state = api::BlendState(*device_);
+  blend_state.AddAttachmentDescription(0)
     .SetEnabled(false)
     .SetColorWriteMask(gfx::R | gfx::G | gfx::B | gfx::A);
-  blend_state->Finalize();
+  blend_state.Finalize();
 
-  pipeline_->SetBlendState(*blend_state);
+  pipeline_->SetBlendState(blend_state);
   pipeline_->Compile();
 
   GMDelete(dsl);
