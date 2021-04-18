@@ -67,16 +67,32 @@ void gdm::DebugPass::CleanupPipeline()
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
-  data_[frame_num].pfcb_staging_vs_ = GMNew api::Buffer(device_, sizeof(DebugVs_PFCB) * 1, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
-  data_[frame_num].pfcb_uniform_vs_ = GMNew api::Buffer(device_, sizeof(DebugVs_PFCB) * 1, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
-  data_[frame_num].pfcb_to_read_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_vs_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
-  data_[frame_num].pfcb_to_write_barrier_ = GMNew api::BufferBarrier(device_, *data_[frame_num].pfcb_uniform_vs_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+  data_[frame_num].pfcb_staging_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(DebugVs_PFCB) * 1)
+    .AddUsage(gfx::TRANSFER_SRC)
+    .AddMemoryType(gfx::HOST_VISIBLE);
+
+  data_[frame_num].pfcb_uniform_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(DebugVs_PFCB) * 1)
+    .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
+    .AddMemoryType(gfx::DEVICE_LOCAL);
+
+  data_[frame_num].pfcb_to_read_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_[frame_num].pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
+    .AddNewAccess(gfx::EAccess::UNIFORM_READ);
+  
+  data_[frame_num].pfcb_to_write_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_[frame_num].pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::UNIFORM_READ)
+    .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
+
   cmd.PushBarrier(*data_[frame_num].pfcb_to_read_barrier_);
 }
 
 void gdm::DebugPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size)
 {
-  data_[frame_num].vertex_buffer_ = GMNew api::Buffer(device_, uint(buffer_size), gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  data_[frame_num].vertex_buffer_ = gfx::Resource<api::Buffer>(device_, uint(buffer_size))
+    .AddUsage(gfx::VERTEX)
+    .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
 
 void gdm::DebugPass::CreateBarriers(api::CommandList& cmd)
@@ -85,20 +101,15 @@ void gdm::DebugPass::CreateBarriers(api::CommandList& cmd)
 
   for(auto&& [i, data] : Enumerate(data_))
   {
-    data.present_to_read_barrier_ = GMNew api::ImageBarrier();
-    data.present_to_write_barrier_ = GMNew api::ImageBarrier();
-
-    data.present_to_read_barrier_->GetProps()
+    data.present_to_read_barrier_ = gfx::Resource<api::ImageBarrier>()
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
-      .Finalize();
+      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
 
-    data.present_to_write_barrier_->GetProps()
+    data.present_to_write_barrier_ = gfx::Resource<api::ImageBarrier>()
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
-      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .Finalize();
+      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
   }
 }
 

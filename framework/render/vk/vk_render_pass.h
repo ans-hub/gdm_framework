@@ -11,7 +11,8 @@
 #include <render/desc/viewport_desc.h>
 #include <render/desc/scissor_desc.h>
 
-#include "render/vk/vk_barrier.h"
+#include "render/vk/vk_image_barrier.h"
+#include "render/vk/vk_buffer_barrier.h"
 
 namespace gdm::vk{
 

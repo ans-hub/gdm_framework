@@ -10,13 +10,21 @@
 #include "render/defines.h"
 
 namespace gdm::vk {
+  struct Device;
+  struct Buffer;
+} // namespace gdm::vk
 
-struct Device;
+namespace gdm::vk {
 
 struct Buffer
 {
-  Buffer(Device* device, uint size, gfx::BufferUsage usage, gfx::MemoryType memory_type);
+  friend struct gfx::Resource<Buffer>;
+
+  Buffer() =default;
   ~Buffer();
+  Buffer(const Buffer& other) =delete;
+  Buffer& operator=(const Buffer& other) =delete;
+  Buffer(Buffer&& other);
 
   auto GetSize() const -> uint { return static_cast<uint>(buffer_info_.size); }
   bool IsMapped() const { return mapped_region_ != nullptr; }
@@ -24,16 +32,12 @@ struct Buffer
   void Map(uint offset, uint size);
   void Unmap();
   template<class T>
-  void CopyDataToGpu(const T* data, uint offset, size_t count);
 
-  Buffer(const Buffer& other) = delete;
-  Buffer& operator=(const Buffer& other) = delete;
-  Buffer(Buffer&& other);
+  void CopyDataToGpu(const T* data, uint offset, size_t count);
   operator VkBuffer() const { return buffer_; }
 
 private:
   Device* device_;
-  VkBufferUsageFlagBits buffer_usage_;
   VkMemoryPropertyFlagBits memory_type_;
   VkBufferCreateInfo buffer_info_;
   VkBuffer buffer_;
@@ -42,6 +46,28 @@ private:
   VkDeviceSize flush_range_alignment_;
 
 }; // struct Buffer
+
+} // namespace gdm::vk
+
+namespace gdm::gfx {
+
+template <>
+struct Resource<api::Buffer>
+{
+  using self = Resource<api::Buffer>&;
+
+  Resource(api::Device* device, uint size);
+  ~Resource();
+
+  self AddUsage(gfx::BufferUsage usage);
+  self AddMemoryType(gfx::MemoryType memory_type);
+
+  operator api::Buffer*() { return res_; }
+
+private:
+  api::Buffer* res_;
+
+}; // struct Resource<api::Buffer>
 
 } // namespace gdm::vk
 

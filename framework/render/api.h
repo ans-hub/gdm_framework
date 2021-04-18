@@ -27,8 +27,8 @@
 #include "vk/vk_image_view.h"
 #include "vk/vk_device.h"
 #include "vk/vk_sampler.h"
-#include "vk/vk_barrier.h"
-#include "vk/vk_barrier.h"
+#include "vk/vk_image_barrier.h"
+#include "vk/vk_buffer_barrier.h"
 #include "vk/vk_fence.h"
 #include "vk/vk_semaphore.h"
 #include "vk/vk_pipeline.h"
@@ -38,6 +38,7 @@
 #include "vk/vk_buffer.h"
 #include "vk/vk_blend_state.h"
 #include "vk/vk_descriptor_set.h"
+#include "vk/vk_host_allocator.h"
 #endif
 
 #endif // GM_GFX_API_H

@@ -83,7 +83,10 @@ void gdm::TextPass::DestroyBarriers()
 
 void gdm::TextPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
-  data_[frame_num].pocb_uniform_fs_ = GMNew api::Buffer(device_, sizeof(TextFs_POCB) * 1, gfx::UNIFORM, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  data_[frame_num].pocb_uniform_fs_ = gfx::Resource<api::Buffer>(device_, sizeof(TextFs_POCB) * 1)
+    .AddUsage(gfx::UNIFORM)
+    .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+
   [[maybe_unused]] const bool map_and_never_unmap = [&](){ data_[frame_num].pocb_uniform_fs_->Map(); return true; }();
 }
 
@@ -92,7 +95,9 @@ void gdm::TextPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num)
   const int quad_size = 4;
   const int buffer_size = v_max_string_ * sizeof(Vec4f) * quad_size;
 
-  data_[frame_num].vertex_buffer_ = GMNew api::Buffer(device_, uint(buffer_size), gfx::VERTEX, gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
+  data_[frame_num].vertex_buffer_ = gfx::Resource<api::Buffer>(device_, uint(buffer_size))
+    .AddUsage(gfx::VERTEX)
+    .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
 
 void gdm::TextPass::CreateBarriers(api::CommandList& cmd)
@@ -101,20 +106,16 @@ void gdm::TextPass::CreateBarriers(api::CommandList& cmd)
 
   for(auto&& [i, data] : Enumerate(data_))
   {
-    data.present_to_read_barrier_ = GMNew api::ImageBarrier();
-    data.present_to_write_barrier_ = GMNew api::ImageBarrier();
 
-    data.present_to_read_barrier_->GetProps()
+    data.present_to_read_barrier_ = gfx::Resource<api::ImageBarrier>()
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
-      .Finalize();
+      .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
 
-    data.present_to_write_barrier_->GetProps()
+    data.present_to_write_barrier_ = gfx::Resource<api::ImageBarrier>()
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
-      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .Finalize();
+      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
   }
 }
 

@@ -11,10 +11,6 @@
 #include "system/event_point.h"
 
 #include "render/debug.h"
-#include "render/shader.h"
-#include "render/desc/sampler_desc.h"
-#include "render/desc/input_layout_desc.h"
-#include "render/desc/rasterizer_desc.h"
 
 #include "app_helpers.h"
 #include "app_defines.h"
@@ -29,18 +25,24 @@ gdm::AppRenderer::AppRenderer(
   : gfx_{ gfx }
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
-  , gbuffer_pass_(gfx_, gfx_.GetSurfaceWidth(), gfx_.GetSurfaceHeight())
+  , gbuffer_pass_{gfx_, gfx_.GetSurfaceWidth(), gfx_.GetSurfaceHeight() }
   , deferred_pass_(gfx::v_num_images, gfx_)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
   , thread_command_lists_{}
   , thread_command_lists_cs_{}
   , gpu_events_{}
-{  
+{
   text_pass_.BindFont(debug_draw.GetFont(), debug_draw.GetFontView());
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
 
+  // gbuffer_pass_ = 
+  // GbufferPass* pass = RenderStageSetup<GbufferPass>(gfx_, setup_list).
+    // AddUniforms<GbufferVs_POCB>(cfg::v_max_objects).
+    // AddImages()
+    // need to derive from render stage and render stage will hold and create all resources
+    // of all types. And high level derived stage will operate only funcs and indices
   gbuffer_pass_.CreateUniforms(setup_list, cfg::v_max_objects);
   gbuffer_pass_.CreateImages(setup_list);
   gbuffer_pass_.CreateRenderPass();

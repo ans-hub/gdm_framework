@@ -16,7 +16,8 @@
 #include <render/vk/vk_host_allocator.h>
 #include <render/vk/vk_fence.h>
 #include <render/vk/vk_semaphore.h>
-#include <render/vk/vk_barrier.h>
+#include <render/vk/vk_image_barrier.h>
+#include <render/vk/vk_buffer_barrier.h>
 #include <render/vk/vk_image.h>
 #include <render/vk/vk_image_view.h>
 #include <render/vk/vk_render_pass.h>
@@ -409,17 +410,16 @@ void gdm::vk::Renderer::InitializePresentImages()
 
     if (!transition_done[frame_num])
     {
-      ImageBarrier barrier;
-
-      barrier.GetProps()
+      ImageBarrier* barrier = gfx::Resource<ImageBarrier>()
         .AddImage(present_images_[frame_num])
         .AddOldLayout(gfx::EImageLayout::UNDEFINED)
-        .AddNewLayout(gfx::EImageLayout::PRESENT_SRC)
-        .Finalize();
-
+        .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
+ 
       CommandList list = CreateCommandList(GDM_HASH("SetupRenderer"), gfx::ECommandListFlags::ONCE);
-      list.PushBarrier(barrier);
+      list.PushBarrier(*barrier);
       list.Finalize();
+
+      GMDelete(barrier);
 
       SubmitCommandLists(vk::CommandLists{list}, vk::Semaphores{present_complete_sem}, vk::Semaphores::empty, *submit_fence_);
       submit_fence_->WaitSignalFromGpu();
@@ -438,11 +438,9 @@ auto gdm::vk::Renderer::CreatePresentImagesView() -> std::vector<ImageView*>
 
   for (size_t i = 0; i < present_images_.size(); ++i)
   {
-    views[i] = GMNew ImageView(*device_);
-    views[i]->GetProps()
+    views[i] = gfx::Resource<api::ImageView>(*device_)
       .AddImage(present_images_[i])
-      .AddFormatType(GetSurfaceFormat())
-      .Create();
+      .AddFormatType(GetSurfaceFormat());
   }
   return views;
 }

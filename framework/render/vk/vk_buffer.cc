@@ -13,33 +13,47 @@
 #include "system/assert_utils.h"
 #include "system/bits_utils.h"
 
-// --public
+// --public Resource<Buffer>
 
-gdm::vk::Buffer::Buffer(Device* device, uint size, gfx::BufferUsage usage, gfx::MemoryType memory_type)
-  : device_{device}
-  , buffer_usage_{static_cast<VkBufferUsageFlagBits>(usage)}
-  , memory_type_{static_cast<VkMemoryPropertyFlagBits>(memory_type)}
-  , buffer_info_{}
-  , buffer_{VK_NULL_HANDLE}
-  , buffer_memory_{VK_NULL_HANDLE}
-  , mapped_region_{nullptr}
-  , flush_range_alignment_{device->GetPhysicalDevice().info_.device_props_.limits.nonCoherentAtomSize}
+gdm::gfx::Resource<gdm::api::Buffer>::Resource(api::Device* device, uint size)
+  : res_ { GMNew api::Buffer() }
 {
-  // todo: if uniform ,then assert on alignong
-  buffer_info_.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  buffer_info_.size = size;
-  buffer_info_.usage = buffer_usage_;
-  buffer_info_.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  buffer_info_.queueFamilyIndexCount = 0;
-  buffer_info_.pQueueFamilyIndices = NULL;
-  
-  VkResult res = vkCreateBuffer(*device_, &buffer_info_, HostAllocator::GetPtr(), &buffer_);
+  // todo: if uniform ,then assert on aligning
+
+  res_->device_ = device;
+ 
+  res_->flush_range_alignment_ = device->GetPhysicalDevice().info_.device_props_.limits.nonCoherentAtomSize;
+ 
+  res_->buffer_info_.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  res_->buffer_info_.size = size;
+  res_->buffer_info_.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  res_->buffer_info_.queueFamilyIndexCount = 0;
+  res_->buffer_info_.pQueueFamilyIndices = NULL;
+}
+
+gdm::gfx::Resource<gdm::api::Buffer>::~Resource()
+{
+  VkResult res = vkCreateBuffer(*res_->device_, &res_->buffer_info_, api::HostAllocator::GetPtr(), &res_->buffer_);
   ASSERTF(res == VK_SUCCESS, "vkCreateBuffer error %d\n", res);
  
-  buffer_memory_ = DeviceAllocator::Allocate(device_, buffer_, memory_type_);
-  res = vkBindBufferMemory(*device_, buffer_, buffer_memory_, 0);
+  res_->buffer_memory_ = api::DeviceAllocator::Allocate(res_->device_, res_->buffer_, res_->memory_type_);
+  res = vkBindBufferMemory(*res_->device_, res_->buffer_, res_->buffer_memory_, 0);
   ASSERTF(res == VK_SUCCESS, "vkBindBufferMemory failed %d", res);
 }
+
+auto gdm::gfx::Resource<gdm::api::Buffer>::AddUsage(gfx::BufferUsage usage) -> Resource::self
+{
+  res_->buffer_info_.usage = static_cast<VkBufferUsageFlagBits>(usage);
+  return *this;
+}
+
+auto gdm::gfx::Resource<gdm::api::Buffer>::AddMemoryType(gfx::MemoryType memory_type) -> Resource::self
+{
+  res_->memory_type_ = static_cast<VkMemoryPropertyFlagBits>(memory_type);
+  return *this;
+}
+
+//--public Buffer
 
 gdm::vk::Buffer::~Buffer()
 {

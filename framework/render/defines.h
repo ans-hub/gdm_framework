@@ -38,6 +38,9 @@ namespace gdm {
 
 namespace gdm::gfx {
 
+  template <class T>
+  struct Resource;
+
   using Offsets = std::vector<uint>;
 
   enum EQueueType : uint

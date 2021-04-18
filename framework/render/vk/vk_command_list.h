@@ -14,7 +14,8 @@
 #include "vk_defines.h"
 #include "vk_image.h"
 #include "vk_buffer.h"
-#include "vk_barrier.h"
+#include "vk_image_barrier.h"
+#include "vk_buffer_barrier.h"
 #include "vk_descriptor_set.h"
 
 namespace gdm::vk {

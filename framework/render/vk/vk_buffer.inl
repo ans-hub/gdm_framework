@@ -40,16 +40,16 @@ inline void gdm::vk::Buffer::CopyDataToGpu(const T* data, uint offset, size_t co
   VkDeviceSize aligned_offset = (offset + alignment_mask) & ~alignment_mask;
   aligned_offset = max((int)0, (int)(aligned_offset - flush_range_alignment_));
 
-  // if (aligned_size + aligned_offset >= buffer_info_.size)
+  if (aligned_size + aligned_offset >= buffer_info_.size)
   {
     flush_range.offset = 0;
     flush_range.size = buffer_info_.size;
   }
-  // else
-  // {
-  //   flush_range.offset = aligned_offset;
-  //   flush_range.size = aligned_size;
-  // } 
+  else
+  {
+    flush_range.offset = aligned_offset;
+    flush_range.size = aligned_size;
+  } 
 
   VkResult res = vkFlushMappedMemoryRanges(*device_, 1, &flush_range);
   ASSERTF(res == VK_SUCCESS, "vkFlushMappedMemoryRanges failed %d", res);

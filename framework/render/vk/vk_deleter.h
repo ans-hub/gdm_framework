@@ -10,10 +10,11 @@
 namespace gdm::vk {
 
 template<class ResourceHandle>
+using VkDeleteFunction = std::function<void(ResourceHandle t)>;
+
+template<class ResourceHandle>
 struct VkDeleter
 {
-  template<class ResourceHandle>
-  using VkDeleteFunction = std::function<void(ResourceHandle t)>;
 
   VkDeleter()
     : delete_fn_{}

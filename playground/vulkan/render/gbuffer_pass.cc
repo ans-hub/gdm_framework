@@ -65,20 +65,53 @@ void gdm::GbufferPass::CreateUniforms(api::CommandList& cmd, uint max_objects)
 {
   data_.pocb_data_vs_.resize(max_objects);
   data_.pocb_data_ps_.resize(max_objects);
-  data_.pfcb_staging_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_PFCB) * 1, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
-  data_.pocb_staging_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_POCB) * max_objects, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
-  data_.pocb_staging_ps_ = GMNew api::Buffer(device_, sizeof(GbufferPs_POCB) * max_objects, gfx::TRANSFER_SRC, gfx::HOST_VISIBLE);
-  data_.pfcb_uniform_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_PFCB) * 1, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
-  data_.pocb_uniform_vs_ = GMNew api::Buffer(device_, sizeof(GbufferVs_POCB) * max_objects, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
-  data_.pocb_uniform_ps_ = GMNew api::Buffer(device_, sizeof(GbufferPs_POCB) * max_objects, gfx::TRANSFER_DST | gfx::UNIFORM, gfx::DEVICE_LOCAL);
+
+  data_.pfcb_staging_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(GbufferVs_PFCB) * 1)
+    .AddUsage(gfx::TRANSFER_SRC)
+    .AddMemoryType(gfx::HOST_VISIBLE);
+  data_.pocb_staging_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(GbufferVs_POCB) * max_objects)
+    .AddUsage(gfx::TRANSFER_SRC)
+    .AddMemoryType(gfx::HOST_VISIBLE);
+  data_.pocb_staging_ps_ = gfx::Resource<api::Buffer>(device_, sizeof(GbufferPs_POCB) * max_objects)
+    .AddUsage(gfx::TRANSFER_SRC)
+    .AddMemoryType(gfx::HOST_VISIBLE);
+  data_.pfcb_uniform_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(GbufferVs_PFCB) * 1)
+    .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
+    .AddMemoryType(gfx::DEVICE_LOCAL);
+  data_.pocb_uniform_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(GbufferVs_POCB) * max_objects)
+    .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
+    .AddMemoryType(gfx::DEVICE_LOCAL);
+  data_.pocb_uniform_ps_ = gfx::Resource<api::Buffer>(device_, sizeof(GbufferPs_POCB) * max_objects)
+    .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
+    .AddMemoryType(gfx::DEVICE_LOCAL);
+
   data_.to_read_barriers_.resize(3);
   data_.to_write_barriers_.resize(3);
-  data_.to_read_barriers_[0] = GMNew api::BufferBarrier(device_, *data_.pfcb_uniform_vs_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
-  data_.to_read_barriers_[1] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_vs_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
-  data_.to_read_barriers_[2] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_ps_, gfx::EAccess::TRANSFER_WRITE, gfx::EAccess::UNIFORM_READ);
-  data_.to_write_barriers_[0] = GMNew api::BufferBarrier(device_, *data_.pfcb_uniform_vs_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
-  data_.to_write_barriers_[1] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_vs_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
-  data_.to_write_barriers_[2] = GMNew api::BufferBarrier(device_, *data_.pocb_uniform_ps_, gfx::EAccess::UNIFORM_READ, gfx::EAccess::TRANSFER_WRITE);
+
+  data_.to_read_barriers_[0] = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_.pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
+    .AddNewAccess(gfx::EAccess::UNIFORM_READ);
+  data_.to_read_barriers_[1] = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_.pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
+    .AddNewAccess(gfx::EAccess::UNIFORM_READ);
+  data_.to_read_barriers_[2] = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_.pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
+    .AddNewAccess(gfx::EAccess::UNIFORM_READ);
+  data_.to_write_barriers_[0] = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_.pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::UNIFORM_READ)
+    .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
+  data_.to_write_barriers_[1] = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_.pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::UNIFORM_READ)
+    .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
+  data_.to_write_barriers_[2] = gfx::Resource<api::BufferBarrier>(device_)
+    .AddBuffer(*data_.pfcb_uniform_vs_)
+    .AddOldAccess(gfx::EAccess::UNIFORM_READ)
+    .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
   
   cmd.PushBarrier(*data_.to_read_barriers_[0]);
   cmd.PushBarrier(*data_.to_read_barriers_[1]);
@@ -100,58 +133,47 @@ void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
 
   for(int i = 0; i < rw_images; ++i)
   {
-    data_.images_[i] = GMNew api::Image2D(device_, w_, h_);
-    data_.images_[i]->GetProps()
+    data_.images_[i] = gfx::Resource<api::Image2D>(device_, w_, h_)
       .AddFormatType(gfx::EFormatType::F4HALF)
-      .AddImageUsage(gfx::EImageUsage::COLOR_ATTACHMENT | gfx::EImageUsage::SAMPLED)
-      .Create();
-    data_.image_views_[i] = GMNew api::ImageView(*device_);
-    data_.image_views_[i]->GetProps()
+      .AddImageUsage(gfx::EImageUsage::COLOR_ATTACHMENT | gfx::EImageUsage::SAMPLED);
+    data_.image_views_[i] = gfx::Resource<api::ImageView>(*device_)
       .AddImage(*data_.images_[i])
-      .AddFormatType(data_.images_[i]->GetFormat())
-      .Create();
-    data_.image_barriers_to_read_[i] = GMNew api::ImageBarrier;
-    data_.image_barriers_to_read_[i]->GetProps()
+      .AddFormatType(data_.images_[i]->GetFormat());
+    data_.image_barriers_to_read_[i] = gfx::Resource<api::ImageBarrier>()
       .AddImage(*data_.images_[i])
       .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL)
-      .Finalize();
-    data_.image_barriers_to_write_[i] = GMNew api::ImageBarrier;
-    data_.image_barriers_to_write_[i]->GetProps()
+      .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
+    data_.image_barriers_to_write_[i] = gfx::Resource<api::ImageBarrier>()
       .AddImage(*data_.images_[i])
       .AddOldLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL)
-      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
-      .Finalize();
-    api::ImageBarrier init_barrier;
-    init_barrier.GetProps()
+      .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
+
+    api::ImageBarrier* init_barrier = gfx::Resource<api::ImageBarrier>()
       .AddImage(*data_.images_[i])
       .AddOldLayout(gfx::EImageLayout::UNDEFINED)
-      .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL)
-      .Finalize();
-    cmd.PushBarrier(init_barrier);
+      .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
+
+    cmd.PushBarrier(*init_barrier);
+
+    GMDelete(init_barrier);
   }
 
-  api::Image2D* gbuffer_depth = GMNew api::Image2D(device_, w_, h_);
-  data_.images_[3] = gbuffer_depth;
-  api::ImageView* gbuffer_depth_view = GMNew api::ImageView(*device_);
-  data_.image_views_[3] = gbuffer_depth_view;
-  
-  data_.images_[3]->GetProps()
+  data_.images_[3] = gfx::Resource<api::Image2D>(device_, w_, h_)
     .AddFormatType(gfx::EFormatType::D16_UNORM)
-    .AddImageUsage(gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT)
-    .Create();
-  data_.image_views_[3]->GetProps()
-    .AddImage(*data_.images_.back())
-    .AddFormatType(data_.images_.back()->GetFormat())
-    .Create();
+    .AddImageUsage(gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT);
 
-  api::ImageBarrier depth_barrier;
-  depth_barrier.GetProps()
+  data_.image_views_[3] = gfx::Resource<api::ImageView>(*device_)
+    .AddImage(*data_.images_.back())
+    .AddFormatType(data_.images_.back()->GetFormat());
+
+  api::ImageBarrier* depth_barrier = gfx::Resource<api::ImageBarrier>()
     .AddImage(*data_.images_[3])
     .AddOldLayout(gfx::EImageLayout::UNDEFINED)
-    .AddNewLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    .Finalize();
-  cmd.PushBarrier(depth_barrier);
+    .AddNewLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+  cmd.PushBarrier(*depth_barrier);
+
+  GMDelete(depth_barrier);
 }
 
 void gdm::GbufferPass::CreateFramebuffer()
