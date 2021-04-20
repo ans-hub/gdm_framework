@@ -74,9 +74,8 @@ struct DeferredPass
   DeferredPass(int frames_count, api::Renderer& rdr);
   ~DeferredPass();
 
-  void Update(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights);
-
 public:
+  void Update(uint curr_frame, const CameraEul& camera, const std::vector<ModelLight>& lamps, const std::vector<ModelLight>& flashlights);
   void Render(api::CommandList& cmd, uint frame_num);
 
 public:

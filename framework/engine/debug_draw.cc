@@ -26,19 +26,19 @@ void gdm::DebugDraw::AddFont(GpuStreamer& gpu_streamer, const std::string& font_
 {
   font_ = std::make_unique<Font>(font_path, size_pt);
 
-  const AbstractImage::StorageType& raw_text = font_->GetRaw();
+  const AbstractImage::StorageType& raw_img = font_->GetRaw();
   const Font::Metrics& metrics = font_->GetMetrics();
   const Vec3u whd {uint(metrics.texture_width_), uint(metrics.texture_height_), 1};
   const std::string font_name = str::GetFileNameFromFpath(font_path);
   
-  TextureHandle texture_handle = TextureFactory::Create(font_name.c_str(), raw_text, whd);
+  TextureHandle texture_handle = TextureFactory::Create(font_name.c_str(), raw_img, whd);
   AbstractTexture* texture = TextureFactory::Get(texture_handle);
   texture->format_ = AbstractTexture::EFormatType::R8_UNORM;
 
-  int tidx = gpu_streamer.FindStagingBuffer(raw_text.size());
+  int tidx = gpu_streamer.FindStagingBuffer(raw_img.size());
 
   if (tidx == -1)
-    tidx = gpu_streamer.CreateStagingBuffer(raw_text.size());
+    tidx = gpu_streamer.CreateStagingBuffer(raw_img.size());
 
   gpu_streamer.CopyTexturesToGpu({texture_handle}, tidx);
 

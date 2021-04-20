@@ -87,3 +87,42 @@ void gdm::vk::Buffer::Unmap()
   vkUnmapMemory(*device_, buffer_memory_);
   mapped_region_ = nullptr;
 }
+
+void gdm::vk::Buffer::CopyDataToGpu(const void* data, uint offset, size_t write_size)
+{
+  ASSERTF(mapped_region_ != nullptr, "Buffer not mapped");
+  ASSERTF(bits::HasFlag(memory_type_, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT), "Copy is not allowed");
+
+  uintptr_t mapped_begin = mem::PtrToUptr(mapped_region_);
+  uintptr_t mapped_end = mapped_begin + buffer_info_.size;
+  uintptr_t write_begin = mapped_begin + offset;
+  uintptr_t write_end = write_begin + write_size;
+
+  ASSERTF(write_begin >= mapped_begin, "Before range begin %d", (int)(write_begin - mapped_begin));
+  ASSERTF(write_end <= mapped_end, "Over range end %d", (int)(write_end - mapped_end));
+
+  memcpy(mem::UptrToPtr(write_begin), data, write_size);
+
+  VkMappedMemoryRange flush_range = {};
+  flush_range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+  flush_range.memory = buffer_memory_;
+
+  VkDeviceSize alignment_mask = flush_range_alignment_ - 1;
+  VkDeviceSize aligned_size = (write_size + alignment_mask) & ~alignment_mask;
+  VkDeviceSize aligned_offset = (offset + alignment_mask) & ~alignment_mask;
+  aligned_offset = max((int)0, (int)(aligned_offset - flush_range_alignment_));
+
+  if (aligned_size + aligned_offset >= buffer_info_.size)
+  {
+    flush_range.offset = 0;
+    flush_range.size = buffer_info_.size;
+  }
+  else
+  {
+    flush_range.offset = aligned_offset;
+    flush_range.size = aligned_size;
+  } 
+
+  VkResult res = vkFlushMappedMemoryRanges(*device_, 1, &flush_range);
+  ASSERTF(res == VK_SUCCESS, "vkFlushMappedMemoryRanges failed %d", res);
+}

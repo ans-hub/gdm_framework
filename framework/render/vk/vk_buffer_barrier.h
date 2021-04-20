@@ -8,6 +8,7 @@
 #define GM_VK_BUFFER_BARRIER_H
 
 #include <vector>
+#include <memory>
 
 #include "render/defines.h"
 
@@ -65,6 +66,7 @@ struct Resource<api::BufferBarrier>
   self AddNewAccess(gfx::EAccess new_access);
 
   operator api::BufferBarrier*() { return res_; }
+  operator std::unique_ptr<api::BufferBarrier>() { return std::unique_ptr<api::BufferBarrier>(res_); }
 
 private:
   api::BufferBarrier* res_;

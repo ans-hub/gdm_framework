@@ -9,6 +9,8 @@
 
 #include "render/defines.h"
 
+#include <memory>
+
 namespace gdm::vk {
   struct Device;
   struct Buffer;
@@ -22,6 +24,7 @@ struct Buffer
 
   Buffer() =default;
   ~Buffer();
+
   Buffer(const Buffer& other) =delete;
   Buffer& operator=(const Buffer& other) =delete;
   Buffer(Buffer&& other);
@@ -31,9 +34,12 @@ struct Buffer
   void Map();
   void Map(uint offset, uint size);
   void Unmap();
-  template<class T>
 
+  template<class T>
   void CopyDataToGpu(const T* data, uint offset, size_t count);
+
+  void CopyDataToGpu(const void* data, uint offset, size_t write_size);
+
   operator VkBuffer() const { return buffer_; }
 
 private:
@@ -63,6 +69,7 @@ struct Resource<api::Buffer>
   self AddMemoryType(gfx::MemoryType memory_type);
 
   operator api::Buffer*() { return res_; }
+  operator std::unique_ptr<api::Buffer>() { return std::unique_ptr<api::Buffer>(res_); }
 
 private:
   api::Buffer* res_;

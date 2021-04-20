@@ -37,12 +37,6 @@ gdm::AppRenderer::AppRenderer(
 
   api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
 
-  // gbuffer_pass_ = 
-  // GbufferPass* pass = RenderStageSetup<GbufferPass>(gfx_, setup_list).
-    // AddUniforms<GbufferVs_POCB>(cfg::v_max_objects).
-    // AddImages()
-    // need to derive from render stage and render stage will hold and create all resources
-    // of all types. And high level derived stage will operate only funcs and indices
   gbuffer_pass_.CreateUniforms(setup_list, cfg::v_max_objects);
   gbuffer_pass_.CreateImages(setup_list);
   gbuffer_pass_.CreateRenderPass();
