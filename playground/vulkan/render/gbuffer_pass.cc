@@ -11,7 +11,7 @@
 #include "render/debug.h"
 #include "system/diff_utils.h"
 #include "system/event_point.h"
-#include "data/model_factory.h"
+#include "factory/model_factory.h"
 
 // --public
 

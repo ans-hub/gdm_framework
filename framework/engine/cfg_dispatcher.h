@@ -11,7 +11,7 @@
 
 #include "engine/camera_eul.h"
 #include "window/main_input.h"
-#include "data/model_factory.h"
+#include "factory/model_factory.h"
 #include "data/cfg_loader.h"
 #include "engine/debug_draw.h"
 

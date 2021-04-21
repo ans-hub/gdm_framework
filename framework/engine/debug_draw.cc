@@ -13,7 +13,7 @@
 
 #include <system/string_utils.h>
 
-#include <data/texture_factory.h>
+#include <factory/texture_factory.h>
 
 #include <render/api.h>
 #include <render/defines.h>

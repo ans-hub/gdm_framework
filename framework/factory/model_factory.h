@@ -15,7 +15,8 @@
 #include "math/vector4.h"
 #include "math/matrix.h"
 
-#include "abstract_image.h"
+#include "data/abstract_image.h"
+
 #include "data_factory.h"
 #include "mesh_factory.h"
 #include "material_factory.h"

@@ -16,12 +16,6 @@ include_directories(
 )
 
 set(SRC_FILES
-    data_factory.cc
-    image_factory.cc
-    mesh_factory.cc
-    material_factory.cc
-    texture_factory.cc
-    model_factory.cc
     image_helpers.cc
     cfg_loader.cc
     abstract_image.cc

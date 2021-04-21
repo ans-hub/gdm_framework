@@ -20,7 +20,7 @@
 
 // --public
 
-gdm::PlaygroundScene::PlaygroundScene(Config& cfg, MainWindow& win)
+gdm::AppScene::AppScene(Config& cfg, MainWindow& win)
   : camera_{cfg::v_fov, win.GetAspectRatio(), cfg::v_znear, cfg::v_zfar}
   , models_{}
   , models_names_{}
@@ -44,8 +44,8 @@ gdm::PlaygroundScene::PlaygroundScene(Config& cfg, MainWindow& win)
   cfg_dispatcher_ = cfg::Dispatcher(cfg, GetSceneInstances(), GetSceneInstancesNames());
 }
 
-void gdm::PlaygroundScene::Update(float dt,
-  PlaygroundInput& input_mgr,
+void gdm::AppScene::Update(float dt,
+  AppInput& input_mgr,
   GuiManager& gui,
   DebugDraw& debug_draw)
 {
@@ -68,7 +68,7 @@ void gdm::PlaygroundScene::Update(float dt,
   cfg_dispatcher_.Update(camera_, input_mgr.GetRawInput(), debug_draw, dt);
 }
 
-void gdm::PlaygroundScene::SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names)
+void gdm::AppScene::SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names)
 {
   for (auto [instance, name] : range::ZipSpan(objs, names))
   {
@@ -77,7 +77,7 @@ void gdm::PlaygroundScene::SetObjects(const std::vector<ModelInstance>& objs, co
   }
 }
 
-void gdm::PlaygroundScene::SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
+void gdm::AppScene::SetLamps(const std::vector<ModelInstance>& lamps, const std::vector<ModelInstance>& flashlights)
 {
   for (auto instance : lamps)
   {
@@ -96,7 +96,7 @@ void gdm::PlaygroundScene::SetLamps(const std::vector<ModelInstance>& lamps, con
   }
 }
 
-auto gdm::PlaygroundScene::GetRenderableInstances() -> std::vector<ModelInstance*>
+auto gdm::AppScene::GetRenderableInstances() -> std::vector<ModelInstance*>
 {
   std::vector<ModelInstance*> renderables;
  
@@ -106,7 +106,7 @@ auto gdm::PlaygroundScene::GetRenderableInstances() -> std::vector<ModelInstance
   return renderables;
 }
 
-auto gdm::PlaygroundScene::GetSceneInstances() -> std::vector<ModelInstance*>
+auto gdm::AppScene::GetSceneInstances() -> std::vector<ModelInstance*>
 {
   std::vector<ModelInstance*> scene_models;
  
@@ -116,12 +116,12 @@ auto gdm::PlaygroundScene::GetSceneInstances() -> std::vector<ModelInstance*>
   return scene_models;
 }
 
-auto gdm::PlaygroundScene::GetSceneInstancesNames() const -> const std::vector<std::string>&
+auto gdm::AppScene::GetSceneInstancesNames() const -> const std::vector<std::string>&
 {
   return models_names_;
 }
 
-auto gdm::PlaygroundScene::GetRenderableMaterials() -> const api::ImageViews&
+auto gdm::AppScene::GetRenderableMaterials() -> const api::ImageViews&
 {
   if (!dummy_view_)
   {

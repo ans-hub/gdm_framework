@@ -12,16 +12,16 @@
 
 #include "engine/camera_eul.h"
 #include "window/main_input.h"
-#include "data/model_factory.h"
+#include "factory/model_factory.h"
 
 #include "engine/debug_draw.h"
 #include "engine/gui_manager.h"
 
 namespace gdm {
 
-struct PlaygroundInput
+struct AppInput
 {
-  PlaygroundInput(HWND window_handle, HINSTANCE hinstance);
+  AppInput(HWND window_handle, HINSTANCE hinstance);
 
   void SetGuiButton(int window_id, uint button) { gui_buttons_[window_id] = button; }
   void SetTextButton(uint button) { text_button_ = button; }
@@ -45,7 +45,7 @@ private:
   unsigned char wire_button_;
   std::map<int, unsigned char> gui_buttons_;
 
-}; // struct PlaygroundInput
+}; // struct AppInput
 
 } // namespace gdm
 

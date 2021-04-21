@@ -35,7 +35,7 @@
 #include "render/text_pass.h"
 
 #include "window/main_input.h"
-#include "data/model_factory.h"
+#include "factory/model_factory.h"
 #include "data/cfg_loader.h"
 #include "system/font.h"
 

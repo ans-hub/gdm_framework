@@ -14,8 +14,8 @@
 #include <system/array_utils.h>
 #include <system/mesh_utils.h>
 
-#include "image_helpers.h"
-#include "abstract_image.h"
+#include <data/image_helpers.h>
+#include <data/abstract_image.h>
 
 // --public
 

@@ -19,8 +19,8 @@
 #include "math/matrix.h"
 #include "math/vector4.h"
 
-#include "data/model_factory.h"
-#include "data/material_factory.h"
+#include "factory/model_factory.h"
+#include "factory/material_factory.h"
 
 #include "render/desc/sampler_desc.h"
 #include "render/desc/rasterizer_desc.h"

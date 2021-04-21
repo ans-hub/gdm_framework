@@ -1,8 +1,8 @@
 cmake_minimum_required (VERSION 3.10)
 
-project("gdm/framework/engine")
+project("gdm/framework/factory")
 
-set(BIN engine)
+set(BIN factory)
 
 message("* Lib: ${BIN} (${CMAKE_BUILD_TYPE})")
 message("  ** into directory: ${CMAKE_BINARY_DIR}")
@@ -10,17 +10,18 @@ message("  ** into directory: ${CMAKE_BINARY_DIR}")
 set(CMAKE_CXX_STANDARD 20)
 
 include_directories(
-    "engine/"
+    "factory/"
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${INCLUDE_DIRS}
 )
 
 set(SRC_FILES
-    camera_eul.cc
-    gui_manager.cc
-    gpu_streamer.cc
-    debug_draw.cc
-    cfg_dispatcher.cc)
+    data_factory.cc
+    image_factory.cc
+    mesh_factory.cc
+    material_factory.cc
+    texture_factory.cc
+    model_factory.cc)
 
 # -- Executable --
 

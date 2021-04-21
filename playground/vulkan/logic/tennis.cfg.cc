@@ -8,7 +8,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include <data/model_factory.h>
+#include <factory/model_factory.h>
 #include <engine/camera_eul.h>
 #include "engine/debug_draw.h"
 #include <window/main_input.h>

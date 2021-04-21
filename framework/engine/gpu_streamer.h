@@ -7,8 +7,8 @@
 #ifndef GFX_GPU_STREAMER
 #define GFX_GPU_STREAMER
 
-#include "data/model_factory.h"
-#include "data/texture_factory.h"
+#include "factory/model_factory.h"
+#include "factory/texture_factory.h"
 
 #include "render/api.h"
 #include "render/defines.h"

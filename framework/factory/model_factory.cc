@@ -6,7 +6,7 @@
 
 #include "model_factory.h"
 
-#include "model_loader.h"
+#include "data/model_loader.h"
 
 // --public
 

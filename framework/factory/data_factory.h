@@ -31,7 +31,7 @@ struct DataFactory
 
 protected:
   inline static char resources_path_[512] {""};
-  inline static std::unordered_map<Handle, T> resources_ {};
+  inline static std::unordered_map<Handle, T> resources_ {}; // todo: rework to unique_ptr<T>
 };
 
 namespace helpers {

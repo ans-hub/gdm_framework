@@ -26,9 +26,6 @@
 #include "window/main_window.h"
 #include "window/main_input.h"
 
-#include "data/data_storage.h"
-#include "data/model_factory.h"
-
 #include "system/fps_counter.h"
 #include "system/timer.h"
 #include "system/hash_utils.h"
@@ -102,7 +99,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   int gui_cb_example = gui.RegisterGuiCallback(gui::GuiExampleCb);
   int gui_cb_docking = gui.RegisterGuiCallback(gui::GuiDockingCb);
 
-  auto input = PlaygroundInput(win.GetHandle(), hInstance);
+  auto input = AppInput(win.GetHandle(), hInstance);
   input.SetGuiButton(gui_cb_example, DIK_F7);
   input.SetGuiButton(gui_cb_docking, DIK_F8);
   input.SetWireButton(DIK_F9);
@@ -115,7 +112,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE prevInstance, LPWSTR cmdLine,
   debug_draw.ToggleActivateText();
 
   auto renderer = AppRenderer(api_renderer, gpu_streamer, debug_draw);
-  auto scene = PlaygroundScene(cfg, win);
+  auto scene = AppScene(cfg, win);
   auto unique_models = app_helpers::GetUniqueModels(scene.GetSceneInstances());
   gpu_streamer.CopyModelsToGpu(unique_models);
 

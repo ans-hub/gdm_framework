@@ -11,7 +11,8 @@
 #include <system/array_utils.h>
 #include <system/mesh_utils.h>
 
-#include "model_loader.h"
+#include <data/model_loader.h>
+
 #include "image_factory.h"
 #include "texture_factory.h"
 

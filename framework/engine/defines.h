@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <functional>
 
-#include <data/model_factory.h>
+#include <factory/model_factory.h>
 #include <engine/camera_eul.h>
 #include <render/defines.h>
 #include <engine/debug_draw.h>

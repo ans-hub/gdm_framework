@@ -8,25 +8,25 @@
 
 //--public
 
-gdm::PlaygroundInput::PlaygroundInput(HWND window_handle, HINSTANCE hinstance)
+gdm::AppInput::AppInput(HWND window_handle, HINSTANCE hinstance)
   : api_input_{window_handle, hinstance}
   , text_button_{}
   , wire_button_{}
   , gui_buttons_{}
 {}
 
-void gdm::PlaygroundInput::UpdateCamera(CameraEul& cam, float dt)
+void gdm::AppInput::UpdateCamera(CameraEul& cam, float dt)
 {
   UpdateCameraRotate(cam, dt);
   UpdateCameraMovement(cam, dt);
 }
 
-void gdm::PlaygroundInput::UpdateCameraRotate(CameraEul& cam, float dt)
+void gdm::AppInput::UpdateCameraRotate(CameraEul& cam, float dt)
 {
   cam.Rotate(api_input_.GetMouseY(), api_input_.GetMouseX());
 }
 
-void gdm::PlaygroundInput::UpdateCameraMovement(CameraEul& cam, float dt)
+void gdm::AppInput::UpdateCameraMovement(CameraEul& cam, float dt)
 {
   dt += dt * static_cast<int>(api_input_.IsKeyboardBtnHold(DIK_LSHIFT)) * 2;
 
@@ -44,7 +44,7 @@ void gdm::PlaygroundInput::UpdateCameraMovement(CameraEul& cam, float dt)
     cam.Move(-cam.GetTm().GetCol(1), dt);
 }
 
-void gdm::PlaygroundInput::UpdateLamps(CameraEul& cam, std::vector<ModelLight>& lamps, float dt)
+void gdm::AppInput::UpdateLamps(CameraEul& cam, std::vector<ModelLight>& lamps, float dt)
 {
   if (api_input_.IsKeyboardBtnPressed(DIK_1) && lamps.size() > 0)
     lamps[0].enabled_ = !lamps[0].enabled_;
@@ -56,7 +56,7 @@ void gdm::PlaygroundInput::UpdateLamps(CameraEul& cam, std::vector<ModelLight>& 
     lamps[3].enabled_ = !lamps[3].enabled_;
 }
 
-void gdm::PlaygroundInput::UpdateFlashlights(CameraEul& cam, std::vector<ModelLight>& flashlights, float dt)
+void gdm::AppInput::UpdateFlashlights(CameraEul& cam, std::vector<ModelLight>& flashlights, float dt)
 {
   if (api_input_.IsKeyboardBtnPressed(DIK_0) && flashlights.size() > 0)
     flashlights[0].enabled_ = !flashlights[0].enabled_;
@@ -65,7 +65,7 @@ void gdm::PlaygroundInput::UpdateFlashlights(CameraEul& cam, std::vector<ModelLi
     flashlights[0].instance_.tm_ = cam.GetTm();
 }
 
-void gdm::PlaygroundInput::UpdateDebugDraw(DebugDraw& debug_draw)
+void gdm::AppInput::UpdateDebugDraw(DebugDraw& debug_draw)
 {
   if (api_input_.IsKeyboardBtnPressed(wire_button_))
     debug_draw.ToggleActivateWire();
@@ -73,7 +73,7 @@ void gdm::PlaygroundInput::UpdateDebugDraw(DebugDraw& debug_draw)
     debug_draw.ToggleActivateText();
 }
 
-void gdm::PlaygroundInput::UpdateGui(GuiManager& gui)
+void gdm::AppInput::UpdateGui(GuiManager& gui)
 {
   for (auto&& [win, btn] : gui_buttons_)
     if (api_input_.IsKeyboardBtnPressed(btn))

@@ -7,7 +7,7 @@
 #ifndef GFX_APP_DEFINES_H
 #define GFX_APP_DEFINES_H
 
-#include <data/model_factory.h>
+#include <factory/model_factory.h>
 #include <engine/camera_eul.h>
 #include <render/defines.h>
 #include <window/main_input.h>

@@ -12,7 +12,7 @@
 #include "render/colors.h"
 #include "system/diff_utils.h"
 #include "system/event_point.h"
-#include "data/model_factory.h"
+#include "factory/model_factory.h"
 
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"

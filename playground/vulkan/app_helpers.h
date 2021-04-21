@@ -19,10 +19,10 @@
 
 #include "window/main_input.h"
 
-#include "data/model_factory.h"
-#include "data/material_factory.h"
-#include "data/texture_factory.h"
-#include "data/image_factory.h"
+#include "factory/model_factory.h"
+#include "factory/material_factory.h"
+#include "factory/texture_factory.h"
+#include "factory/image_factory.h"
 #include "data/cfg_loader.h"
 
 namespace gdm::app_helpers {

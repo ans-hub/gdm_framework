@@ -13,7 +13,7 @@
 #include "window/main_input.h"
 #include "window/main_window.h"
 
-#include "data/model_factory.h"
+#include "factory/model_factory.h"
 #include "data/cfg_loader.h"
 
 #include "engine/cfg_dispatcher.h"
@@ -23,10 +23,10 @@
 
 namespace gdm {
 
-struct PlaygroundScene
+struct AppScene
 {
-  PlaygroundScene(Config& cfg, MainWindow& win);
-  void Update(float dt, PlaygroundInput& input_mgr, GuiManager& gui, DebugDraw& debug_draw);
+  AppScene(Config& cfg, MainWindow& win);
+  void Update(float dt, AppInput& input_mgr, GuiManager& gui, DebugDraw& debug_draw);
 
 public:
   void SetObjects(const std::vector<ModelInstance>& objs, const std::vector<std::string>& names);
@@ -50,6 +50,6 @@ private:
   api::ImageView* dummy_view_;
   cfg::Dispatcher cfg_dispatcher_;
 
-}; // struct PlaygroundScene
+}; // struct AppScene
 
 } // namespace gdm
