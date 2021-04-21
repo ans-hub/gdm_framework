@@ -75,8 +75,7 @@ namespace gdm::_private
     ~ThreadIdWrapper() { _private::UnmapThreadId(); }
 
     int index = -1;
-
-  } thread_local v_thread_id_wrapper;
+  };
 }
 
 // --public
@@ -205,8 +204,7 @@ bool gdm::Thread::IsRunning() const
 
 auto gdm::Thread::GetId() -> int
 {
-  if (_private::v_thread_id_wrapper.index == -1)
-    _private::v_thread_id_wrapper.index = _private::MapThreadIdToInteger();
+  thread_local _private::ThreadIdWrapper v_thread_id_wrapper;
 
-  return _private::v_thread_id_wrapper.index;
+  return v_thread_id_wrapper.index;
 }
