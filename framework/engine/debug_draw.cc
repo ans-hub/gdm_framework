@@ -33,7 +33,7 @@ void gdm::DebugDraw::AddFont(GpuStreamer& gpu_streamer, const std::string& font_
   
   TextureHandle texture_handle = TextureFactory::Create(font_name.c_str(), raw_img, whd);
   AbstractTexture* texture = TextureFactory::Get(texture_handle);
-  texture->format_ = AbstractTexture::EFormatType::R8_UNORM;
+  texture->format_ = gfx::EFormatType::R8_UNORM;
 
   int tidx = gpu_streamer.FindStagingBuffer(raw_img.size());
 
@@ -41,8 +41,7 @@ void gdm::DebugDraw::AddFont(GpuStreamer& gpu_streamer, const std::string& font_
     tidx = gpu_streamer.CreateStagingBuffer(raw_img.size());
 
   gpu_streamer.CopyTexturesToGpu({texture_handle}, tidx);
-
-  font_view_ = texture->GetApiImageView<api::ImageView>();
+  font_view_ = &(texture->GetTextureImpl().GetImageViewImpl());
 }
 
 gdm::DebugDraw::~DebugDraw()
@@ -52,7 +51,7 @@ gdm::DebugDraw::~DebugDraw()
 
 void gdm::DebugDraw::Cleanup()
 {
-  GMDelete(font_view_);
+  // GMDelete(font_view_);
 }
 
 void gdm::DebugDraw::DrawString(Vec3f pos, const std::string& text, Vec4f color)

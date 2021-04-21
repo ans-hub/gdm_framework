@@ -11,6 +11,8 @@
 #include "system/literals.h"
 #include "system/diff_utils.h"
 
+#include "render/texture.h"
+
 #include "defines.h"
 
 // --public
@@ -220,45 +222,40 @@ uint gdm::GpuStreamer::CopyTextureToStagingBuffer(AbstractTexture* texture, api:
   stg.CopyDataToGpu(image->GetRaw().data(), curr_offset, image->GetRaw().size());
   curr_offset += static_cast<uint>(image->GetRaw().size());
 
-  gfx::EFormatType texture_format = gfx::EFormatType::FORMAT_TYPE_MAX;
-  
-  if (texture->format_ == AbstractTexture::EFormatType::FORMAT_TYPE_MAX)
-    texture_format = v_default_texture_fmt;
-  else
-    texture_format = helpers::ConvertData2RenderTextureFormat(texture->format_);
+  if (texture->format_ == gfx::EFormatType::FORMAT_TYPE_MAX)
+    texture->format_ = v_default_texture_fmt;
 
   api::Image2D* api_img = gfx::Resource<api::Image2D>(&device_, image->GetWidth(), image->GetHeight())
-    .AddFormatType(texture_format)
+    .AddFormatType(texture->format_)
     .AddImageUsage(gfx::TRANSFER_DST_IMG | gfx::SAMPLED);
 
   api::ImageView* api_img_view = gfx::Resource<api::ImageView>(device_)
     .AddImage(*api_img)
     .AddFormatType(api_img->GetFormat());
   
-  texture->SetApiImage(api_img);
-  texture->SetApiImageView(api_img_view);
+  gfx::Texture* gfx_texture = GMNew gfx::Texture(api_img, api_img_view); 
+  texture->SetTextureImpl(gfx_texture);
 
   return curr_offset;
 }
 
 void gdm::GpuStreamer::CopyTextureFromStagingBuffer(api::CommandList& cmd, AbstractTexture* texture, api::Buffer& stg, uint curr_offset)
 {
-  api::Image2D* img = texture->GetApiImage<api::Image2D>();
+  api::Image2D& img = texture->GetTextureImpl();
   auto& img_raw = ImageFactory::Get(texture->image_)->GetRaw();
   
-
   api::ImageBarrier* barrier_undef_to_transfer = gfx::Resource<api::ImageBarrier>()
-    .AddImage(*img)
+    .AddImage(img)
     .AddOldLayout(gfx::EImageLayout::UNDEFINED)
     .AddNewLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL);
 
   api::ImageBarrier* barrier_transfer_to_shader = gfx::Resource<api::ImageBarrier>()
-    .AddImage(*img)
+    .AddImage(img)
     .AddOldLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL)
     .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
 
   cmd.PushBarrier(*barrier_undef_to_transfer);
-  cmd.CopyBufferToImage(stg, *img, curr_offset, 0, static_cast<uint>(img_raw.size()));
+  cmd.CopyBufferToImage(stg, img, curr_offset, 0, static_cast<uint>(img_raw.size()));
   cmd.PushBarrier(*barrier_transfer_to_shader);
 
   GMDelete(barrier_undef_to_transfer);
@@ -291,8 +288,9 @@ void gdm::GpuStreamer::CreateDummyView(api::CommandList& cmd)
     .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
 
   cmd.PushBarrier(*barrier_undef_to_srv);
-  dummy_texture->SetApiImage(api_img);
-  dummy_texture->SetApiImageView(api_img_view);
+
+  gfx::Texture* gfx_texture = GMNew gfx::Texture(api_img, api_img_view); 
+  dummy_texture->SetTextureImpl(gfx_texture);
 
   GMDelete(barrier_undef_to_srv);
 }
@@ -310,27 +308,4 @@ auto gdm::helpers::GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -
         result.push_back(material_handle);
   }
   return result;
-}
-
-auto gdm::helpers::ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType
-{
-  switch(type)
-  {
-    case AbstractTexture::EFormatType::F1: return gfx::EFormatType::F1;
-    case AbstractTexture::EFormatType::F2: return gfx::EFormatType::F2;
-    case AbstractTexture::EFormatType::F3: return gfx::EFormatType::F3;
-    case AbstractTexture::EFormatType::F4: return gfx::EFormatType::F4;
-    case AbstractTexture::EFormatType::F4HALF: return gfx::EFormatType::F4HALF;
-    case AbstractTexture::EFormatType::SRGB4: return gfx::EFormatType::SRGB4;
-    case AbstractTexture::EFormatType::UNORM4: return gfx::EFormatType::UNORM4;
-    case AbstractTexture::EFormatType::D24_UNORM_S8_UINT: return gfx::EFormatType::D24_UNORM_S8_UINT;
-    case AbstractTexture::EFormatType::D32_SFLOAT_S8_UINT: return gfx::EFormatType::D32_SFLOAT_S8_UINT;
-    case AbstractTexture::EFormatType::R8_UNORM: return gfx::EFormatType::R8_UNORM;
-    case AbstractTexture::EFormatType::D16_UNORM: return gfx::EFormatType::D16_UNORM;
-    default:
-    {
-      ASSERTF(false, "No association with texture type");
-      return gfx::EFormatType::FORMAT_TYPE_MAX;
-    }
-  }
 }

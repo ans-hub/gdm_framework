@@ -90,14 +90,13 @@ void gdm::DeferredPass::CreateImages(api::CommandList& cmd)
       .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
       .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
 
+    // DepthRenderTarget
     data.depth_image_ = gfx::Resource<api::Image2D>(device_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight())
       .AddImageUsage(gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT)
       .AddFormatType(gfx::EFormatType::D16_UNORM);
-
     data.depth_image_view_ = gfx::Resource<api::ImageView>(*device_)
       .AddImage(data.depth_image_->GetHandle())
       .AddFormatType(data.depth_image_->GetFormat());
-
     api::ImageBarrier* depth_barrier = gfx::Resource<api::ImageBarrier>()
       .AddImage(*data.depth_image_)
       .AddOldLayout(gfx::EImageLayout::UNDEFINED)

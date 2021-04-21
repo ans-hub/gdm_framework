@@ -24,9 +24,9 @@
 
 gdm::AbstractTexture::AbstractTexture(ImageHandle handle)
   : image_{handle}
-  , format_{EFormatType::FORMAT_TYPE_MAX}
+  , format_{gfx::EFormatType::FORMAT_TYPE_MAX}
 { }
- 
+
 // --public TextureFactory
 
 gdm::TextureHandle gdm::TextureFactory::Load(ImageHandle img_handle)

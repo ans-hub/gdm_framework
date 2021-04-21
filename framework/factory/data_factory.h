@@ -17,6 +17,8 @@ namespace gdm {
 
 using Handle = uint64_t;
 
+constexpr static Handle v_null_handle = 0;
+
 template <class T>
 struct DataFactory
 {

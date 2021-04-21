@@ -78,7 +78,7 @@ bool gdm::MaterialFactory::ImplementationLoaded(MaterialHandle handle)
   for (auto handle : material->GetTextureHandles())
   {
     if (TextureFactory::Has(handle))
-      loaded |= TextureFactory::Get(handle)->image_impl_ && TextureFactory::Get(handle)->image_view_impl_;
+      loaded |= TextureFactory::Get(handle)->HasTextureImpl();
   }
   return loaded;
 }

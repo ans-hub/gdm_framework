@@ -8,6 +8,7 @@
 #define GM_VK_IMAGE_BARRIER_H
 
 #include <vector>
+#include <memory>
 
 #include "render/defines.h"
 
@@ -67,6 +68,7 @@ struct Resource<api::ImageBarrier>
   self AddNewLayout(gfx::EImageLayout new_layout);
 
   operator api::ImageBarrier*() { return res_; }
+  operator std::unique_ptr<api::ImageBarrier>() { return std::unique_ptr<api::ImageBarrier>(res_); }
 
 private:
   void FillAspectMask(VkImageLayout layout, VkFormat format);

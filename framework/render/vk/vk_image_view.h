@@ -8,6 +8,7 @@
 #define GM_VK_IMAGE_VIEW_H
 
 #include <vector>
+#include <memory>
 
 #include "render/defines.h"
 #include "memory/defines.h"
@@ -68,6 +69,7 @@ struct Resource<api::ImageView>
   self AddFormatType(gfx::FormatType format);
 
   operator api::ImageView*() { return res_; }
+  operator std::unique_ptr<api::ImageView>() { return std::unique_ptr<api::ImageView>(res_); }
 
 private:
   api::ImageView* res_;

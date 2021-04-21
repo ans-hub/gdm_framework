@@ -7,6 +7,8 @@
 #ifndef GM_VK_IMAGE_H
 #define GM_VK_IMAGE_H
 
+#include <memory>
+
 #include "render/defines.h"
 #include "render/vk/vk_deleter.h"
 
@@ -70,6 +72,7 @@ struct Resource<api::Image>
   self AddImageUsage(gfx::ImageUsage usage);
 
   operator api::Image*() { return res_; }
+  operator std::unique_ptr<api::Image>() { return std::unique_ptr<api::Image>(res_); }
 
 private:
   api::Image* res_;

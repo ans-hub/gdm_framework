@@ -51,8 +51,6 @@ private:
 namespace helpers {
 
   auto GetMaterialsToLoad(const std::vector<ModelHandle>& handles) -> std::vector<MaterialHandle>;
-  auto ConvertData2RenderTextureFormat(AbstractTexture::EFormatType type) -> gfx::EFormatType;
-
 } // namespace helpers
 
 } // namespace gdm

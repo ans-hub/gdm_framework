@@ -127,7 +127,7 @@ auto gdm::AppScene::GetRenderableMaterials() -> const api::ImageViews&
   {
     TextureHandle dummy_handle = dummy_handle = TextureFactory::GetHandle(cfg::v_dummy_image);
     AbstractTexture* dummy_texture = TextureFactory::Get(dummy_handle);
-    dummy_view_ = dummy_texture->GetApiImageView<api::ImageView>();
+    dummy_view_ = &dummy_texture->GetTextureImpl().GetImageViewImpl();
   }
 
   renderable_materials_.clear();
@@ -146,9 +146,9 @@ auto gdm::AppScene::GetRenderableMaterials() -> const api::ImageViews&
       auto normal_texture = TextureFactory::Get(material->norm_);
       auto specular_texture = TextureFactory::Get(material->spec_);
       
-      renderable_materials_[material->index_ * 3 + cfg::v_diff_offset] = diffuse_texture->GetApiImageView<api::ImageView>();
-      renderable_materials_[material->index_ * 3 + cfg::v_norm_offset] = normal_texture->GetApiImageView<api::ImageView>();
-      renderable_materials_[material->index_ * 3 + cfg::v_spec_offset] = specular_texture->GetApiImageView<api::ImageView>();
+      renderable_materials_[material->index_ * 3 + cfg::v_diff_offset] = &(diffuse_texture->GetTextureImpl().GetImageViewImpl());
+      renderable_materials_[material->index_ * 3 + cfg::v_norm_offset] = &(normal_texture->GetTextureImpl().GetImageViewImpl());
+      renderable_materials_[material->index_ * 3 + cfg::v_spec_offset] = &(specular_texture->GetTextureImpl().GetImageViewImpl());
     }
   }
   return renderable_materials_;

@@ -70,6 +70,7 @@ else()
 endif()
 
 set(SRC_FILES
+  texture.cc
   ${SRC_FILES})
 
 if ("${VK_API}")
