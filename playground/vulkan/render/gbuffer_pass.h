@@ -13,6 +13,9 @@
 #include "render/api.h"
 #include "render/renderer.h"
 #include "render/shader.h"
+#include "render/texture.h"
+#include "render/uniform_buffer.h"
+
 #include "engine/camera_eul.h"
 
 #include "math/matrix.h"
@@ -60,19 +63,19 @@ struct alignas(64) GbufferPs_POCB
 
 struct GbufferPassData
 {
-  api::Buffer* pfcb_staging_vs_;
-  api::Buffer* pocb_staging_vs_;
-  api::Buffer* pocb_staging_ps_;
-  api::Buffer* pfcb_uniform_vs_;
-  api::Buffer* pocb_uniform_vs_;
-  api::Buffer* pocb_uniform_ps_;
-  std::vector<api::BufferBarrier*> to_read_barriers_;
-  std::vector<api::BufferBarrier*> to_write_barriers_;
+  gfx::UniformBuffer<GbufferVs_PFCB>* pfcb_uniform_vs_;
+  gfx::UniformBuffer<GbufferVs_POCB>* pocb_uniform_vs_;
+  gfx::UniformBuffer<GbufferPs_POCB>* pocb_uniform_ps_;
+  std::vector<api::BufferBarrier*> ub_to_read_barriers_;
+  std::vector<api::BufferBarrier*> ub_to_write_barriers_;
+  gfx::Texture* tex_position_;
+  gfx::Texture* tex_diffuse_;
+  gfx::Texture* tex_normal_;
+  gfx::Texture* tex_depth_;
+  std::vector<api::ImageView*> tex_views_;
+  std::vector<api::ImageBarrier*> tex_to_read_barriers_;
+  std::vector<api::ImageBarrier*> tex_to_write_barriers_;
   api::Sampler* sampler_;
-  std::vector<api::Image2D*> images_; // pos, diff, norm
-  std::vector<api::ImageView*> image_views_;  // pos, diff, norm
-  std::vector<api::ImageBarrier*> image_barriers_to_read_;
-  std::vector<api::ImageBarrier*> image_barriers_to_write_;
   api::Framebuffer* fb_;
   api::DescriptorSetLayout* descriptor_set_layout_;
   api::DescriptorSet* descriptor_set_;  

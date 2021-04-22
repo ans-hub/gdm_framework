@@ -52,7 +52,8 @@ struct Semaphores
   operator std::vector<VkSemaphore>() const { return semaphores_; }
   inline static const std::vector<VkSemaphore> empty = {};
   std::vector<VkSemaphore> semaphores_;
-};
+
+}; // struct Semaphores
 
 } // namespace gdm::vk
 

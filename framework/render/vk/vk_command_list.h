@@ -31,6 +31,7 @@ struct CommandList
 
   void Finalize();
   void PushBarrier(const ImageBarrier& image_barrier);
+  void PushBarriers(const ImageBarriers& barriers);
   void PushBarrier(const BufferBarrier& buffer_barrier);
   void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint src_offset, uint dst_offset, uint size);
   void CopyBufferToBuffer(Buffer& src, const Buffer& dst, uint size);

@@ -56,6 +56,26 @@ void gdm::vk::CommandList::PushBarrier(const ImageBarrier& barrier)
   vkCmdPipelineBarrier(command_buffer_, src, dst, 0, 0, NULL, 0, NULL, 1, &vk_barrier);
 }
 
+void gdm::vk::CommandList::PushBarriers(const ImageBarriers& barriers)
+{
+  ASSERTF(!explicitly_finalized_, "Command list finalized");
+  ASSERTF(!barriers.empty(), "Array of barriers shouldn't be empty");
+  
+  const VkPipelineStageFlagBits src = barriers.front()->src_stage_mask_;
+  const VkPipelineStageFlagBits dst = barriers.front()->dst_stage_mask_;
+  
+  std::vector<VkImageMemoryBarrier> vk_barriers;
+  
+  for (const auto& barrier : barriers)
+  {
+    vk_barriers.push_back(*barrier);
+    ASSERTF(barrier->src_stage_mask_ == src, "One of the barrier on barriers has different src stage mask");
+    ASSERTF(barrier->dst_stage_mask_ == dst, "One of the barrier on barriers has different dst stage mask");
+  }
+
+  vkCmdPipelineBarrier(command_buffer_, src, dst, 0, 0, NULL, 0, NULL, static_cast<uint32_t>(barriers.size()), vk_barriers.data());
+}
+
 void gdm::vk::CommandList::PushBarrier(const BufferBarrier& barrier)
 {
   ASSERTF(!explicitly_finalized_, "Command list finalized");

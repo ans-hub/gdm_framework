@@ -6,7 +6,7 @@
 
 #include "gpu_streamer.h"
 
-#include <set>
+#include <unordered_set>
 
 #include "system/literals.h"
 #include "system/diff_utils.h"
@@ -147,33 +147,32 @@ void gdm::GpuStreamer::CopyMaterialsToGpu(const std::vector<MaterialHandle>& han
   api::Buffer& tstg = *staging_buffers_[tstg_index];
 
   uint curr_offset = 0;
-  std::vector<uint> offsets = {};
-  
+  std::vector<std::pair<uint, AbstractTexture*>> offsets = {};
+  std::unordered_set<AbstractTexture*> processed = {}; 
+
   tstg.Map();
   for (auto [index, material_handle] : Enumerate(handles))
   {
+    if (MaterialFactory::ImplementationLoaded(material_handle))
+      continue;
+
     AbstractMaterial* material = MaterialFactory::Get(material_handle);
     std::vector<AbstractTexture**> textures = TextureFactory::Get(material->GetTextureHandles());
 
     for (auto texture : textures)
     {
-      offsets.push_back(curr_offset);
+      if ((*texture)->HasTextureImpl() || processed.find(*texture) != processed.end())
+        continue;
+
+      processed.insert(*texture);
+      offsets.push_back(std::make_pair(curr_offset, *texture));
       curr_offset = CopyTextureToStagingBuffer(*texture, tstg, curr_offset);
     }
   }
   tstg.Unmap();
 
-  auto offset = offsets.begin();
-  for (auto [index, material_handle] : Enumerate(handles))
-  {
-    AbstractMaterial* material = MaterialFactory::Get(material_handle);
-    auto textures = TextureFactory::Get(material->GetTextureHandles());
-    for (auto texture : textures)
-    {
-      CopyTextureFromStagingBuffer(cmd, *texture, tstg, *offset);
-      ++offset;
-    }
-  }
+  for (auto&& [offset, abstract_texture] : offsets)
+    CopyTextureFromStagingBuffer(cmd, abstract_texture, tstg, offset);
 }
 
 void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<TextureHandle>& handles, uint tstg_index)
@@ -217,45 +216,35 @@ void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<TextureHandle>& handl
 
 uint gdm::GpuStreamer::CopyTextureToStagingBuffer(AbstractTexture* texture, api::Buffer& stg, uint curr_offset)
 {
-  AbstractImage* image = ImageFactory::Get(texture->image_);
- 
+  AbstractImage* image = ImageFactory::Get(texture->GetImageHandle()); 
   stg.CopyDataToGpu(image->GetRaw().data(), curr_offset, image->GetRaw().size());
-  curr_offset += static_cast<uint>(image->GetRaw().size());
-
-  if (texture->format_ == gfx::EFormatType::FORMAT_TYPE_MAX)
-    texture->format_ = v_default_texture_fmt;
-
-  api::Image2D* api_img = gfx::Resource<api::Image2D>(&device_, image->GetWidth(), image->GetHeight())
-    .AddFormatType(texture->format_)
-    .AddImageUsage(gfx::TRANSFER_DST_IMG | gfx::SAMPLED);
-
-  api::ImageView* api_img_view = gfx::Resource<api::ImageView>(device_)
-    .AddImage(*api_img)
-    .AddFormatType(api_img->GetFormat());
-  
-  gfx::Texture* gfx_texture = GMNew gfx::Texture(api_img, api_img_view); 
-  texture->SetTextureImpl(gfx_texture);
+  curr_offset += static_cast<uint>(image->GetRaw().size());  
 
   return curr_offset;
 }
 
 void gdm::GpuStreamer::CopyTextureFromStagingBuffer(api::CommandList& cmd, AbstractTexture* texture, api::Buffer& stg, uint curr_offset)
 {
-  api::Image2D& img = texture->GetTextureImpl();
-  auto& img_raw = ImageFactory::Get(texture->image_)->GetRaw();
+  const AbstractImage* image = ImageFactory::Get(texture->GetImageHandle()); 
+  uint img_raw_size = ImageFactory::Get(texture->GetImageHandle())->GetRaw().size();
+
+  gfx::Texture* gfx_texture = GMNew gfx::Texture(gfx::tag::SR{}, texture->GetFormat(), image->GetWHD(), cmd, &device_); 
+  texture->SetTextureImpl(gfx_texture);
+
+  api::Image2D& api_img = gfx_texture->GetImageImpl();
   
   api::ImageBarrier* barrier_undef_to_transfer = gfx::Resource<api::ImageBarrier>()
-    .AddImage(img)
+    .AddImage(api_img)
     .AddOldLayout(gfx::EImageLayout::UNDEFINED)
     .AddNewLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL);
 
   api::ImageBarrier* barrier_transfer_to_shader = gfx::Resource<api::ImageBarrier>()
-    .AddImage(img)
+    .AddImage(api_img)
     .AddOldLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL)
     .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
 
   cmd.PushBarrier(*barrier_undef_to_transfer);
-  cmd.CopyBufferToImage(stg, img, curr_offset, 0, static_cast<uint>(img_raw.size()));
+  cmd.CopyBufferToImage(stg, api_img, curr_offset, 0, static_cast<uint>(img_raw_size));
   cmd.PushBarrier(*barrier_transfer_to_shader);
 
   GMDelete(barrier_undef_to_transfer);
@@ -270,27 +259,18 @@ void gdm::GpuStreamer::CreateDummyView(api::CommandList& cmd)
   
   ImageHandle image_handle = ImageFactory::Create(cfg::v_dummy_image, 1, 1, 32, 1, 1, 1);
   AbstractImage* dummy_image = ImageFactory::Get(image_handle);
-  TextureHandle texture_handle = TextureFactory::Load(image_handle);
+  TextureHandle texture_handle = TextureFactory::Load(image_handle, gfx::EFormatType::UNORM4);
   AbstractTexture* dummy_texture = TextureFactory::Get(texture_handle);
 
-
-  api::Image2D* api_img = gfx::Resource<api::Image2D>(&device_, dummy_image->GetWidth(), dummy_image->GetHeight())
-    .AddImageUsage(gfx::TRANSFER_DST_IMG | gfx::SAMPLED)
-    .AddFormatType(gfx::UNORM4);
-
-  api::ImageView* api_img_view = gfx::Resource<api::ImageView>(device_)
-    .AddImage(*api_img)
-    .AddFormatType(api_img->GetFormat());
+  gfx::Texture* gfx_texture = GMNew gfx::Texture(gfx::tag::SR{}, dummy_texture->GetFormat(), dummy_image->GetWHD(), cmd, &device_); 
+  dummy_texture->SetTextureImpl(gfx_texture);
 
   api::ImageBarrier* barrier_undef_to_srv = gfx::Resource<api::ImageBarrier>()
-    .AddImage(*api_img)
+    .AddImage(gfx_texture->GetImageImpl())
     .AddOldLayout(gfx::EImageLayout::UNDEFINED)
     .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
 
   cmd.PushBarrier(*barrier_undef_to_srv);
-
-  gfx::Texture* gfx_texture = GMNew gfx::Texture(api_img, api_img_view); 
-  dummy_texture->SetTextureImpl(gfx_texture);
 
   GMDelete(barrier_undef_to_srv);
 }

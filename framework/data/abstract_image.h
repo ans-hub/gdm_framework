@@ -11,6 +11,8 @@
 #include <iostream>
 #include <vector>
 
+#include <math/vector3.h>
+
 namespace gdm {
 
 struct AbstractImage
@@ -25,6 +27,7 @@ struct AbstractImage
   virtual auto GetWidth() const -> unsigned;
   virtual auto GetHeight() const -> unsigned;
   virtual auto GetDepth() const -> unsigned;
+  virtual auto GetWHD() const -> Vec3u;
   virtual auto GetRaw() const -> const StorageType&;
 
 protected:

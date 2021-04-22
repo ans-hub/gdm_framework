@@ -49,7 +49,7 @@ private:
 
 }; // struct ImageBarrier
 
-using ImageBarriers = std::vector<ImageBarrier>;
+using ImageBarriers = std::vector<ImageBarrier*>;
 
 } // namespace gdm::vk
 

@@ -16,25 +16,20 @@
 
 namespace gdm::gfx {
 
+  namespace tag {
+    struct SR {};
+    struct RT {};
+    struct SRRT {};
+    struct DRT {};
+  }
+
   struct Texture
   {
-    [[deprecated("Tmp")]] Texture(api::Image* image, api::ImageView* image_view)
-    {
-      implemented_already_ = true;
-      api_image_ = std::unique_ptr<api::Image>(image);
-      api_image_view_ = std::unique_ptr<api::ImageView>(image_view);
-    }
-    [[deprecated("Tmp")]] ~Texture()
-    {
-      if (implemented_already_)
-      {
-        api_image_.release();
-        api_image_view_.release();
-      }
-    }
+    Texture(tag::SR, gfx::EFormatType format, Vec3u whd, api::CommandList& cmd, api::Device* device);
+    Texture(tag::RT, gfx::EFormatType format, Vec3u whd, api::CommandList& cmd, api::Device* device);
+    Texture(tag::SRRT, gfx::EFormatType format, Vec3u whd, api::CommandList& cmd, api::Device* device);
+    Texture(tag::DRT, gfx::EFormatType format, Vec3u whd, api::CommandList& cmd, api::Device* device);
 
-    // Texture() =default;
-    // Texture(gfx::EFormatType& format, int w, int h, api::CommandList& cmd, api::Device* device);
     Texture(const Texture&) =delete;
     Texture& operator=(const Texture&) =delete;
 
@@ -48,16 +43,13 @@ namespace gdm::gfx {
     operator api::ImageView&() { return *api_image_view_.get(); }
     operator api::ImageView&() const { return *api_image_view_.get(); }
 
-    void ToRead();
-    void ToWrite();
+    auto GetToReadBarrier() -> api::ImageBarrier* { return to_read_barrier_.get(); }
+    auto GetToWriteBarrier() -> api::ImageBarrier* { return to_write_barrier_.get(); }
 
   private:
-    [[deprecated]] bool implemented_already_ = false;
     api::Device* device_;
-    // ImageHandle image_;
     gfx::EFormatType format_;
-    int w_;
-    int h_;
+    Vec3u whd_;
     std::unique_ptr<api::Image> api_image_;
     std::unique_ptr<api::ImageView> api_image_view_;
     std::unique_ptr<api::ImageBarrier> to_read_barrier_;

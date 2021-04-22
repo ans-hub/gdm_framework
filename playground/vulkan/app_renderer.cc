@@ -50,7 +50,7 @@ gdm::AppRenderer::AppRenderer(
   deferred_pass_.CreateImages(setup_list);
   deferred_pass_.CreateRenderPass();
   deferred_pass_.CreateFramebuffer();
-  deferred_pass_.CreatePipeline(gbuffer_pass_.data_.image_views_);
+  deferred_pass_.CreatePipeline(gbuffer_pass_.data_.tex_views_);
 
   debug_pass_.CreateBarriers(setup_list);
   debug_pass_.CreateRenderPass();
@@ -193,7 +193,7 @@ void gdm::AppRenderer::ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_e
         deferred_pass_.CreateImages(setup_list);
         deferred_pass_.CreateRenderPass();
         deferred_pass_.CreateFramebuffer();
-        deferred_pass_.CreatePipeline(gbuffer_pass_.data_.image_views_);
+        deferred_pass_.CreatePipeline(gbuffer_pass_.data_.tex_views_);
 
         text_pass_.CleanupPipeline();
         text_pass_.CreateBarriers(setup_list);

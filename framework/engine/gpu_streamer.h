@@ -10,8 +10,8 @@
 #include "factory/model_factory.h"
 #include "factory/texture_factory.h"
 
-#include "render/api.h"
 #include "render/defines.h"
+#include "render/api.h"
 #include "render/renderer.h"
 
 namespace gdm {
@@ -37,7 +37,6 @@ private:
 
 private:
   constexpr static int v_max_buffers_ = 32;
-  constexpr static gfx::EFormatType v_default_texture_fmt = gfx::EFormatType::UNORM4;
 
 private:
   api::Renderer& gfx_;

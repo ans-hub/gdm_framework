@@ -20,35 +20,34 @@
 
 #include "image_factory.h"
 
-// --public AbstractTexture
+// --public
 
-gdm::AbstractTexture::AbstractTexture(ImageHandle handle)
+gdm::AbstractTexture::AbstractTexture(ImageHandle handle, gfx::EFormatType format)
   : image_{handle}
-  , format_{gfx::EFormatType::FORMAT_TYPE_MAX}
+  , format_{format}
+  , impl_{nullptr}
 { }
 
-// --public TextureFactory
-
-gdm::TextureHandle gdm::TextureFactory::Load(ImageHandle img_handle)
+gdm::TextureHandle gdm::TextureFactory::Load(ImageHandle img_handle, gfx::EFormatType format)
 {
   ASSERTF(ImageFactory::Has(img_handle), "Image doesn't exists while creating texture");
   ASSERTF(!Has(img_handle), "Trying to load alreade loaded texture");
 
   AbstractImage* img = ImageFactory::Get(img_handle);
-  AbstractTexture* tex = GMNew AbstractTexture(img_handle);
+  AbstractTexture* tex = GMNew AbstractTexture(img_handle, format);
   resources_[img_handle] = tex;
   return img_handle;
 }
 
-gdm::TextureHandle gdm::TextureFactory::Load(const char* fpath)
+gdm::TextureHandle gdm::TextureFactory::Load(const char* fpath, gfx::EFormatType format)
 {
   ASSERT(*fpath != '\000');
   Handle img_handle = ImageFactory::Has(fpath) ? ImageFactory::GetHandle(fpath) : ImageFactory::Load(fpath);
-  Handle tex_handle = Load(img_handle);
+  Handle tex_handle = Load(img_handle, format);
   return tex_handle;
 }
 
-gdm::TextureHandle gdm::TextureFactory::Create(const char* fpath, const Vec3u& whd, const Vec3f& rgb)
+gdm::TextureHandle gdm::TextureFactory::Create(const char* fpath, gfx::EFormatType format, const Vec3u& whd, const Vec3f& rgb)
 {
   ASSERT(*fpath != '\000');
   Handle img_handle;
@@ -56,14 +55,14 @@ gdm::TextureHandle gdm::TextureFactory::Create(const char* fpath, const Vec3u& w
     img_handle = ImageFactory::GetHandle(fpath);
   else
     img_handle = ImageFactory::Create(fpath, whd.w, whd.h, whd.d, rgb.r, rgb.g, rgb.b);
-  Handle tex_handle = Load(img_handle);
+  Handle tex_handle = Load(img_handle, format);
   return tex_handle;
 }
 
-gdm::TextureHandle gdm::TextureFactory::Create(const char* name, const AbstractImage::StorageType& raw, const Vec3u& whd)
+gdm::TextureHandle gdm::TextureFactory::Create(const char* name, gfx::EFormatType format, const AbstractImage::StorageType& raw, const Vec3u& whd)
 {
   ImageHandle img_handle = ImageFactory::Create(name, raw, whd.w, whd.h, whd.d);
-  Handle tex_handle = Load(img_handle);
+  Handle tex_handle = Load(img_handle, format);
   return tex_handle;
 }
 

@@ -58,7 +58,12 @@ unsigned gdm::AbstractImage::GetDepth() const
   return static_cast<unsigned>(depth_);
 }
 
-auto gdm::AbstractImage::GetRaw() const -> const std::vector<unsigned char>&
+auto gdm::AbstractImage::GetWHD() const -> Vec3u
+{
+  return Vec3u(width_, height_, depth_);
+}
+
+auto gdm::AbstractImage::GetRaw() const -> const StorageType&
 {
   return data_;
 }

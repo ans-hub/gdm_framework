@@ -10,8 +10,13 @@
 //--public
 
 template<class T>
-gdm::gfx::UniformBuffer<T>::UniformBuffer(uint count, api::Device* device, api::CommandList& cmd)
+gdm::gfx::UniformBuffer<T>::UniformBuffer(uint count, bool mapped, api::Device* device, api::CommandList& cmd)
   : device_{device}
+  , staging_buffer_{nullptr}
+  , uniform_buffer_{nullptr}
+  , to_read_barrier_{nullptr}
+  , to_write_barrier_{nullptr}
+  , mapped_{mapped}
 {
   staging_buffer_ = gfx::Resource<api::Buffer>(device_, sizeof(T) * count)
     .AddUsage(gfx::TRANSFER_SRC)
@@ -32,6 +37,9 @@ gdm::gfx::UniformBuffer<T>::UniformBuffer(uint count, api::Device* device, api::
     .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
 
   cmd.PushBarrier(*to_read_barrier_);
+
+  if (mapped_)
+    staging_buffer_->Map();
 }
 
 template<class T>
@@ -41,10 +49,17 @@ void gdm::gfx::UniformBuffer<T>::Update(api::CommandList& cmd, const T* data, ui
 
   cmd.PushBarrier(*to_write_barrier_);
 
-  staging_buffer_->Map();
-  staging_buffer_->CopyDataToGpu(data, offset, count);
-  staging_buffer_->Unmap();
+  if (mapped_)
+    staging_buffer_->CopyDataToGpu(data, offset, count);
+  else
+  {
+    staging_buffer_->Map();
+    staging_buffer_->CopyDataToGpu(data, offset, count);
+    staging_buffer_->Unmap();
+  }
   
-  cmd.CopyBufferToBuffer(*staging_buffer_, *uniform_buffer_, Size);
+  uint32_t size = sizeof(T) * count;
+
+  cmd.CopyBufferToBuffer(*staging_buffer_, *uniform_buffer_, size);
   cmd.PushBarrier(*to_read_barrier_);
 }

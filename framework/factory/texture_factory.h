@@ -10,10 +10,17 @@
 #include <vector>
 
 #include "memory/defines.h"
+
+#include "system/assert_utils.h"
+
 #include "math/vector3.h"
 #include "math/vector4.h"
+
+#include "render/api.h"
 #include "render/defines.h"
 #include "render/texture.h"
+
+#include "data/abstract_image.h"
 
 #include "data_factory.h"
 #include "image_factory.h"
@@ -22,31 +29,41 @@ namespace gdm {
 
 using TextureHandle = Handle;
 
+constexpr static gfx::EFormatType V_DEFAULT_TEXTURE_FMT = gfx::EFormatType::UNORM4;
+
 struct AbstractTexture
 { 
-  AbstractTexture(ImageHandle handle);
+  AbstractTexture(ImageHandle handle, gfx::EFormatType format);
 
-  void SetTextureImpl(gfx::Texture* texture_impl) { impl_ = texture_impl; }
+  void SetTextureImpl(gfx::Texture* texture_impl) { ASSERT(!impl_); impl_ = texture_impl; }
   auto GetTextureImpl() const -> gfx::Texture& { return *impl_; }
   auto HasTextureImpl() const -> bool { return impl_; }
 
-  operator gfx::Texture*() const { return impl_; }
+public:
+  operator const gfx::Texture*() const { return impl_; }
+  operator const gfx::Texture&() const { return *impl_; }
   operator gfx::Texture*() { return impl_; }
+  operator gfx::Texture&() { return *impl_; }
 
-  ImageHandle image_ = v_null_handle;
-  gfx::EFormatType format_ = gfx::EFormatType::FORMAT_TYPE_MAX;
-  gfx::Texture* impl_ = nullptr;
+  auto GetImageHandle() const -> ImageHandle { return image_; }
+  auto GetFormat() const -> gfx::EFormatType { return format_; }
+
+private:
+  ImageHandle image_;
+  gfx::EFormatType format_;
+  gfx::Texture* impl_;
 
 }; // struct AbstractTexture
 
 struct TextureFactory : public DataFactory<AbstractTexture*>
 {
-  static auto Load(ImageHandle handle) -> TextureHandle;
-  static auto Load(const char* fpath) -> TextureHandle;
-  static auto Create(const char* fpath, const Vec3u& whd, const Vec3f& rgb) -> TextureHandle;
-  static auto Create(const char* name, const AbstractImage::StorageType& raw, const Vec3u& whd) -> TextureHandle;
-  static void Release(TextureHandle handle); // TODO: Release what? only tex? or with chidlren? ref_cnt needed
-};
+  static auto Load(ImageHandle handle, gfx::EFormatType format) -> TextureHandle;
+  static auto Load(const char* fpath, gfx::EFormatType format) -> TextureHandle;
+  static auto Create(const char* fpath, gfx::EFormatType format, const Vec3u& whd, const Vec3f& rgb) -> TextureHandle;
+  static auto Create(const char* name, gfx::EFormatType format, const AbstractImage::StorageType& raw, const Vec3u& whd) -> TextureHandle;
+  static void Release(TextureHandle handle);
+
+}; // struct TextureFactory
 
 } // namespace gdm
 

@@ -16,14 +16,18 @@ namespace gdm::gfx {
   template <class T>
   struct UniformBuffer
   {
-    UniformBuffer() =default;
     UniformBuffer(const UniformBuffer&) =delete;
     UniformBuffer& operator=(const UniformBuffer&) =delete;
 
-    UniformBuffer(uint count, api::Device* device, api::CommandList& cmd);
+    UniformBuffer(uint count, bool mapped, api::Device* device, api::CommandList& cmd);
 
     void Update(api::CommandList& cmd, const T* data, uint offset, uint count);
-    auto GetImpl() const -> const api::Buffer* { return uniform_buffer_.get(); }
+
+    auto GetImpl() const -> const api::Buffer& { return *uniform_buffer_.get(); }
+    auto GetImpl() -> api::Buffer& { return *uniform_buffer_.get(); }
+
+    auto GetToReadBarrier() -> api::BufferBarrier* { return to_read_barrier_.get(); }
+    auto GetToWriteBarrier() -> api::BufferBarrier* { return to_write_barrier_.get(); }
 
   private:
     api::Device* device_;
@@ -31,6 +35,7 @@ namespace gdm::gfx {
     std::unique_ptr<api::Buffer> uniform_buffer_;
     std::unique_ptr<api::BufferBarrier> to_read_barrier_;
     std::unique_ptr<api::BufferBarrier> to_write_barrier_;
+    bool mapped_;
   };
 
 } // namespace gdm

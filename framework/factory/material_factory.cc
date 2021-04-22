@@ -50,9 +50,9 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
       else
       {
         if (strcmp(tex_name, "diffuse_map") == 0)
-          *tex_handle = TextureFactory::Create(img_fname.c_str(), Vec3u{32,32,32}, {mat->props_.diffuse_.r, mat->props_.diffuse_.g, mat->props_.diffuse_.b});
+          *tex_handle = TextureFactory::Create(img_fname.c_str(), gfx::EFormatType::UNORM4, Vec3u{32,32,32}, {mat->props_.diffuse_.r, mat->props_.diffuse_.g, mat->props_.diffuse_.b});
         else
-          *tex_handle = TextureFactory::Create(img_fname.c_str(), Vec3u{32,32,32}, {0,0,0});
+          *tex_handle = TextureFactory::Create(img_fname.c_str(), gfx::EFormatType::UNORM4, Vec3u{32,32,32}, {0,0,0});
       }
     }
     else
@@ -60,7 +60,7 @@ gdm::MaterialHandle gdm::MaterialFactory::Create(const char* mat_name, int mat_n
       if (TextureFactory::Has(img_fname.c_str()))
         *tex_handle = TextureFactory::GetHandle(img_fname.c_str());
       else
-        *tex_handle = TextureFactory::Load(img_fname.c_str());
+        *tex_handle = TextureFactory::Load(img_fname.c_str(), gfx::EFormatType::UNORM4);
     }
   }
 
