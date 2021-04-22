@@ -61,60 +61,83 @@ struct alignas(64) GbufferPs_POCB
 
 }; // struct GbufferPs_POCB
 
-struct GbufferPassData
-{
-  gfx::UniformBuffer<GbufferVs_PFCB>* pfcb_uniform_vs_;
-  gfx::UniformBuffer<GbufferVs_POCB>* pocb_uniform_vs_;
-  gfx::UniformBuffer<GbufferPs_POCB>* pocb_uniform_ps_;
-  std::vector<api::BufferBarrier*> ub_to_read_barriers_;
-  std::vector<api::BufferBarrier*> ub_to_write_barriers_;
-  gfx::Texture* tex_position_;
-  gfx::Texture* tex_diffuse_;
-  gfx::Texture* tex_normal_;
-  gfx::Texture* tex_depth_;
-  std::vector<api::ImageView*> tex_views_;
-  std::vector<api::ImageBarrier*> tex_to_read_barriers_;
-  std::vector<api::ImageBarrier*> tex_to_write_barriers_;
-  api::Sampler* sampler_;
-  api::Framebuffer* fb_;
-  api::DescriptorSetLayout* descriptor_set_layout_;
-  api::DescriptorSet* descriptor_set_;  
-
-  GbufferVs_PFCB pfcb_data_vs_;
-  std::vector<GbufferVs_POCB> pocb_data_vs_;
-  std::vector<GbufferPs_POCB> pocb_data_ps_;
-};
-
 struct GbufferPass
 {
-  GbufferPass(api::Renderer& rdr, int width, int height);
-  ~GbufferPass();
-  
-  void Cleanup();
+  GbufferPass(
+    api::Renderer& rdr, 
+    api::CommandList& cmd, 
+    int width, 
+    int height, 
+    size_t max_objects, 
+    size_t max_materials);
 
-  api::Renderer* rdr_ = nullptr;
-  api::Device* device_ = nullptr;
-  api::Sampler* sampler_ = nullptr;
-  api::RenderPass* pass_ = nullptr;
-  api::Pipeline* pipeline_ = nullptr;
-
-  GbufferPassData data_;
-
-  int w_;
-  int h_;
-
-  void CreateUniforms(api::CommandList& cmd, uint max_objects);
-  void CreateImages(api::CommandList& cmd);
-  void CreateFramebuffer();
-  void CreateRenderPass();
-  void CreateDescriptorSet(size_t materials_cnt);
-  void CreatePipeline();
-  
   void UpdateUniforms(api::CommandList& cmd, uint max_objects);
   void UpdateUniformsData(const CameraEul& camera, const std::vector<ModelInstance*>& renderable_models);
   void UpdateDescriptorSet(const api::ImageViews& renderable_materials);
-  void Draw(api::CommandList& cmd, const std::vector<ModelInstance*>& renderable_models);
-};
+  void Render(api::CommandList& cmd, const std::vector<ModelInstance*>& renderable_models);
+  void Recreate(api::CommandList& cmd);
+  
+  auto GetTextureViews() const -> const api::ImageViews& { return textures_.views_; }
+
+private:
+  struct Pipeline
+  {
+    std::unique_ptr<api::RenderPass> api_pass_;
+    std::unique_ptr<api::Framebuffer> api_fb_;
+    std::unique_ptr<api::DescriptorSetLayout> api_descriptor_set_layout_;
+    std::unique_ptr<api::DescriptorSet> api_descriptor_set_;  
+    std::unique_ptr<api::Pipeline> api_pipeline_;
+  };
+  struct Textures
+  {
+    gfx::Texture position_;
+    gfx::Texture diffuse_;
+    gfx::Texture normal_;
+    gfx::Texture depth_;
+    std::vector<api::ImageView*> views_;
+    std::vector<api::ImageBarrier*> to_read_barriers_;
+    std::vector<api::ImageBarrier*> to_write_barriers_;
+  };
+  struct Uniforms
+  {
+    gfx::UniformBuffer<GbufferVs_PFCB> pfcb_uniform_vs_;
+    gfx::UniformBuffer<GbufferVs_POCB> pocb_uniform_vs_;
+    gfx::UniformBuffer<GbufferPs_POCB> pocb_uniform_ps_;
+    std::vector<api::BufferBarrier*> ub_to_read_barriers_;
+    std::vector<api::BufferBarrier*> ub_to_write_barriers_;
+  };
+  struct UniformsData
+  {
+    std::vector<GbufferVs_POCB> pocb_data_vs_;
+    std::vector<GbufferPs_POCB> pocb_data_ps_;
+    GbufferVs_PFCB pfcb_data_vs_;
+  };
+
+private:
+  auto CreateUniformsData(uint max_objects) -> UniformsData;
+  auto CreateUniforms(api::CommandList& cmd, uint max_objects) -> Uniforms;
+  auto CreateTextures(api::CommandList& cmd) -> Textures;
+  auto CreatePipeline(api::CommandList& cmd, const api::ImageViews& views, size_t materials_cnt) -> Pipeline;
+  auto CreateRenderPass() -> std::unique_ptr<api::RenderPass>;
+  auto CreateFramebuffer(api::RenderPass* pass, const api::ImageViews& views) -> std::unique_ptr<api::Framebuffer>;
+  auto CreateDescriptorSetLayout(size_t materials_cnt) -> std::unique_ptr<api::DescriptorSetLayout>;
+  auto CreateDescriptorSet(size_t materials_cnt, api::DescriptorSetLayout* dsl, Uniforms& uniforms) -> std::unique_ptr<api::DescriptorSet>;
+  auto CompilePipeline(api::RenderPass* pass, api::DescriptorSetLayout* dsl) -> std::unique_ptr<api::Pipeline>;
+
+private:
+  api::Renderer* rdr_;
+  api::Device* device_;
+  api::Sampler sampler_;
+  int width_;
+  int height_;
+  size_t max_objects_;
+  size_t max_materials_;
+  Textures textures_;
+  Uniforms uniforms_;
+  UniformsData uniforms_data_;
+  Pipeline pipeline_;
+
+}; // struct GbufferPass
 
 } // namespace gdm
 

@@ -25,7 +25,14 @@ gdm::AppRenderer::AppRenderer(
   : gfx_{ gfx }
   , device_{ gfx_.GetDevice() }
   , submit_fence_(device_)
-  , gbuffer_pass_{gfx_, gfx_.GetSurfaceWidth(), gfx_.GetSurfaceHeight() }
+  , setup_list_{ gfx_.CreateCommandList(GDM_HASH("AppRendererSetup"), gfx::ECommandListFlags::ONCE) }
+  , gbuffer_pass_{
+      gfx_,
+      setup_list_,
+      gfx_.GetSurfaceWidth(),
+      gfx_.GetSurfaceHeight(),
+      cfg::v_max_objects,
+      cfg::v_max_materials * cfg::v_material_type_cnt}
   , deferred_pass_(gfx::v_num_images, gfx_)
   , debug_pass_(gfx::v_num_images, gfx_)
   , text_pass_(gfx::v_num_images, gfx_)
@@ -35,52 +42,43 @@ gdm::AppRenderer::AppRenderer(
 {
   text_pass_.BindFont(debug_draw.GetFont(), debug_draw.GetFontView());
 
-  api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
-
-  gbuffer_pass_.CreateUniforms(setup_list, cfg::v_max_objects);
-  gbuffer_pass_.CreateImages(setup_list);
-  gbuffer_pass_.CreateRenderPass();
-  gbuffer_pass_.CreateFramebuffer();
-  gbuffer_pass_.CreateDescriptorSet(cfg::v_max_materials * cfg::v_material_type_cnt);
-  gbuffer_pass_.CreatePipeline();
-
   for (uint i = 0; i < gfx::v_num_images; ++i)
-    deferred_pass_.CreateUniforms(setup_list, i);
+    deferred_pass_.CreateUniforms(setup_list_, i);
 
-  deferred_pass_.CreateImages(setup_list);
+  deferred_pass_.CreateImages(setup_list_);
   deferred_pass_.CreateRenderPass();
   deferred_pass_.CreateFramebuffer();
-  deferred_pass_.CreatePipeline(gbuffer_pass_.data_.tex_views_);
+  deferred_pass_.CreatePipeline(gbuffer_pass_.GetTextureViews());
 
-  debug_pass_.CreateBarriers(setup_list);
+  debug_pass_.CreateBarriers(setup_list_);
   debug_pass_.CreateRenderPass();
   debug_pass_.CreateFramebuffer();
   
   for (uint i = 0; i < gfx::v_num_images; ++i)
   {
-    debug_pass_.CreateUniforms(setup_list, i);
-    debug_pass_.CreateVertexBuffer(setup_list, i, 128_Kb);
+    debug_pass_.CreateUniforms(setup_list_, i);
+    debug_pass_.CreateVertexBuffer(setup_list_, i, 128_Kb);
   }
   
   debug_pass_.CreatePipeline();
   debug_pass_.CreateGui();
   
-  text_pass_.CreateBarriers(setup_list);
+  text_pass_.CreateBarriers(setup_list_);
   text_pass_.CreateRenderPass();
   text_pass_.CreateFramebuffer();
 
   for (uint i = 0; i < gfx::v_num_images; ++i)
   {
-    text_pass_.CreateUniforms(setup_list, i);
-    text_pass_.CreateVertexBuffer(setup_list, i);
+    text_pass_.CreateUniforms(setup_list_, i);
+    text_pass_.CreateVertexBuffer(setup_list_, i);
   }
 
   text_pass_.CreatePipeline();
 
   submit_fence_.Reset();
 
-  setup_list.Finalize();
-  gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
+  setup_list_.Finalize();
+  gfx_.SubmitCommandLists(api::CommandLists{setup_list_}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
   submit_fence_.WaitSignalFromGpu();
   submit_fence_.Reset();
 }
@@ -110,7 +108,7 @@ void gdm::AppRenderer::Render(
   gbuffer_pass_.UpdateUniformsData(camera, models);
   gbuffer_pass_.UpdateUniforms(cmd_gbuffer, cfg::v_max_objects);
   gbuffer_pass_.UpdateDescriptorSet(materials);
-  gbuffer_pass_.Draw(cmd_gbuffer, models);
+  gbuffer_pass_.Render(cmd_gbuffer, models);
 
   submit_fence_.Reset();
   cmd_gbuffer.Finalize();
@@ -187,35 +185,34 @@ void gdm::AppRenderer::ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_e
       case api::Renderer::Event::SwapchainRecreated:
       {
         // todo: add sync - stop all threads
-        api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
 
         deferred_pass_.CleanupPipeline();
-        deferred_pass_.CreateImages(setup_list);
+        deferred_pass_.CreateImages(setup_list_);
         deferred_pass_.CreateRenderPass();
         deferred_pass_.CreateFramebuffer();
-        deferred_pass_.CreatePipeline(gbuffer_pass_.data_.tex_views_);
+        deferred_pass_.CreatePipeline(gbuffer_pass_.GetTextureViews());
 
         text_pass_.CleanupPipeline();
-        text_pass_.CreateBarriers(setup_list);
+        text_pass_.CreateBarriers(setup_list_);
         text_pass_.CreateRenderPass();
         text_pass_.CreateFramebuffer();
 
         for (uint i = 0; i < gfx::v_num_images; ++i)
         {
-          text_pass_.CreateUniforms(setup_list, i);
-          text_pass_.CreateVertexBuffer(setup_list, i);
+          text_pass_.CreateUniforms(setup_list_, i);
+          text_pass_.CreateVertexBuffer(setup_list_, i);
         }
         text_pass_.CreatePipeline();
 
         debug_pass_.CleanupPipeline();
-        debug_pass_.CreateBarriers(setup_list);
+        debug_pass_.CreateBarriers(setup_list_);
         debug_pass_.CreateRenderPass();
         debug_pass_.CreateFramebuffer();        
         debug_pass_.CreatePipeline();
       
         submit_fence_.Reset();
-        setup_list.Finalize();
-        gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
+        setup_list_.Finalize();
+        gfx_.SubmitCommandLists(api::CommandLists{setup_list_}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
         submit_fence_.WaitSignalFromGpu();
         submit_fence_.Reset();
       }

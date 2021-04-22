@@ -31,7 +31,9 @@ namespace gdm::gfx {
     Texture(tag::DRT, gfx::EFormatType format, Vec3u whd, api::CommandList& cmd, api::Device* device);
 
     Texture(const Texture&) =delete;
+    Texture(Texture&&) =default;
     Texture& operator=(const Texture&) =delete;
+    Texture& operator=(Texture&&) =default;
 
     auto GetImageImpl() const -> const api::Image& { return *api_image_.get(); }
     auto GetImageImpl() -> api::Image& { return *api_image_.get(); }

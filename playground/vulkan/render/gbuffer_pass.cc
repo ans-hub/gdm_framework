@@ -15,92 +15,104 @@
 
 // --public
 
-gdm::GbufferPass::GbufferPass(api::Renderer& rdr, int width, int height)
+gdm::GbufferPass::GbufferPass(api::Renderer& rdr, api::CommandList& cmd, int width, int height, size_t max_objects, size_t max_materials)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
-  , data_()
-  , w_{width}
-  , h_{height}
+  , sampler_(*device_, StdSamplerDesc{})
+  , width_{width}
+  , height_{height}
+  , max_objects_{max_objects}
+  , max_materials_{max_materials}
+  , textures_{ CreateTextures(cmd) }
+  , uniforms_{ CreateUniforms(cmd, max_objects) }
+  , uniforms_data_ {CreateUniformsData(max_objects) }
+  , pipeline_{ CreatePipeline(cmd, textures_.views_, max_materials) }
 { }
 
-gdm::GbufferPass::~GbufferPass()
+void gdm::GbufferPass::Recreate(api::CommandList& cmd)
 {
-  Cleanup();
+  textures_ = CreateTextures(cmd);
+  pipeline_ = CreatePipeline(cmd, textures_.views_, max_materials_);
 }
 
-void gdm::GbufferPass::Cleanup()
+//--private
+
+auto gdm::GbufferPass::CreateUniforms(api::CommandList& cmd, uint max_objects) -> Uniforms
 {
-  GMDelete(data_.sampler_);
+  Uniforms uniforms {
+    .pfcb_uniform_vs_ = {1, false, device_, cmd },
+    .pocb_uniform_vs_ = { max_objects, true, device_, cmd },
+    .pocb_uniform_ps_ { max_objects, true, device_, cmd }
+  };
+  uniforms.ub_to_read_barriers_ = {
+    uniforms.pfcb_uniform_vs_.GetToReadBarrier(),
+    uniforms.pocb_uniform_vs_.GetToReadBarrier(),
+    uniforms.pocb_uniform_ps_.GetToReadBarrier()
+  };
+  uniforms.ub_to_write_barriers_ = {
+    uniforms.pfcb_uniform_vs_.GetToWriteBarrier(),
+    uniforms.pocb_uniform_vs_.GetToWriteBarrier(),
+    uniforms.pocb_uniform_ps_.GetToWriteBarrier()
+  };
+  cmd.PushBarrier(*uniforms.ub_to_read_barriers_[0]);
+  cmd.PushBarrier(*uniforms.ub_to_read_barriers_[1]);
+  cmd.PushBarrier(*uniforms.ub_to_read_barriers_[2]);
 
-  GMDelete(data_.tex_position_);
-  GMDelete(data_.tex_diffuse_);
-  GMDelete(data_.tex_normal_);
-
-  GMDelete(data_.pfcb_uniform_vs_);
-  GMDelete(data_.pocb_uniform_vs_);
-  GMDelete(data_.pocb_uniform_ps_);
-
-  GMDelete(data_.fb_);
-  GMDelete(data_.descriptor_set_layout_);
-  GMDelete(data_.descriptor_set_);
-
-  GMDelete(sampler_);
-  GMDelete(pass_);
-  GMDelete(pipeline_);
+  return uniforms;
 }
 
-void gdm::GbufferPass::CreateUniforms(api::CommandList& cmd, uint max_objects)
+auto gdm::GbufferPass::CreateUniformsData(uint max_objects) -> UniformsData
 {
-  data_.pocb_data_vs_.resize(max_objects);
-  data_.pocb_data_ps_.resize(max_objects);
-
-  data_.pfcb_uniform_vs_ = GMNew gfx::UniformBuffer<GbufferVs_PFCB>(1, false, device_, cmd);
-  data_.pocb_uniform_vs_ = GMNew gfx::UniformBuffer<GbufferVs_POCB>(max_objects, true, device_, cmd);
-  data_.pocb_uniform_ps_ = GMNew gfx::UniformBuffer<GbufferPs_POCB>(max_objects, true, device_, cmd);
-  data_.ub_to_read_barriers_.push_back(data_.pfcb_uniform_vs_->GetToReadBarrier());
-  data_.ub_to_read_barriers_.push_back(data_.pocb_uniform_vs_->GetToReadBarrier());
-  data_.ub_to_read_barriers_.push_back(data_.pocb_uniform_ps_->GetToReadBarrier());
-  data_.ub_to_write_barriers_.push_back(data_.pfcb_uniform_vs_->GetToWriteBarrier());
-  data_.ub_to_write_barriers_.push_back(data_.pocb_uniform_vs_->GetToWriteBarrier());
-  data_.ub_to_write_barriers_.push_back(data_.pocb_uniform_ps_->GetToWriteBarrier());
-  
-  cmd.PushBarrier(*data_.ub_to_read_barriers_[0]);
-  cmd.PushBarrier(*data_.ub_to_read_barriers_[1]);
-  cmd.PushBarrier(*data_.ub_to_read_barriers_[2]);
+  UniformsData uniforms_data;
+  uniforms_data.pocb_data_vs_.resize(max_objects);
+  uniforms_data.pocb_data_ps_.resize(max_objects);
+  return uniforms_data;
 }
 
-void gdm::GbufferPass::CreateImages(api::CommandList& cmd)
+auto gdm::GbufferPass::CreateTextures(api::CommandList& cmd) -> Textures
 {
-  const Vec3u whd = {static_cast<uint>(w_), static_cast<uint>(h_), 1u};
+  const Vec3u whd = {static_cast<uint>(width_), static_cast<uint>(height_), 1u};
 
-  data_.tex_position_ = GMNew gfx::Texture(gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_); 
-  data_.tex_diffuse_ = GMNew gfx::Texture(gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_); 
-  data_.tex_normal_ = GMNew gfx::Texture(gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_); 
-  data_.tex_depth_ = GMNew gfx::Texture(gfx::tag::DRT{}, gfx::EFormatType::D16_UNORM, whd, cmd, device_); 
-  data_.tex_views_.push_back(&data_.tex_position_->GetImageViewImpl());
-  data_.tex_views_.push_back(&data_.tex_diffuse_->GetImageViewImpl());
-  data_.tex_views_.push_back(&data_.tex_normal_->GetImageViewImpl());
-  data_.tex_views_.push_back(&data_.tex_depth_->GetImageViewImpl());
-  data_.tex_to_read_barriers_.push_back(data_.tex_diffuse_->GetToReadBarrier());
-  data_.tex_to_read_barriers_.push_back(data_.tex_position_->GetToReadBarrier());
-  data_.tex_to_read_barriers_.push_back(data_.tex_normal_->GetToReadBarrier());
-  data_.tex_to_write_barriers_.push_back(data_.tex_diffuse_->GetToWriteBarrier());
-  data_.tex_to_write_barriers_.push_back(data_.tex_position_->GetToWriteBarrier());
-  data_.tex_to_write_barriers_.push_back(data_.tex_normal_->GetToWriteBarrier());
+  Textures textures {
+    .position_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 
+    .diffuse_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 
+    .normal_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 
+    .depth_ = { gfx::tag::DRT{}, gfx::EFormatType::D16_UNORM, whd, cmd, device_ } 
+  };
+
+  textures.views_.push_back(&textures.position_.GetImageViewImpl());
+  textures.views_.push_back(&textures.diffuse_.GetImageViewImpl());
+  textures.views_.push_back(&textures.normal_.GetImageViewImpl());
+  textures.views_.push_back(&textures.depth_.GetImageViewImpl());
+  textures.to_read_barriers_.push_back(textures.position_.GetToReadBarrier());
+  textures.to_read_barriers_.push_back(textures.diffuse_.GetToReadBarrier());
+  textures.to_read_barriers_.push_back(textures.normal_.GetToReadBarrier());
+  textures.to_write_barriers_.push_back(textures.position_.GetToWriteBarrier());
+  textures.to_write_barriers_.push_back(textures.diffuse_.GetToWriteBarrier());
+  textures.to_write_barriers_.push_back(textures.normal_.GetToWriteBarrier());
+
+  return textures;
 }
 
-void gdm::GbufferPass::CreateFramebuffer()
+auto gdm::GbufferPass::CreatePipeline(api::CommandList& cmd, const api::ImageViews& views, size_t materials_cnt) -> Pipeline
 {
-  data_.fb_ = GMNew api::Framebuffer(*device_, w_, h_, *pass_, data_.tex_views_);
+  Pipeline pipeline;
+  pipeline.api_pass_ = CreateRenderPass();
+  pipeline.api_fb_ = CreateFramebuffer(pipeline.api_pass_.get(), views);
+  pipeline.api_descriptor_set_layout_ = CreateDescriptorSetLayout(materials_cnt);
+  pipeline.api_descriptor_set_ = CreateDescriptorSet(materials_cnt, pipeline.api_descriptor_set_layout_.get(), uniforms_);
+  pipeline.api_pipeline_ = CompilePipeline(pipeline.api_pass_.get(), pipeline.api_descriptor_set_layout_.get());
+
+  return pipeline;
 }
 
-void gdm::GbufferPass::CreateRenderPass()
+auto gdm::GbufferPass::CreateRenderPass() -> std::unique_ptr<api::RenderPass>
 {
-  pass_ = GMNew api::RenderPass(*device_);
+  auto render_pass = std::make_unique<api::RenderPass>(*device_);
 
   for (int i = 0; i < 3; ++i)
   {
-    pass_->AddAttachmentDescription(i)
+    render_pass->AddAttachmentDescription(i)
       .AddFormat(gfx::EFormatType::F4HALF)
       .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
       .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
@@ -108,21 +120,28 @@ void gdm::GbufferPass::CreateRenderPass()
   }
   
   uint gbuff_depth_idx = 3;
-  pass_->AddAttachmentDescription(gbuff_depth_idx)
+  render_pass->AddAttachmentDescription(gbuff_depth_idx)
     .AddFormat(gfx::EFormatType::D16_UNORM)
     .AddInitLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
     .AddFinalLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
     .AddRefLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-  uint subpass_idx = pass_->CreateSubpass(gfx::EQueueType::GRAPHICS);
-  pass_->AddSubpassColorAttachments(subpass_idx, api::Attachments{0,1,2});
-  pass_->AddSubpassDepthAttachments(subpass_idx, api::Attachment{3});
-  pass_->Finalize();
+  uint subpass_idx = render_pass->CreateSubpass(gfx::EQueueType::GRAPHICS);
+  render_pass->AddSubpassColorAttachments(subpass_idx, api::Attachments{0,1,2});
+  render_pass->AddSubpassDepthAttachments(subpass_idx, api::Attachment{3});
+  render_pass->Finalize();
+
+  return render_pass;
 }
 
-void gdm::GbufferPass::CreateDescriptorSet(size_t materials_cnt)
+auto gdm::GbufferPass::CreateFramebuffer(api::RenderPass* pass, const api::ImageViews& views) -> std::unique_ptr<api::Framebuffer>
 {
-  auto* dsl = GMNew api::DescriptorSetLayout(*device_);
+  return std::make_unique<api::Framebuffer>(*device_, width_, height_, *pass, views);
+}
+
+auto gdm::GbufferPass::CreateDescriptorSetLayout(size_t materials_cnt) -> std::unique_ptr<api::DescriptorSetLayout>
+{
+  auto dsl = std::make_unique<api::DescriptorSetLayout>(*device_);
 
   dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
   dsl->AddBinding(1, 1, gfx::EResourceType::UNIFORM_DYNAMIC, gfx::EShaderStage::VERTEX_STAGE);
@@ -130,44 +149,47 @@ void gdm::GbufferPass::CreateDescriptorSet(size_t materials_cnt)
   dsl->AddBinding(3, 1, gfx::EResourceType::SAMPLER, gfx::EShaderStage::FRAGMENT_STAGE);
   dsl->AddBinding(4, static_cast<uint>(materials_cnt), gfx::EResourceType::SAMPLED_IMAGE, gfx::EShaderStage::FRAGMENT_STAGE, gfx::VARIABLE_DESCRIPTOR | gfx::PARTIALLY_BOUND);
   dsl->Finalize();
-
-  data_.sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
-
-  auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
-  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, data_.pfcb_uniform_vs_->GetImpl());
-  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, data_.pocb_uniform_vs_->GetImpl());
-  descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, data_.pocb_uniform_ps_->GetImpl());
-  descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(3, *data_.sampler_);
-  descriptor_set->Finalize();
   
-  data_.descriptor_set_layout_ = dsl;
-  data_.descriptor_set_ = descriptor_set;
+  return dsl;
 }
 
-void gdm::GbufferPass::CreatePipeline()
+auto gdm::GbufferPass::CreateDescriptorSet(size_t materials_cnt, api::DescriptorSetLayout* dsl, Uniforms& uniforms) -> std::unique_ptr<api::DescriptorSet>
+{
+  auto ds = std::make_unique<api::DescriptorSet>(*device_, *dsl, rdr_->GetDescriptorPool());
+
+  ds->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, uniforms.pfcb_uniform_vs_.GetImpl());
+  ds->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, uniforms.pocb_uniform_vs_.GetImpl());
+  ds->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, uniforms.pocb_uniform_ps_.GetImpl());
+  ds->UpdateContent<gfx::EResourceType::SAMPLER>(3, sampler_);
+  ds->Finalize();
+
+  return ds;
+}
+
+auto gdm::GbufferPass::CompilePipeline(api::RenderPass* pass, api::DescriptorSetLayout* dsl) -> std::unique_ptr<api::Pipeline>
 {
   Shader vx_shader("assets/shaders/gbuffer_vert.hlsl", gfx::EShaderType::VX);
   Shader px_shader("assets/shaders/gbuffer_frag.hlsl", gfx::EShaderType::PX);
   
-  float width = (float)w_;
-  float height = (float)h_;
+  float width = (float)width_;
+  float height = (float)height_;
 
   ViewportDesc vp{0, height, width, -height, 0, 1};
 
-  pipeline_ = GMNew api::Pipeline(*device_);
-  pipeline_->SetShaderStage(vx_shader, gfx::EShaderType::VX);
-  pipeline_->SetShaderStage(px_shader, gfx::EShaderType::PX);
-  pipeline_->SetViewportState(vp);
-  pipeline_->SetRasterizerState(StdRasterizerDesc{});
-  pipeline_->SetInputLayout(StdInputLayout{});
-  pipeline_->SetRenderPass(*pass_);
-  pipeline_->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*data_.descriptor_set_layout_});
+  auto pipeline = std::make_unique<api::Pipeline>(*device_);
+  pipeline->SetShaderStage(vx_shader, gfx::EShaderType::VX);
+  pipeline->SetShaderStage(px_shader, gfx::EShaderType::PX);
+  pipeline->SetViewportState(vp);
+  pipeline->SetRasterizerState(StdRasterizerDesc{});
+  pipeline->SetInputLayout(StdInputLayout{});
+  pipeline->SetRenderPass(*pass);
+  pipeline->SetDescriptorSetLayouts(api::DescriptorSetLayouts{*dsl});
 
   const uint depth_attachments_cnt = 1;
   
   api::BlendState blend_state = api::BlendState(*device_);
   
-  for (uint i = 0; i < pass_->GetPassAttachmentsCount() - depth_attachments_cnt; ++i)
+  for (uint i = 0; i < pass->GetPassAttachmentsCount() - depth_attachments_cnt; ++i)
   {
     blend_state.AddAttachmentDescription(i)
       .SetEnabled(false)
@@ -176,8 +198,10 @@ void gdm::GbufferPass::CreatePipeline()
 
   blend_state.Finalize();
 
-  pipeline_->SetBlendState(blend_state);
-  pipeline_->Compile();
+  pipeline->SetBlendState(blend_state);
+  pipeline->Compile();
+
+  return pipeline;
 }
 
 // --public Updates
@@ -186,17 +210,17 @@ void gdm::GbufferPass::UpdateUniforms(api::CommandList& cmd, uint max_objects)
 {
   GDM_EVENT_POINT("GbufferUniform", GDM_LABEL_S(color::Black));
 
-  data_.pfcb_uniform_vs_->Update(cmd, &data_.pfcb_data_vs_, 0, 1);
-  data_.pocb_uniform_vs_->Update(cmd, data_.pocb_data_vs_.data(), 0, data_.pocb_data_vs_.size());
-  data_.pocb_uniform_ps_->Update(cmd, data_.pocb_data_ps_.data(), 0, data_.pocb_data_ps_.size());
+  uniforms_.pfcb_uniform_vs_.Update(cmd, &uniforms_data_.pfcb_data_vs_, 0, 1);
+  uniforms_.pocb_uniform_vs_.Update(cmd, uniforms_data_.pocb_data_vs_.data(), 0, uniforms_data_.pocb_data_vs_.size());
+  uniforms_.pocb_uniform_ps_.Update(cmd, uniforms_data_.pocb_data_ps_.data(), 0, uniforms_data_.pocb_data_ps_.size());
 }
 
 void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::vector<ModelInstance*>& renderable_models)
 {
   Mat4f view = camera.GetViewMx();
   Mat4f proj = camera.GetProjectionMx();
-  data_.pfcb_data_vs_.u_view_proj_ = proj * view;
-  data_.pfcb_data_vs_.u_cam_pos_ = camera.GetPos();
+  uniforms_data_.pfcb_data_vs_.u_view_proj_ = proj * view;
+  uniforms_data_.pfcb_data_vs_.u_cam_pos_ = camera.GetPos();
 
   uint mesh_number = 0;
   for (const auto& model_instance : renderable_models)
@@ -206,10 +230,10 @@ void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::ve
     {
       AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
       AbstractMaterial* material = MaterialFactory::Get(mesh->material_);
-      data_.pocb_data_vs_[mesh_number].u_model_ = model_instance->tm_;
-      data_.pocb_data_vs_[mesh_number].u_color_ = model_instance->color_;
-      data_.pocb_data_ps_[mesh_number].u_material_index_ = material->index_;
-      data_.pocb_data_ps_[mesh_number].u_material_props_ = material->props_;
+      uniforms_data_.pocb_data_vs_[mesh_number].u_model_ = model_instance->tm_;
+      uniforms_data_.pocb_data_vs_[mesh_number].u_color_ = model_instance->color_;
+      uniforms_data_.pocb_data_ps_[mesh_number].u_material_index_ = material->index_;
+      uniforms_data_.pocb_data_ps_[mesh_number].u_material_props_ = material->props_;
       ++mesh_number;
     }
   }
@@ -217,20 +241,20 @@ void gdm::GbufferPass::UpdateUniformsData(const CameraEul& camera, const std::ve
 
 void gdm::GbufferPass::UpdateDescriptorSet(const api::ImageViews& renderable_materials)
 {
-  data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, data_.pfcb_uniform_vs_->GetImpl());
-  data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, data_.pocb_uniform_vs_->GetImpl());
-  data_.descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, data_.pocb_uniform_ps_->GetImpl());
-  data_.descriptor_set_->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(4, renderable_materials);
-  data_.descriptor_set_->Finalize();
+  pipeline_.api_descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, uniforms_.pfcb_uniform_vs_.GetImpl());
+  pipeline_.api_descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, uniforms_.pocb_uniform_vs_.GetImpl());
+  pipeline_.api_descriptor_set_->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(2, uniforms_.pocb_uniform_ps_.GetImpl());
+  pipeline_.api_descriptor_set_->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(4, renderable_materials);
+  pipeline_.api_descriptor_set_->Finalize();
 }
 
-void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelInstance*>& renderable_models)
+void gdm::GbufferPass::Render(api::CommandList& cmd, const std::vector<ModelInstance*>& renderable_models)
 {
   GDM_EVENT_POINT("GbufferPass", GDM_LABEL_S(color::Black));
 
-  cmd.PushBarriers(data_.tex_to_write_barriers_);
-  cmd.BindPipelineGraphics(*pipeline_);
-  cmd.BeginRenderPass(*pass_, *data_.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  cmd.PushBarriers(textures_.to_write_barriers_);
+  cmd.BindPipelineGraphics(*pipeline_.api_pipeline_);
+  cmd.BeginRenderPass(*pipeline_.api_pass_, *pipeline_.api_fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
 
   int mesh_number = 0;
   for (const auto& model_instance : renderable_models)
@@ -240,9 +264,9 @@ void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelInstan
     {
       AbstractMesh* mesh = MeshFactory::Get(mesh_handle);
       uint offset = sizeof(GbufferVs_POCB) * mesh_number++;
-      api::DescriptorSets descriptor_sets {*data_.descriptor_set_};
+      api::DescriptorSets descriptor_sets {*pipeline_.api_descriptor_set_};
       
-      cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{offset, offset});      
+      cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_.api_pipeline_, gfx::Offsets{offset, offset});      
       cmd.BindVertexBuffer(*mesh->GetVertexBuffer<api::Buffer>());
       cmd.BindIndexBuffer(*mesh->GetIndexBuffer<api::Buffer>());
       cmd.DrawIndexed(mesh->faces_);
@@ -250,5 +274,5 @@ void gdm::GbufferPass::Draw(api::CommandList& cmd, const std::vector<ModelInstan
   }
   
   cmd.EndRenderPass();
-  cmd.PushBarriers(data_.tex_to_read_barriers_);
+  cmd.PushBarriers(textures_.to_read_barriers_);
 }

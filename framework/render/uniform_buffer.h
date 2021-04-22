@@ -17,7 +17,9 @@ namespace gdm::gfx {
   struct UniformBuffer
   {
     UniformBuffer(const UniformBuffer&) =delete;
+    UniformBuffer(UniformBuffer&&) =default;
     UniformBuffer& operator=(const UniformBuffer&) =delete;
+    UniformBuffer& operator=(UniformBuffer&&) =default;
 
     UniformBuffer(uint count, bool mapped, api::Device* device, api::CommandList& cmd);
 

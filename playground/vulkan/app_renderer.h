@@ -78,6 +78,7 @@ private:
   api::Renderer& gfx_;
   api::Device& device_;
   api::Fence submit_fence_;
+  api::CommandList setup_list_;
 
   GbufferPass gbuffer_pass_;
   DeferredPass deferred_pass_;
