@@ -63,13 +63,7 @@ struct alignas(64) GbufferPs_POCB
 
 struct GbufferPass
 {
-  GbufferPass(
-    api::Renderer& rdr, 
-    api::CommandList& cmd, 
-    int width, 
-    int height, 
-    size_t max_objects, 
-    size_t max_materials);
+  GbufferPass(api::Renderer& rdr, api::CommandList& cmd, size_t max_objects, size_t max_materials);
 
   void UpdateUniforms(api::CommandList& cmd, uint max_objects);
   void UpdateUniformsData(const CameraEul& camera, const std::vector<ModelInstance*>& renderable_models);
@@ -128,8 +122,8 @@ private:
   api::Renderer* rdr_;
   api::Device* device_;
   api::Sampler sampler_;
-  int width_;
-  int height_;
+  uint width_;
+  uint height_;
   size_t max_objects_;
   size_t max_materials_;
   Textures textures_;

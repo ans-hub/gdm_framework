@@ -15,22 +15,25 @@
 
 // --public
 
-gdm::GbufferPass::GbufferPass(api::Renderer& rdr, api::CommandList& cmd, int width, int height, size_t max_objects, size_t max_materials)
+gdm::GbufferPass::GbufferPass(api::Renderer& rdr, api::CommandList& cmd, size_t max_objects, size_t max_materials)
   : rdr_{&rdr}
   , device_{&rdr.GetDevice()}
   , sampler_(*device_, StdSamplerDesc{})
-  , width_{width}
-  , height_{height}
+  , width_{rdr_->GetSurfaceWidth()}
+  , height_{rdr_->GetSurfaceHeight()}
   , max_objects_{max_objects}
   , max_materials_{max_materials}
   , textures_{ CreateTextures(cmd) }
   , uniforms_{ CreateUniforms(cmd, max_objects) }
   , uniforms_data_ {CreateUniformsData(max_objects) }
   , pipeline_{ CreatePipeline(cmd, textures_.views_, max_materials) }
+  // , pipeline_{ CreatePipeline(tag::Simple{}, cmd, textures_.views_, max_materials) }
 { }
 
 void gdm::GbufferPass::Recreate(api::CommandList& cmd)
 {
+  width_ = rdr_->GetSurfaceWidth();
+  height_ = rdr_->GetSurfaceHeight();
   textures_ = CreateTextures(cmd);
   pipeline_ = CreatePipeline(cmd, textures_.views_, max_materials_);
 }
@@ -71,7 +74,7 @@ auto gdm::GbufferPass::CreateUniformsData(uint max_objects) -> UniformsData
 
 auto gdm::GbufferPass::CreateTextures(api::CommandList& cmd) -> Textures
 {
-  const Vec3u whd = {static_cast<uint>(width_), static_cast<uint>(height_), 1u};
+  const Vec3u whd = {width_, height_, 1u};
 
   Textures textures {
     .position_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 

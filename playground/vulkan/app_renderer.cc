@@ -29,8 +29,6 @@ gdm::AppRenderer::AppRenderer(
   , gbuffer_pass_{
       gfx_,
       setup_list_,
-      gfx_.GetSurfaceWidth(),
-      gfx_.GetSurfaceHeight(),
       cfg::v_max_objects,
       cfg::v_max_materials * cfg::v_material_type_cnt}
   , deferred_pass_(gfx::v_num_images, gfx_)
@@ -184,35 +182,38 @@ void gdm::AppRenderer::ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_e
     {
       case api::Renderer::Event::SwapchainRecreated:
       {
+        api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("AppRendererSetup"), gfx::ECommandListFlags::ONCE);
+
         // todo: add sync - stop all threads
+        gbuffer_pass_.Recreate(setup_list);
 
         deferred_pass_.CleanupPipeline();
-        deferred_pass_.CreateImages(setup_list_);
+        deferred_pass_.CreateImages(setup_list);
         deferred_pass_.CreateRenderPass();
         deferred_pass_.CreateFramebuffer();
         deferred_pass_.CreatePipeline(gbuffer_pass_.GetTextureViews());
 
         text_pass_.CleanupPipeline();
-        text_pass_.CreateBarriers(setup_list_);
+        text_pass_.CreateBarriers(setup_list);
         text_pass_.CreateRenderPass();
         text_pass_.CreateFramebuffer();
 
         for (uint i = 0; i < gfx::v_num_images; ++i)
         {
-          text_pass_.CreateUniforms(setup_list_, i);
-          text_pass_.CreateVertexBuffer(setup_list_, i);
+          text_pass_.CreateUniforms(setup_list, i);
+          text_pass_.CreateVertexBuffer(setup_list, i);
         }
         text_pass_.CreatePipeline();
 
         debug_pass_.CleanupPipeline();
-        debug_pass_.CreateBarriers(setup_list_);
+        debug_pass_.CreateBarriers(setup_list);
         debug_pass_.CreateRenderPass();
         debug_pass_.CreateFramebuffer();        
         debug_pass_.CreatePipeline();
       
         submit_fence_.Reset();
-        setup_list_.Finalize();
-        gfx_.SubmitCommandLists(api::CommandLists{setup_list_}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
+        setup_list.Finalize();
+        gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
         submit_fence_.WaitSignalFromGpu();
         submit_fence_.Reset();
       }
