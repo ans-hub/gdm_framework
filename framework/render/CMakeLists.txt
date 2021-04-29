@@ -56,6 +56,7 @@ elseif ("${VK_API}")
       vk/vk_command_list.cc
       vk/vk_buffer.cc
       vk/vk_blend_state.cc
+      vk/vk_debug_interface.cc
       vk/vk_pointers.cc
       vk/vk_physical_device.cc)
 else()

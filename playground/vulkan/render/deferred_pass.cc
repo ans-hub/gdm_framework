@@ -12,9 +12,9 @@
 
 //--public
 
-gdm::DeferredPass::DeferredPass(int frame_count, api::Renderer& rdr)
-  : rdr_{&rdr}
-  , device_{&rdr.GetDevice()}
+gdm::DeferredPass::DeferredPass(int frame_count, api::Renderer& ctx)
+  : ctx_{&ctx}
+  , device_{&ctx.GetDevice()}
   , data_(frame_count, DeferredPassData{})
 { }
 
@@ -53,20 +53,20 @@ void gdm::DeferredPass::CleanupPipeline()
 
 void gdm::DeferredPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
-  data_[frame_num].pfcb_staging_ps_ = gfx::Resource<api::Buffer>(device_, sizeof(DeferredPs_PFCB) * 1)
+  data_[frame_num].pfcb_staging_ps_ = api::Resource<api::Buffer>(device_, sizeof(DeferredPs_PFCB) * 1)
     .AddUsage(gfx::TRANSFER_SRC)
     .AddMemoryType(gfx::HOST_VISIBLE);
   
-  data_[frame_num].pfcb_uniform_ps_ = gfx::Resource<api::Buffer>(device_, sizeof(DeferredPs_PFCB) * 1)
+  data_[frame_num].pfcb_uniform_ps_ = api::Resource<api::Buffer>(device_, sizeof(DeferredPs_PFCB) * 1)
     .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
     .AddMemoryType(gfx::DEVICE_LOCAL);
 
-  data_[frame_num].pfcb_to_read_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+  data_[frame_num].pfcb_to_read_barrier_ = api::Resource<api::BufferBarrier>(device_)
     .AddBuffer(*data_[frame_num].pfcb_uniform_ps_)
     .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
     .AddNewAccess(gfx::EAccess::UNIFORM_READ);
   
-  data_[frame_num].pfcb_to_write_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+  data_[frame_num].pfcb_to_write_barrier_ = api::Resource<api::BufferBarrier>(device_)
     .AddBuffer(*data_[frame_num].pfcb_uniform_ps_)
     .AddOldAccess(gfx::EAccess::UNIFORM_READ)
     .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
@@ -76,28 +76,29 @@ void gdm::DeferredPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 
 void gdm::DeferredPass::CreateImages(api::CommandList& cmd)
 {
-  auto present_images = rdr_->GetBackBufferImages();
+  auto present_images = ctx_->GetBackBufferImages();
 
   for(auto&& [i, data] : Enumerate(data_))
   {
-    data.present_to_read_barrier_ = gfx::Resource<api::ImageBarrier>()
+    data.present_to_read_barrier_ = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
       .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
  
-    data.present_to_write_barrier_ = gfx::Resource<api::ImageBarrier>()
+    data.present_to_write_barrier_ = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
       .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
 
     // DepthRenderTarget
-    data.depth_image_ = gfx::Resource<api::Image2D>(device_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight())
+    data.depth_image_ = api::Resource<api::Image>(&ctx_->GetDevice())
+      .AddExtent(ctx_->GetSurfaceWidth(), ctx_->GetSurfaceHeight(), 1)
       .AddImageUsage(gfx::EImageUsage::DEPTH_STENCIL_ATTACHMENT)
       .AddFormatType(gfx::EFormatType::D16_UNORM);
-    data.depth_image_view_ = gfx::Resource<api::ImageView>(*device_)
+    data.depth_image_view_ = api::Resource<api::ImageView>(&ctx_->GetDevice())
       .AddImage(data.depth_image_->GetHandle())
       .AddFormatType(data.depth_image_->GetFormat());
-    api::ImageBarrier* depth_barrier = gfx::Resource<api::ImageBarrier>()
+    api::ImageBarrier* depth_barrier = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(*data.depth_image_)
       .AddOldLayout(gfx::EImageLayout::UNDEFINED)
       .AddNewLayout(gfx::EImageLayout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
@@ -114,7 +115,7 @@ void gdm::DeferredPass::CreateRenderPass()
 
   uint color_idx = 0;
   pass_->AddAttachmentDescription(color_idx)
-    .AddFormat(rdr_->GetSurfaceFormat())
+    .AddFormat(ctx_->GetSurfaceFormat())
     .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
@@ -135,12 +136,12 @@ void gdm::DeferredPass::CreateRenderPass()
 
 void gdm::DeferredPass::CreateFramebuffer()
 {
-  uint height = rdr_->GetSurfaceHeight();
-  uint width = rdr_->GetSurfaceWidth();
+  uint height = ctx_->GetSurfaceHeight();
+  uint width = ctx_->GetSurfaceWidth();
 
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  for (uint i = 0; i < ctx_->GetBackBuffersCount(); ++i)
   {
-    api::ImageViews image_views { rdr_->GetBackBufferViews()[i], data_[i].depth_image_view_};
+    api::ImageViews image_views { ctx_->GetBackBufferViews()[i], data_[i].depth_image_view_};
     data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
   }
 }
@@ -161,9 +162,9 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
 
   sampler_ = GMNew api::Sampler(*device_, StdSamplerDesc{});
 
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  for (uint i = 0; i < ctx_->GetBackBuffersCount(); ++i)
   {
-    auto* descriptor_set = GMNew api::DescriptorSet(*device_, dsl, rdr_->GetDescriptorPool());
+    auto* descriptor_set = GMNew api::DescriptorSet(*device_, dsl, ctx_->GetDescriptorPool());
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(0, *data_[i].pfcb_uniform_ps_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(1, *sampler_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(2, *gbuffer_image_views[0]);
@@ -173,8 +174,8 @@ void gdm::DeferredPass::CreatePipeline(const api::ImageViews& gbuffer_image_view
     data_[i].descriptor_set_ = descriptor_set;
   }
 
-  float width = static_cast<float>(rdr_->GetSurfaceWidth());
-  float height = static_cast<float>(rdr_->GetSurfaceHeight());
+  float width = static_cast<float>(ctx_->GetSurfaceWidth());
+  float height = static_cast<float>(ctx_->GetSurfaceHeight());
   ViewportDesc vp{0, 0, width, height, 0, 1};
 
   pipeline_ = GMNew api::Pipeline(*device_);
@@ -248,7 +249,7 @@ void gdm::DeferredPass::Render(api::CommandList& cmd, uint frame_num)
     cmd.PushBarrier(*data_[frame_num].present_to_write_barrier_);    
     cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{0});      
     cmd.BindPipelineGraphics(*pipeline_);
-    cmd.BeginRenderPass(*pass_, *data_[frame_num].fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+    cmd.BeginRenderPass(*pass_, *data_[frame_num].fb_, ctx_->GetSurfaceWidth(), ctx_->GetSurfaceHeight());
     cmd.DrawDummy();
     cmd.EndRenderPass();
     cmd.PushBarrier(*data_[frame_num].present_to_read_barrier_);

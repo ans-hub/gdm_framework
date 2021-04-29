@@ -42,9 +42,9 @@ __declspec(align(64)) struct DebugVs_PFCB
 
 struct DebugPassData
 {
-  DebugPassData(api::Renderer& rdr);
+  DebugPassData(api::Renderer& ctx);
 
-  api::Renderer* rdr_;
+  api::Renderer* ctx_;
   api::Device* device_;
   api::Buffer* pfcb_staging_vs_;
   api::Buffer* pfcb_uniform_vs_;
@@ -63,13 +63,13 @@ struct DebugPassData
 
 struct DebugPass
 {
-  DebugPass(int frame_count, api::Renderer& rdr);
+  DebugPass(int frame_count, api::Renderer& ctx);
   ~DebugPass();
 
   void CleanupInternals();
   void CleanupPipeline();
 
-  api::Renderer* rdr_ = nullptr;
+  api::Renderer* ctx_ = nullptr;
   api::Device* device_ = nullptr;
   api::Sampler* sampler_ = nullptr;
   api::RenderPass* pass_ = nullptr;

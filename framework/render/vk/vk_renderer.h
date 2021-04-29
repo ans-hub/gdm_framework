@@ -48,6 +48,7 @@ struct Renderer
   auto GetDescriptorPool() -> VkDescriptorPool;
   auto GetBackBufferViews() -> std::vector<ImageView*>;
   auto GetBackBufferImages() -> std::vector<VkImage>;
+  auto GetBackBuffersCount() const -> uint { return v_num_images_; };
   auto CreateFrameCommandList(uint frame_num, gfx::CommandListFlags flags) -> CommandList;
   auto CreateCommandList(Hash name, gfx::CommandListFlags flags) -> CommandList;
   auto AcquireNextFrame(VkSemaphore sem_sig, VkFence fence) -> uint;
@@ -55,12 +56,6 @@ struct Renderer
   void SubmitPresentation(uint frame_num, const std::vector<VkSemaphore>& sem_wait);
   void WaitForGpuIdle();
   void FlushGpuEvents(std::vector<Event>& out) { out.insert(out.end(), gpu_events_.begin(), gpu_events_.end()); gpu_events_.clear(); } 
-
-  void BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
-  void InsertDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color);
-  void EndDebugLabel(VkCommandBuffer cmd);
-  
-  auto GetBackBuffersCount() const -> uint { return v_num_images_; };
 
 private:
   auto CreateInstance() -> VkInstance;

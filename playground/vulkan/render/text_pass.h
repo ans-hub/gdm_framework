@@ -37,9 +37,9 @@ __declspec(align(64)) struct TextFs_POCB
 
 struct TextPassData
 {
-  TextPassData(api::Renderer& rdr);
+  TextPassData(api::Renderer& ctx);
 
-  api::Renderer* rdr_;
+  api::Renderer* ctx_;
   api::Device* device_;
   api::Buffer* pocb_uniform_fs_;
   api::Framebuffer* fb_;
@@ -54,7 +54,7 @@ class TextPass
   constexpr static const uint v_max_string_ = 1024;
   constexpr static const uint v_vxs_per_char_ = 4;
 
-  api::Renderer* rdr_ = nullptr;
+  api::Renderer* ctx_ = nullptr;
   api::Device* device_ = nullptr;
   api::Sampler* sampler_ = nullptr;
   api::RenderPass* pass_ = nullptr;
@@ -66,7 +66,7 @@ class TextPass
   std::vector<std::pair<uint, Vec4f>> strings_ = {};
 
 public:
-  TextPass(int frame_count, api::Renderer& rdr);
+  TextPass(int frame_count, api::Renderer& ctx);
   ~TextPass();
 
   void CleanupInternals();

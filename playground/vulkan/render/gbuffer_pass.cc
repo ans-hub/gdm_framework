@@ -15,25 +15,24 @@
 
 // --public
 
-gdm::GbufferPass::GbufferPass(api::Renderer& rdr, api::CommandList& cmd, size_t max_objects, size_t max_materials)
-  : rdr_{&rdr}
-  , device_{&rdr.GetDevice()}
+gdm::GbufferPass::GbufferPass(api::Renderer& ctx, api::CommandList& cmd, size_t max_objects, size_t max_materials)
+  : ctx_{&ctx}
+  , device_{&ctx.GetDevice()}
   , sampler_(*device_, StdSamplerDesc{})
-  , width_{rdr_->GetSurfaceWidth()}
-  , height_{rdr_->GetSurfaceHeight()}
+  , width_{ctx_->GetSurfaceWidth()}
+  , height_{ctx_->GetSurfaceHeight()}
   , max_objects_{max_objects}
   , max_materials_{max_materials}
   , textures_{ CreateTextures(cmd) }
   , uniforms_{ CreateUniforms(cmd, max_objects) }
   , uniforms_data_ {CreateUniformsData(max_objects) }
   , pipeline_{ CreatePipeline(cmd, textures_.views_, max_materials) }
-  // , pipeline_{ CreatePipeline(tag::Simple{}, cmd, textures_.views_, max_materials) }
 { }
 
 void gdm::GbufferPass::Recreate(api::CommandList& cmd)
 {
-  width_ = rdr_->GetSurfaceWidth();
-  height_ = rdr_->GetSurfaceHeight();
+  width_ = ctx_->GetSurfaceWidth();
+  height_ = ctx_->GetSurfaceHeight();
   textures_ = CreateTextures(cmd);
   pipeline_ = CreatePipeline(cmd, textures_.views_, max_materials_);
 }
@@ -77,10 +76,10 @@ auto gdm::GbufferPass::CreateTextures(api::CommandList& cmd) -> Textures
   const Vec3u whd = {width_, height_, 1u};
 
   Textures textures {
-    .position_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 
-    .diffuse_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 
-    .normal_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, device_ }, 
-    .depth_ = { gfx::tag::DRT{}, gfx::EFormatType::D16_UNORM, whd, cmd, device_ } 
+    .position_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, &ctx_->GetDevice() }, 
+    .diffuse_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, &ctx_->GetDevice() }, 
+    .normal_ = { gfx::tag::SRRT{}, gfx::EFormatType::F4HALF, whd, cmd, &ctx_->GetDevice() }, 
+    .depth_ = { gfx::tag::DRT{}, gfx::EFormatType::D16_UNORM, whd, cmd, &ctx_->GetDevice() } 
   };
 
   textures.views_.push_back(&textures.position_.GetImageViewImpl());
@@ -158,7 +157,7 @@ auto gdm::GbufferPass::CreateDescriptorSetLayout(size_t materials_cnt) -> std::u
 
 auto gdm::GbufferPass::CreateDescriptorSet(size_t materials_cnt, api::DescriptorSetLayout* dsl, Uniforms& uniforms) -> std::unique_ptr<api::DescriptorSet>
 {
-  auto ds = std::make_unique<api::DescriptorSet>(*device_, *dsl, rdr_->GetDescriptorPool());
+  auto ds = std::make_unique<api::DescriptorSet>(*device_, *dsl, ctx_->GetDescriptorPool());
 
   ds->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, uniforms.pfcb_uniform_vs_.GetImpl());
   ds->UpdateContent<gfx::EResourceType::UNIFORM_DYNAMIC>(1, uniforms.pocb_uniform_vs_.GetImpl());
@@ -257,7 +256,7 @@ void gdm::GbufferPass::Render(api::CommandList& cmd, const std::vector<ModelInst
 
   cmd.PushBarriers(textures_.to_write_barriers_);
   cmd.BindPipelineGraphics(*pipeline_.api_pipeline_);
-  cmd.BeginRenderPass(*pipeline_.api_pass_, *pipeline_.api_fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  cmd.BeginRenderPass(*pipeline_.api_pass_, *pipeline_.api_fb_, ctx_->GetSurfaceWidth(), ctx_->GetSurfaceHeight());
 
   int mesh_number = 0;
   for (const auto& model_instance : renderable_models)

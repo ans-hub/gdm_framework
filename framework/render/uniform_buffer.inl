@@ -18,20 +18,20 @@ gdm::gfx::UniformBuffer<T>::UniformBuffer(uint count, bool mapped, api::Device* 
   , to_write_barrier_{nullptr}
   , mapped_{mapped}
 {
-  staging_buffer_ = gfx::Resource<api::Buffer>(device_, sizeof(T) * count)
+  staging_buffer_ = api::Resource<api::Buffer>(device_, sizeof(T) * count)
     .AddUsage(gfx::TRANSFER_SRC)
     .AddMemoryType(gfx::HOST_VISIBLE);
 
-  uniform_buffer_ = gfx::Resource<api::Buffer>(device_, sizeof(T) * count)
+  uniform_buffer_ = api::Resource<api::Buffer>(device_, sizeof(T) * count)
     .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
     .AddMemoryType(gfx::DEVICE_LOCAL);
 
-  to_read_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+  to_read_barrier_ = api::Resource<api::BufferBarrier>(device_)
     .AddBuffer(*uniform_buffer_)
     .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
     .AddNewAccess(gfx::EAccess::UNIFORM_READ);
   
-  to_write_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+  to_write_barrier_ = api::Resource<api::BufferBarrier>(device_)
     .AddBuffer(*staging_buffer_)
     .AddOldAccess(gfx::EAccess::UNIFORM_READ)
     .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);

@@ -10,6 +10,7 @@ extern PFN_vkSetDebugUtilsObjectTagEXT vkSetDebugUtilsObjectTag = nullptr;
 extern PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabel = nullptr;
 extern PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabel = nullptr;
 extern PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabel = nullptr;
+extern PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectName = nullptr;
 
 void gdm::vk::GatherAdditionalVulkanFunctionPtrs(VkDevice device)
 {
@@ -17,4 +18,5 @@ void gdm::vk::GatherAdditionalVulkanFunctionPtrs(VkDevice device)
   vkCmdBeginDebugUtilsLabel = PFN_vkCmdBeginDebugUtilsLabelEXT(vkGetDeviceProcAddr(device, "vkCmdBeginDebugUtilsLabelEXT"));
   vkCmdEndDebugUtilsLabel = PFN_vkCmdEndDebugUtilsLabelEXT(vkGetDeviceProcAddr(device, "vkCmdEndDebugUtilsLabelEXT"));
   vkCmdInsertDebugUtilsLabel = PFN_vkCmdInsertDebugUtilsLabelEXT(vkGetDeviceProcAddr(device, "vkCmdInsertDebugUtilsLabelEXT"));
+  vkSetDebugUtilsObjectName = PFN_vkSetDebugUtilsObjectNameEXT(vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectNameEXT"));
 }

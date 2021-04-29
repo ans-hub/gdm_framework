@@ -11,6 +11,7 @@
 #include <memory>
 
 #include "render/defines.h"
+#include "render/vk/vk_resource.h"
 
 namespace gdm::vk {
   struct ImageBarrier;
@@ -20,23 +21,23 @@ namespace gdm::vk {
   struct CommandList;
   struct RenderPass;
   struct ImageBarrier;
-  struct BufferBarrier;
 }
-namespace gdm::gfx {
-  template<>
-  struct Resource<api::ImageBarrier>;
+namespace gdm::vk {
+  template<class T> struct Resource;
+  template<> struct Resource<ImageBarrier>;
 }
 
 namespace gdm::vk {
 
 struct ImageBarrier
 {
-  friend struct gfx::Resource<ImageBarrier>;
+  friend struct Resource<ImageBarrier>;
 
   ImageBarrier() =default;
   ImageBarrier(const ImageBarrier&) =delete;
   ImageBarrier& operator=(const ImageBarrier&) =delete;
 
+  auto GetImpl() const -> VkImageMemoryBarrier { return image_barrier_; }
   operator VkImageMemoryBarrier() const { return image_barrier_; }
 
 private:
@@ -51,31 +52,19 @@ private:
 
 using ImageBarriers = std::vector<ImageBarrier*>;
 
-} // namespace gdm::vk
-
-namespace gdm::gfx {
-
 template <>
-struct Resource<api::ImageBarrier>
+struct Resource<ImageBarrier> : public BaseResourceBuilder<ImageBarrier>
 {
-  using self = Resource<api::ImageBarrier>&;
-
-  Resource();
-  ~Resource();
+  Resource(api::Device* device);
+  ~Resource() override;
 
   self AddImage(VkImage image);
   self AddOldLayout(gfx::EImageLayout old_layout);
   self AddNewLayout(gfx::EImageLayout new_layout);
 
-  operator api::ImageBarrier*() { return res_; }
-  operator std::unique_ptr<api::ImageBarrier>() { return std::unique_ptr<api::ImageBarrier>(res_); }
-
 private:
   void FillAspectMask(VkImageLayout layout, VkFormat format);
   void FillAccessMasks(VkImageLayout old_layout, VkImageLayout new_layout);
-
-private:
-  api::ImageBarrier* res_;
 
 }; // struct Resource<api::ImageBarrier>
 

@@ -59,7 +59,7 @@ struct DeferredPassData
   api::Buffer* pfcb_uniform_ps_;
   api::BufferBarrier* pfcb_to_write_barrier_;
   api::BufferBarrier* pfcb_to_read_barrier_;
-  api::Image2D* depth_image_;
+  api::Image* depth_image_;
   api::ImageView* depth_image_view_;
   api::Framebuffer* fb_;
   api::DescriptorSet* descriptor_set_;
@@ -71,7 +71,7 @@ struct DeferredPassData
 
 struct DeferredPass
 {
-  DeferredPass(int frames_count, api::Renderer& rdr);
+  DeferredPass(int frames_count, api::Renderer& ctx);
   ~DeferredPass();
 
 public:
@@ -90,7 +90,7 @@ public:
   void CleanupPipeline();
 
 private:
-  api::Renderer* rdr_ = nullptr;
+  api::Renderer* ctx_ = nullptr;
   api::Device* device_ = nullptr;
   api::Sampler* sampler_ = nullptr;
   api::RenderPass* pass_ = nullptr;

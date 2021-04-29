@@ -20,15 +20,15 @@
 
 // --public
 
-gdm::DebugPassData::DebugPassData(api::Renderer& rdr)
-  : rdr_{&rdr}
+gdm::DebugPassData::DebugPassData(api::Renderer& ctx)
+  : ctx_{&ctx}
   , device_{device_}
 { }
 
-gdm::DebugPass::DebugPass(int frame_count, api::Renderer& rdr)
-  : rdr_{&rdr}
-  , device_{&rdr.GetDevice()}
-  , data_(frame_count, rdr)
+gdm::DebugPass::DebugPass(int frame_count, api::Renderer& ctx)
+  : ctx_{&ctx}
+  , device_{&ctx.GetDevice()}
+  , data_(frame_count, ctx)
 { }
 
 gdm::DebugPass::~DebugPass()
@@ -67,20 +67,20 @@ void gdm::DebugPass::CleanupPipeline()
 
 void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
-  data_[frame_num].pfcb_staging_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(DebugVs_PFCB) * 1)
+  data_[frame_num].pfcb_staging_vs_ = api::Resource<api::Buffer>(device_, sizeof(DebugVs_PFCB) * 1)
     .AddUsage(gfx::TRANSFER_SRC)
     .AddMemoryType(gfx::HOST_VISIBLE);
 
-  data_[frame_num].pfcb_uniform_vs_ = gfx::Resource<api::Buffer>(device_, sizeof(DebugVs_PFCB) * 1)
+  data_[frame_num].pfcb_uniform_vs_ = api::Resource<api::Buffer>(device_, sizeof(DebugVs_PFCB) * 1)
     .AddUsage(gfx::TRANSFER_DST | gfx::UNIFORM)
     .AddMemoryType(gfx::DEVICE_LOCAL);
 
-  data_[frame_num].pfcb_to_read_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+  data_[frame_num].pfcb_to_read_barrier_ = api::Resource<api::BufferBarrier>(device_)
     .AddBuffer(*data_[frame_num].pfcb_uniform_vs_)
     .AddOldAccess(gfx::EAccess::TRANSFER_WRITE)
     .AddNewAccess(gfx::EAccess::UNIFORM_READ);
   
-  data_[frame_num].pfcb_to_write_barrier_ = gfx::Resource<api::BufferBarrier>(device_)
+  data_[frame_num].pfcb_to_write_barrier_ = api::Resource<api::BufferBarrier>(device_)
     .AddBuffer(*data_[frame_num].pfcb_uniform_vs_)
     .AddOldAccess(gfx::EAccess::UNIFORM_READ)
     .AddNewAccess(gfx::EAccess::TRANSFER_WRITE);
@@ -90,23 +90,23 @@ void gdm::DebugPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 
 void gdm::DebugPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num, uint64 buffer_size)
 {
-  data_[frame_num].vertex_buffer_ = gfx::Resource<api::Buffer>(device_, uint(buffer_size))
+  data_[frame_num].vertex_buffer_ = api::Resource<api::Buffer>(device_, uint(buffer_size))
     .AddUsage(gfx::VERTEX)
     .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
 
 void gdm::DebugPass::CreateBarriers(api::CommandList& cmd)
 {
-  auto present_images = rdr_->GetBackBufferImages();
+  auto present_images = ctx_->GetBackBufferImages();
 
   for(auto&& [i, data] : Enumerate(data_))
   {
-    data.present_to_read_barrier_ = gfx::Resource<api::ImageBarrier>()
+    data.present_to_read_barrier_ = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
       .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
 
-    data.present_to_write_barrier_ = gfx::Resource<api::ImageBarrier>()
+    data.present_to_write_barrier_ = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
       .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
@@ -115,12 +115,12 @@ void gdm::DebugPass::CreateBarriers(api::CommandList& cmd)
 
 void gdm::DebugPass::CreateFramebuffer()
 {
-  uint height = rdr_->GetSurfaceHeight();
-  uint width = rdr_->GetSurfaceWidth();
+  uint height = ctx_->GetSurfaceHeight();
+  uint width = ctx_->GetSurfaceWidth();
 
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  for (uint i = 0; i < ctx_->GetBackBuffersCount(); ++i)
   {
-    api::ImageViews image_views { rdr_->GetBackBufferViews()[i] };
+    api::ImageViews image_views { ctx_->GetBackBufferViews()[i] };
     data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
   }
 }
@@ -132,7 +132,7 @@ void gdm::DebugPass::CreateRenderPass()
   uint color_idx = 0;
 
   pass_->AddAttachmentDescription(color_idx)
-    .AddFormat(rdr_->GetSurfaceFormat())
+    .AddFormat(ctx_->GetSurfaceFormat())
     .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
@@ -154,16 +154,16 @@ void gdm::DebugPass::CreatePipeline()
   uint pfcb = dsl->AddBinding(0, 1, gfx::EResourceType::UNIFORM_BUFFER, gfx::EShaderStage::VERTEX_STAGE);
   dsl->Finalize();
 
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  for (uint i = 0; i < ctx_->GetBackBuffersCount(); ++i)
   {
-    auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, rdr_->GetDescriptorPool());
+    auto* descriptor_set = GMNew api::DescriptorSet(*device_, *dsl, ctx_->GetDescriptorPool());
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_[i].pfcb_uniform_vs_);
     descriptor_set->Finalize();
     data_[i].descriptor_set_ = descriptor_set;
   }
 
-  float width = static_cast<float>(rdr_->GetSurfaceWidth());
-  float height = static_cast<float>(rdr_->GetSurfaceHeight());
+  float width = static_cast<float>(ctx_->GetSurfaceWidth());
+  float height = static_cast<float>(ctx_->GetSurfaceHeight());
   
   ViewportDesc vp{0, height, width, -height, 0, 1};
 
@@ -205,32 +205,32 @@ void gdm::DebugPass::CreateGui()
 
   ImGui::StyleColorsDark();
   
-  ImGui_ImplWin32_Init(rdr_->GetSurfaceWindow());
-  io.DisplaySize.x = rdr_->GetSurfaceWidth();
-  io.DisplaySize.y = rdr_->GetSurfaceHeight();
+  ImGui_ImplWin32_Init(ctx_->GetSurfaceWindow());
+  io.DisplaySize.x = ctx_->GetSurfaceWidth();
+  io.DisplaySize.y = ctx_->GetSurfaceHeight();
 
   auto check_vk_result = [](VkResult res) { ASSERT(res == VK_SUCCESS); };
 
   ImGui_ImplVulkan_InitInfo init_info = {};
 
-  init_info.Instance = rdr_->GetInstance();
-  init_info.PhysicalDevice = rdr_->GetDevice().GetPhysicalDevice().info_.device_;
-  init_info.Device = rdr_->GetDevice();
-  init_info.QueueFamily = rdr_->GetDevice().GetPhysicalDevice().queue_id;
-  init_info.Queue = rdr_->GetDevice().GetQueue(gfx::EQueueType::GRAPHICS);
+  init_info.Instance = ctx_->GetInstance();
+  init_info.PhysicalDevice = ctx_->GetDevice().GetPhysicalDevice().info_.device_;
+  init_info.Device = ctx_->GetDevice();
+  init_info.QueueFamily = ctx_->GetDevice().GetPhysicalDevice().queue_id;
+  init_info.Queue = ctx_->GetDevice().GetQueue(gfx::EQueueType::GRAPHICS);
   init_info.PipelineCache = VK_NULL_HANDLE;
-  init_info.DescriptorPool = rdr_->GetDescriptorPool();
+  init_info.DescriptorPool = ctx_->GetDescriptorPool();
   init_info.Allocator = VK_NULL_HANDLE;
-  init_info.MinImageCount = rdr_->GetBackBuffersCount();
+  init_info.MinImageCount = ctx_->GetBackBuffersCount();
   init_info.ImageCount = init_info.MinImageCount;
   init_info.CheckVkResultFn = check_vk_result;
   ImGui_ImplVulkan_Init(&init_info, *pass_);
 
-  auto command_buffer = rdr_->CreateCommandList(GDM_HASH("ImGuiSetup"), gfx::ECommandListFlags::ONCE);
+  auto command_buffer = ctx_->CreateCommandList(GDM_HASH("ImGuiSetup"), gfx::ECommandListFlags::ONCE);
   ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
   command_buffer.Finalize();
-  rdr_->SubmitCommandLists(api::CommandLists{command_buffer}, api::Semaphores::empty, api::Semaphores::empty, api::Fence::null);
-  rdr_->WaitForGpuIdle();
+  ctx_->SubmitCommandLists(api::CommandLists{command_buffer}, api::Semaphores::empty, api::Semaphores::empty, api::Fence::null);
+  ctx_->WaitForGpuIdle();
   ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
@@ -277,7 +277,7 @@ void gdm::DebugPass::Draw(api::CommandList& cmd, uint curr_frame, bool wire_stag
   cmd.PushBarrier(*data.present_to_write_barrier_);
   cmd.BindDescriptorSetGraphics(descriptor_sets, *pipeline_, gfx::Offsets{});      
   cmd.BindPipelineGraphics(*pipeline_);
-  cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  cmd.BeginRenderPass(*pass_, *data.fb_, ctx_->GetSurfaceWidth(), ctx_->GetSurfaceHeight());
   
   if (wire_stage_active && data.vertices_count_ != 0)
   {

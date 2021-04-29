@@ -13,6 +13,7 @@ extern PFN_vkSetDebugUtilsObjectTagEXT vkSetDebugUtilsObjectTag;
 extern PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabel;
 extern PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabel;
 extern PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabel;
+extern PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectName;
 
 namespace gdm::vk
 {

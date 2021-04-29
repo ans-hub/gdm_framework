@@ -11,29 +11,32 @@
 #include <memory>
 
 #include "render/defines.h"
-#include "memory/defines.h"
-
-#include "system/assert_utils.h"
+#include "render/vk/vk_resource.h"
 #include "render/vk/vk_host_allocator.h"
 #include "render/vk/vk_device_allocator.h"
 #include "render/vk/vk_device.h"
 #include "render/vk/vk_image.h"
 
+#include "memory/defines.h"
+
+#include "system/assert_utils.h"
+
 #include "vk_deleter.h"
 
 namespace gdm::vk {
   struct ImageView;
+  struct Device;
 }
-namespace gdm::gfx {
+namespace gdm::vk {
   template<>
-  struct Resource<vk::ImageView>;
+  struct Resource<ImageView>;
 }
 
 namespace gdm::vk {
 
 struct ImageView
 {
-  friend struct gfx::Resource<ImageView>;
+  friend struct Resource<ImageView>;
 
   ImageView() =default;
   ImageView(const ImageView&) =delete;
@@ -45,7 +48,7 @@ public:
   operator VkImageView() const { return image_view_; }
 
 private:
-  VkDevice device_;
+  Device* device_;
   VkImageViewCreateInfo image_view_info_;
   VkDeleter<VkImageView> image_view_; 
 
@@ -53,29 +56,18 @@ private:
 
 using ImageViews = std::vector<ImageView*>;
 
-} // namespace gdm::vk
-
-namespace gdm::gfx {
-
 template <>
-struct Resource<api::ImageView>
+struct Resource<ImageView> : BaseResourceBuilder<ImageView>
 {
-  using self = Resource<api::ImageView>&;
-
-  Resource(VkDevice device);
-  ~Resource();
+  Resource(vk::Device* device);
+  ~Resource() override;
 
   self AddImage(VkImage image);
   self AddFormatType(gfx::FormatType format);
+  self SetName(const char* name);
 
-  operator api::ImageView*() { return res_; }
-  operator std::unique_ptr<api::ImageView>() { return std::unique_ptr<api::ImageView>(res_); }
+}; // struct Resource<ImageView>
 
-private:
-  api::ImageView* res_;
-
-}; // struct Resource<api::ImageView>
-
-} // namespace gdm::gfx
+} // namespace gdm::vk
 
 #endif // GM_VK_IMAGE_VIEW_H

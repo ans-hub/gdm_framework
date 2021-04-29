@@ -18,22 +18,22 @@
 // --public
 
 gdm::AppRenderer::AppRenderer(
-  api::Renderer& gfx,
+  api::Renderer& ctx,
   GpuStreamer& gpu_streamer,
   const DebugDraw& debug_draw
 )
-  : gfx_{ gfx }
-  , device_{ gfx_.GetDevice() }
+  : ctx_{ ctx }
+  , device_{ ctx_.GetDevice() }
   , submit_fence_(device_)
-  , setup_list_{ gfx_.CreateCommandList(GDM_HASH("AppRendererSetup"), gfx::ECommandListFlags::ONCE) }
+  , setup_list_{ ctx_.CreateCommandList(GDM_HASH("AppRendererSetup"), gfx::ECommandListFlags::ONCE) }
   , gbuffer_pass_{
-      gfx_,
+      ctx_,
       setup_list_,
       cfg::v_max_objects,
       cfg::v_max_materials * cfg::v_material_type_cnt}
-  , deferred_pass_(gfx::v_num_images, gfx_)
-  , debug_pass_(gfx::v_num_images, gfx_)
-  , text_pass_(gfx::v_num_images, gfx_)
+  , deferred_pass_(gfx::v_num_images, ctx_)
+  , debug_pass_(gfx::v_num_images, ctx_)
+  , text_pass_(gfx::v_num_images, ctx_)
   , thread_command_lists_{}
   , thread_command_lists_cs_{}
   , gpu_events_{}
@@ -76,7 +76,7 @@ gdm::AppRenderer::AppRenderer(
   submit_fence_.Reset();
 
   setup_list_.Finalize();
-  gfx_.SubmitCommandLists(api::CommandLists{setup_list_}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
+  ctx_.SubmitCommandLists(api::CommandLists{setup_list_}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
   submit_fence_.WaitSignalFromGpu();
   submit_fence_.Reset();
 }
@@ -93,10 +93,10 @@ void gdm::AppRenderer::Render(
 {
   std::vector<api::Renderer::Event> gpu_events;
 
-  gfx_.FlushGpuEvents(gpu_events);
+  ctx_.FlushGpuEvents(gpu_events);
   ProcessGpuEvents(gpu_events);
 
-  api::CommandList cmd_gbuffer = gfx_.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
+  api::CommandList cmd_gbuffer = ctx_.CreateCommandList(GDM_HASH("Gbuffer"), gfx::ECommandListFlags::SIMULTANEOUS);
 
   api::Semaphore spresent_done(device_);
   api::Semaphore sgbuffer_done(device_);
@@ -110,12 +110,12 @@ void gdm::AppRenderer::Render(
 
   submit_fence_.Reset();
   cmd_gbuffer.Finalize();
-  gfx_.SubmitCommandLists(api::CommandLists{cmd_gbuffer}, api::Semaphores::empty, api::Semaphores{sgbuffer_done}, submit_fence_);
+  ctx_.SubmitCommandLists(api::CommandLists{cmd_gbuffer}, api::Semaphores::empty, api::Semaphores{sgbuffer_done}, submit_fence_);
   submit_fence_.WaitSignalFromGpu();
 
-  uint curr_frame = gfx_.AcquireNextFrame(spresent_done, api::Fence::null);
+  uint curr_frame = ctx_.AcquireNextFrame(spresent_done, api::Fence::null);
   
-  api::CommandList cmd_deferred = gfx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
+  api::CommandList cmd_deferred = ctx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
   deferred_pass_.Update(curr_frame, camera, lamps, flashlights);
   deferred_pass_.Render(cmd_deferred, curr_frame);
@@ -133,10 +133,10 @@ void gdm::AppRenderer::Render(
 
   if (active_gui || active_wire || active_text)
   {
-    gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
+    ctx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
     submit_fence_.WaitSignalFromGpu();
   
-    api::CommandList cmd_debug = gfx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
+    api::CommandList cmd_debug = ctx_.CreateFrameCommandList(curr_frame, gfx::ECommandListFlags::SIMULTANEOUS);
 
     if (active_wire || active_gui)
     {
@@ -155,14 +155,14 @@ void gdm::AppRenderer::Render(
     submit_fence_.Reset();
     cmd_debug.Finalize();
 
-    gfx_.SubmitCommandLists(api::CommandLists{cmd_debug}, api::Semaphores{sdeferred_done}, api::Semaphores{sdebug_done}, submit_fence_);
-    gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdebug_done});
+    ctx_.SubmitCommandLists(api::CommandLists{cmd_debug}, api::Semaphores{sdeferred_done}, api::Semaphores{sdebug_done}, submit_fence_);
+    ctx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdebug_done});
     submit_fence_.WaitSignalFromGpu();
   }
   else
   {
-    gfx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
-    gfx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
+    ctx_.SubmitCommandLists(api::CommandLists{cmd_deferred}, api::Semaphores{sgbuffer_done}, api::Semaphores{sdeferred_done}, submit_fence_);
+    ctx_.SubmitPresentation(curr_frame, api::Semaphores{spresent_done, sdeferred_done});
     submit_fence_.WaitSignalFromGpu();
   }
 }
@@ -182,7 +182,7 @@ void gdm::AppRenderer::ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_e
     {
       case api::Renderer::Event::SwapchainRecreated:
       {
-        api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("AppRendererSetup"), gfx::ECommandListFlags::ONCE);
+        api::CommandList setup_list = ctx_.CreateCommandList(GDM_HASH("AppRendererSetup"), gfx::ECommandListFlags::ONCE);
 
         // todo: add sync - stop all threads
         gbuffer_pass_.Recreate(setup_list);
@@ -213,7 +213,7 @@ void gdm::AppRenderer::ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_e
       
         submit_fence_.Reset();
         setup_list.Finalize();
-        gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
+        ctx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence_);
         submit_fence_.WaitSignalFromGpu();
         submit_fence_.Reset();
       }

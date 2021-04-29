@@ -17,9 +17,9 @@
 
 // --public
 
-gdm::GpuStreamer::GpuStreamer(api::Renderer& gfx)
-  : gfx_{gfx}
-  , device_{gfx.GetDevice()}
+gdm::GpuStreamer::GpuStreamer(api::Renderer& ctx)
+  : ctx_{ctx}
+  , device_{ctx.GetDevice()}
   , staging_buffers_{}
 {
   staging_buffers_.reserve(v_max_buffers_);
@@ -34,7 +34,7 @@ gdm::GpuStreamer::~GpuStreamer()
 
 auto gdm::GpuStreamer::CreateStagingBuffer(uint bytes) -> uint
 {
-  api::Buffer* buffer = gfx::Resource<api::Buffer>(&device_, bytes)
+  api::Buffer* buffer = api::Resource<api::Buffer>(&device_, bytes)
     .AddUsage(gfx::TRANSFER_SRC)
     .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 
@@ -54,7 +54,7 @@ int gdm::GpuStreamer::FindStagingBuffer(uint min_size)
 
 void gdm::GpuStreamer::CopyModelsToGpu(const std::vector<ModelHandle>& models)
 {
-  api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::CommandList setup_list = ctx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
   api::Fence submit_fence(device_);
 
   uint vstg = CreateStagingBuffer(64_Mb);
@@ -70,7 +70,7 @@ void gdm::GpuStreamer::CopyModelsToGpu(const std::vector<ModelHandle>& models)
     CreateDummyView(setup_list);
 
   setup_list.Finalize();
-  gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
+  ctx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
   submit_fence.WaitSignalFromGpu();
 }
 
@@ -110,13 +110,13 @@ void gdm::GpuStreamer::CopyGeometryToGpu(const std::vector<ModelHandle>& handles
 
     uint curr_vbuffer_sz = curr_voffset - mesh_voffsets.back();
 
-    api::Buffer* vxs_buffer = gfx::Resource<api::Buffer>(&device_, curr_vbuffer_sz)
+    api::Buffer* vxs_buffer = api::Resource<api::Buffer>(&device_, curr_vbuffer_sz)
       .AddUsage(gfx::VERTEX | gfx::TRANSFER_DST)
       .AddMemoryType(gfx::DEVICE_LOCAL);
 
     uint curr_ibuffer_sz = curr_ioffset - mesh_ioffsets.back();
 
-    api::Buffer* idx_buffer = gfx::Resource<api::Buffer>(&device_, curr_ibuffer_sz)
+    api::Buffer* idx_buffer = api::Resource<api::Buffer>(&device_, curr_ibuffer_sz)
       .AddUsage(gfx::INDEX | gfx::TRANSFER_DST)
       .AddMemoryType(gfx::DEVICE_LOCAL);
 
@@ -177,13 +177,13 @@ void gdm::GpuStreamer::CopyMaterialsToGpu(const std::vector<MaterialHandle>& han
 
 void gdm::GpuStreamer::CopyTexturesToGpu(const std::vector<TextureHandle>& handles, uint tstg_index)
 {
-  api::CommandList setup_list = gfx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
+  api::CommandList setup_list = ctx_.CreateCommandList(GDM_HASH("SceneSetup"), gfx::ECommandListFlags::ONCE);
   api::Fence submit_fence(device_);
 
   CopyTexturesToGpu(handles, tstg_index, setup_list);
 
   setup_list.Finalize();
-  gfx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
+  ctx_.SubmitCommandLists(api::CommandLists{setup_list}, api::Semaphores::empty, api::Semaphores::empty, submit_fence);
   submit_fence.WaitSignalFromGpu();
 }
 
@@ -228,17 +228,17 @@ void gdm::GpuStreamer::CopyTextureFromStagingBuffer(api::CommandList& cmd, Abstr
   const AbstractImage* image = ImageFactory::Get(texture->GetImageHandle()); 
   uint img_raw_size = ImageFactory::Get(texture->GetImageHandle())->GetRaw().size();
 
-  gfx::Texture* gfx_texture = GMNew gfx::Texture(gfx::tag::SR{}, texture->GetFormat(), image->GetWHD(), cmd, &device_); 
+  gfx::Texture* gfx_texture = GMNew gfx::Texture(gfx::tag::SR{}, texture->GetFormat(), image->GetWHD(), cmd, &ctx_.GetDevice()); 
   texture->SetTextureImpl(gfx_texture);
 
-  api::Image2D& api_img = gfx_texture->GetImageImpl();
+  api::Image& api_img = gfx_texture->GetImageImpl();
   
-  api::ImageBarrier* barrier_undef_to_transfer = gfx::Resource<api::ImageBarrier>()
+  api::ImageBarrier* barrier_undef_to_transfer = api::Resource<api::ImageBarrier>(&ctx_.GetDevice())
     .AddImage(api_img)
     .AddOldLayout(gfx::EImageLayout::UNDEFINED)
     .AddNewLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL);
 
-  api::ImageBarrier* barrier_transfer_to_shader = gfx::Resource<api::ImageBarrier>()
+  api::ImageBarrier* barrier_transfer_to_shader = api::Resource<api::ImageBarrier>(&ctx_.GetDevice())
     .AddImage(api_img)
     .AddOldLayout(gfx::EImageLayout::TRANSFER_DST_OPTIMAL)
     .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);
@@ -262,10 +262,10 @@ void gdm::GpuStreamer::CreateDummyView(api::CommandList& cmd)
   TextureHandle texture_handle = TextureFactory::Load(image_handle, gfx::EFormatType::UNORM4);
   AbstractTexture* dummy_texture = TextureFactory::Get(texture_handle);
 
-  gfx::Texture* gfx_texture = GMNew gfx::Texture(gfx::tag::SR{}, dummy_texture->GetFormat(), dummy_image->GetWHD(), cmd, &device_); 
+  gfx::Texture* gfx_texture = GMNew gfx::Texture(gfx::tag::SR{}, dummy_texture->GetFormat(), dummy_image->GetWHD(), cmd, &ctx_.GetDevice()); 
   dummy_texture->SetTextureImpl(gfx_texture);
 
-  api::ImageBarrier* barrier_undef_to_srv = gfx::Resource<api::ImageBarrier>()
+  api::ImageBarrier* barrier_undef_to_srv = api::Resource<api::ImageBarrier>(&ctx_.GetDevice())
     .AddImage(gfx_texture->GetImageImpl())
     .AddOldLayout(gfx::EImageLayout::UNDEFINED)
     .AddNewLayout(gfx::EImageLayout::SHADER_READ_OPTIMAL);

@@ -8,6 +8,7 @@
 #define GM_VK_BUFFER_H
 
 #include "render/defines.h"
+#include "render/vk/vk_resource.h"
 
 #include <memory>
 
@@ -17,10 +18,15 @@ namespace gdm::vk {
 } // namespace gdm::vk
 
 namespace gdm::vk {
+  template<class T> struct Resource;
+  template<> struct Resource<Buffer>;
+} // namespace gdm::vk
+
+namespace gdm::vk {
 
 struct Buffer
 {
-  friend struct gfx::Resource<Buffer>;
+  friend struct Resource<Buffer>;
 
   Buffer() =default;
   ~Buffer();
@@ -40,6 +46,7 @@ struct Buffer
 
   void CopyDataToGpu(const void* data, uint offset, size_t write_size);
 
+  auto GetImpl() const -> VkBuffer { return buffer_; }
   operator VkBuffer() const { return buffer_; }
 
 private:
@@ -53,26 +60,14 @@ private:
 
 }; // struct Buffer
 
-} // namespace gdm::vk
-
-namespace gdm::gfx {
-
 template <>
-struct Resource<api::Buffer>
+struct Resource<Buffer> : public BaseResourceBuilder<Buffer>
 {
-  using self = Resource<api::Buffer>&;
-
   Resource(api::Device* device, uint size);
   ~Resource();
 
   self AddUsage(gfx::BufferUsage usage);
   self AddMemoryType(gfx::MemoryType memory_type);
-
-  operator api::Buffer*() { return res_; }
-  operator std::unique_ptr<api::Buffer>() { return std::unique_ptr<api::Buffer>(res_); }
-
-private:
-  api::Buffer* res_;
 
 }; // struct Resource<api::Buffer>
 

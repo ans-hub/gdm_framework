@@ -11,30 +11,32 @@
 #include <memory>
 
 #include "render/defines.h"
+#include "render/vk/vk_resource.h"
 
 namespace gdm::vk {
   struct Device;
-  struct Image;
   struct Buffer;
   struct CommandList;
   struct RenderPass;
   struct BufferBarrier;
-}
-namespace gdm::gfx {
-  template<>
-  struct Resource<api::BufferBarrier>;
-}
+} // namespace gdm::vk
+
+namespace gdm::vk {
+  template<class T> struct Resource;
+  template<> struct Resource<BufferBarrier>;
+} // namespace gdm::vk
 
 namespace gdm::vk {
 
 struct BufferBarrier
 {
-  friend struct gfx::Resource<BufferBarrier>;
+  friend struct Resource<BufferBarrier>;
 
   BufferBarrier() =default;
   BufferBarrier(const BufferBarrier&) =delete;
   BufferBarrier& operator=(const BufferBarrier&) =delete;
 
+  auto GetImpl() const -> VkBufferMemoryBarrier { return buffer_barrier_; }
   operator VkBufferMemoryBarrier() const { return buffer_barrier_; }
 
 private:
@@ -49,30 +51,18 @@ private:
 
 using BufferBarriers = std::vector<BufferBarrier>;
 
-} // namespace gdm::vk
-
-namespace gdm::gfx {
-
 template <>
-struct Resource<api::BufferBarrier>
+struct Resource<BufferBarrier> : public BaseResourceBuilder<BufferBarrier>
 {
-  using self = Resource<api::BufferBarrier>&;
-
   Resource(api::Device* device);
-  ~Resource();
+  ~Resource() override;
 
   self AddBuffer(VkBuffer buffer);
   self AddOldAccess(gfx::EAccess old_acces);
   self AddNewAccess(gfx::EAccess new_access);
 
-  operator api::BufferBarrier*() { return res_; }
-  operator std::unique_ptr<api::BufferBarrier>() { return std::unique_ptr<api::BufferBarrier>(res_); }
+}; // struct Resource<BufferBarrier>
 
-private:
-  api::BufferBarrier* res_;
-
-}; // struct Resource<api::BufferBarrier>
-
-} // namespace gdm::gfx
+} // namespace gdm::vk
 
 #endif // GM_VK_BUFFER_BARRIER_H

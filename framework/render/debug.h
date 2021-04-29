@@ -8,47 +8,41 @@
 #define AH_DEBUG_H
 
 #include "defines.h"
-#include "api.h"
-#include "renderer.h"
+
+#include "vk/vk_debug_interface.h"  // todo: remove VK namespace file from here and make separate file api_debug.h to avoid chain deps
 
 #include <math/vector4.h>
 #include <system/diff_utils.h>
-
-// Gpu labels for event point. By convention in caller context should present
-// interface to renderer pointer named rdr_ and command list called cmd. Otherwise
-// use macroses accept renderer and command list in arguments
 
 namespace gdm::gfx {
 
   struct DebugScope
   {
-    DebugScope(api::Renderer& rdr, api::CommandList& cmd, const char* name, const Vec4f& color)
+    DebugScope(VkCommandBuffer cmd, const char* name, const Vec4f& color)
       : cmd_{cmd}
-      , rdr_{rdr}
     {
-      rdr_.BeginDebugLabel(cmd_, name, color);
+      api::debug::BeginDebugLabel(cmd_, name, color);
     }
-    ~DebugScope() { rdr_.EndDebugLabel(cmd_); }
-    api::Renderer& rdr_;
-    api::CommandList& cmd_;
+    ~DebugScope() { api::debug::EndDebugLabel(cmd_); }
+    VkCommandBuffer cmd_;
   };
 
 #ifdef GDM_LABELS_ENABLED
 
 # define GDM_LABEL_S(col)\
-    [[maybe_unused]] ::gdm::gfx::DebugScope GDM_CONCAT(label, __LINE__)(*rdr_, cmd, v_eventname64, col);
+    [[maybe_unused]] ::gdm::gfx::DebugScope GDM_CONCAT(label, __LINE__)(cmd, v_eventname64, col);
 
 # define GDM_LABEL_B(col)\
     do {\
-      rdr_->BeginDebugLabel(cmd, v_eventname64, col);\
+      ::gdm::api::debug::BeginDebugLabel(cmd, v_eventname64, col);\
     } while(0);
 # define GDM_LABEL_E()\
     do {\
-      rdr_->EndDebugLabel(cmd);\
+      ::gdm::api::debug::EndDebugLabel(cmd);\
     } while(0);
 # define GDM_LABEL_I(col)\
     do {\
-      rdr_->InsertDebugLabel(cmd, v_eventname64, col);\
+      ::gdm::api::debug::InsertDebugLabel(cmd, v_eventname64, col);\
     } while(0);
 
 #else

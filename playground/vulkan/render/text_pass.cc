@@ -29,15 +29,15 @@ void gdm::TextPass::BindFramebuffer(api::Framebuffer* fb, uint frame_num)
 
 // --public create
 
-gdm::TextPassData::TextPassData(api::Renderer& rdr)
-  : rdr_{&rdr}
+gdm::TextPassData::TextPassData(api::Renderer& ctx)
+  : ctx_{&ctx}
   , device_{device_}
 { }
 
-gdm::TextPass::TextPass(int frame_count, api::Renderer& rdr)
-  : rdr_{&rdr}
-  , device_{&rdr.GetDevice()}
-  , data_(frame_count, rdr)
+gdm::TextPass::TextPass(int frame_count, api::Renderer& ctx)
+  : ctx_{&ctx}
+  , device_{&ctx.GetDevice()}
+  , data_(frame_count, ctx)
   , font_{nullptr}
   , font_texture_{nullptr}
   , strings_{}
@@ -83,7 +83,7 @@ void gdm::TextPass::DestroyBarriers()
 
 void gdm::TextPass::CreateUniforms(api::CommandList& cmd, uint frame_num)
 {
-  data_[frame_num].pocb_uniform_fs_ = gfx::Resource<api::Buffer>(device_, sizeof(TextFs_POCB) * 1)
+  data_[frame_num].pocb_uniform_fs_ = api::Resource<api::Buffer>(device_, sizeof(TextFs_POCB) * 1)
     .AddUsage(gfx::UNIFORM)
     .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 
@@ -95,24 +95,24 @@ void gdm::TextPass::CreateVertexBuffer(api::CommandList& cmd, uint frame_num)
   const int quad_size = 4;
   const int buffer_size = v_max_string_ * sizeof(Vec4f) * quad_size;
 
-  data_[frame_num].vertex_buffer_ = gfx::Resource<api::Buffer>(device_, uint(buffer_size))
+  data_[frame_num].vertex_buffer_ = api::Resource<api::Buffer>(device_, uint(buffer_size))
     .AddUsage(gfx::VERTEX)
     .AddMemoryType(gfx::HOST_VISIBLE | gfx::HOST_COHERENT);
 }
 
 void gdm::TextPass::CreateBarriers(api::CommandList& cmd)
 {
-  auto present_images = rdr_->GetBackBufferImages();
+  auto present_images = ctx_->GetBackBufferImages();
 
   for(auto&& [i, data] : Enumerate(data_))
   {
 
-    data.present_to_read_barrier_ = gfx::Resource<api::ImageBarrier>()
+    data.present_to_read_barrier_ = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
       .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
 
-    data.present_to_write_barrier_ = gfx::Resource<api::ImageBarrier>()
+    data.present_to_write_barrier_ = api::Resource<api::ImageBarrier>(&ctx_->GetDevice())
       .AddImage(present_images[i])
       .AddOldLayout(gfx::EImageLayout::PRESENT_SRC)
       .AddNewLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL);
@@ -126,7 +126,7 @@ void gdm::TextPass::CreateRenderPass()
   uint color_idx = 0;
 
   pass_->AddAttachmentDescription(color_idx)
-    .AddFormat(rdr_->GetSurfaceFormat())
+    .AddFormat(ctx_->GetSurfaceFormat())
     .AddInitLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddFinalLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
     .AddRefLayout(gfx::EImageLayout::COLOR_ATTACHMENT_OPTIMAL)
@@ -140,12 +140,12 @@ void gdm::TextPass::CreateRenderPass()
 
 void gdm::TextPass::CreateFramebuffer()
 {
-  uint height = rdr_->GetSurfaceHeight();
-  uint width = rdr_->GetSurfaceWidth();
+  uint height = ctx_->GetSurfaceHeight();
+  uint width = ctx_->GetSurfaceWidth();
 
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  for (uint i = 0; i < ctx_->GetBackBuffersCount(); ++i)
   {
-    api::ImageViews image_views { rdr_->GetBackBufferViews()[i] };
+    api::ImageViews image_views { ctx_->GetBackBufferViews()[i] };
     data_[i].fb_ = GMNew api::Framebuffer(*device_, width, height, *pass_, image_views);
   }
 }
@@ -165,9 +165,9 @@ void gdm::TextPass::CreatePipeline()
   
   dsl.Finalize();
 
-  for (uint i = 0; i < rdr_->GetBackBuffersCount(); ++i)
+  for (uint i = 0; i < ctx_->GetBackBuffersCount(); ++i)
   {
-    auto* descriptor_set = GMNew api::DescriptorSet(*device_, dsl, rdr_->GetDescriptorPool());
+    auto* descriptor_set = GMNew api::DescriptorSet(*device_, dsl, ctx_->GetDescriptorPool());
     descriptor_set->UpdateContent<gfx::EResourceType::UNIFORM_BUFFER>(0, *data_[i].pocb_uniform_fs_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLER>(1, *sampler_);
     descriptor_set->UpdateContent<gfx::EResourceType::SAMPLED_IMAGE>(2, *font_texture_);
@@ -175,8 +175,8 @@ void gdm::TextPass::CreatePipeline()
     data_[i].descriptor_set_ = descriptor_set;
   }
 
-  float width = static_cast<float>(rdr_->GetSurfaceWidth());
-  float height = static_cast<float>(rdr_->GetSurfaceHeight());
+  float width = static_cast<float>(ctx_->GetSurfaceWidth());
+  float height = static_cast<float>(ctx_->GetSurfaceHeight());
   
   ViewportDesc vp{0, height, width, -height, 0, 1};
 
@@ -217,8 +217,8 @@ void gdm::TextPass::UpdateVertexData(api::CommandList& cmd, uint curr_frame, con
   std::vector<Vec4f> mapped_data;
   mapped_data.reserve(text_data.size() * v_vxs_per_char_);
 
-  const float w = (float)rdr_->GetSurfaceWidth();
-	const float h = (float)rdr_->GetSurfaceHeight();
+  const float w = (float)ctx_->GetSurfaceWidth();
+	const float h = (float)ctx_->GetSurfaceHeight();
   const float ar = h/w;
   const float prop = 1.f / w * 2.f;
   const float font_height = font_->GetMetrics().font_height_;
@@ -277,7 +277,7 @@ void gdm::TextPass::Draw(api::CommandList& cmd, uint curr_frame)
   
   uint characters_offset = 0;
 
-  cmd.BeginRenderPass(*pass_, *data.fb_, rdr_->GetSurfaceWidth(), rdr_->GetSurfaceHeight());
+  cmd.BeginRenderPass(*pass_, *data.fb_, ctx_->GetSurfaceWidth(), ctx_->GetSurfaceHeight());
   cmd.BindVertexBuffer(*data.vertex_buffer_);
 
   for (auto&& [characters_count, color] : strings_)

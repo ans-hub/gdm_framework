@@ -13,43 +13,41 @@
 #include "system/assert_utils.h"
 #include "system/bits_utils.h"
 
-// --public Resource<Buffer>
+// --public Resource
 
-gdm::gfx::Resource<gdm::api::Buffer>::Resource(api::Device* device, uint size)
-  : res_ { GMNew api::Buffer() }
+gdm::vk::Resource<gdm::vk::Buffer>::Resource(api::Device* device, uint size)
+  : BaseResourceBuilder(*device)
 {
   // todo: if uniform ,then assert on aligning
 
-  res_->device_ = device;
- 
-  res_->flush_range_alignment_ = device->GetPhysicalDevice().info_.device_props_.limits.nonCoherentAtomSize;
- 
-  res_->buffer_info_.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  res_->buffer_info_.size = size;
-  res_->buffer_info_.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-  res_->buffer_info_.queueFamilyIndexCount = 0;
-  res_->buffer_info_.pQueueFamilyIndices = NULL;
+  ptr_->device_ = device;
+  ptr_->flush_range_alignment_ = device->GetPhysicalDevice().info_.device_props_.limits.nonCoherentAtomSize;
+  ptr_->buffer_info_.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+  ptr_->buffer_info_.size = size;
+  ptr_->buffer_info_.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  ptr_->buffer_info_.queueFamilyIndexCount = 0;
+  ptr_->buffer_info_.pQueueFamilyIndices = NULL;
 }
 
-gdm::gfx::Resource<gdm::api::Buffer>::~Resource()
+gdm::vk::Resource<gdm::vk::Buffer>::~Resource()
 {
-  VkResult res = vkCreateBuffer(*res_->device_, &res_->buffer_info_, api::HostAllocator::GetPtr(), &res_->buffer_);
+  VkResult res = vkCreateBuffer(*ptr_->device_, &ptr_->buffer_info_, api::HostAllocator::GetPtr(), &ptr_->buffer_);
   ASSERTF(res == VK_SUCCESS, "vkCreateBuffer error %d\n", res);
  
-  res_->buffer_memory_ = api::DeviceAllocator::Allocate(res_->device_, res_->buffer_, res_->memory_type_);
-  res = vkBindBufferMemory(*res_->device_, res_->buffer_, res_->buffer_memory_, 0);
+  ptr_->buffer_memory_ = api::DeviceAllocator::Allocate(ptr_->device_, ptr_->buffer_, ptr_->memory_type_);
+  res = vkBindBufferMemory(*ptr_->device_, ptr_->buffer_, ptr_->buffer_memory_, 0);
   ASSERTF(res == VK_SUCCESS, "vkBindBufferMemory failed %d", res);
 }
 
-auto gdm::gfx::Resource<gdm::api::Buffer>::AddUsage(gfx::BufferUsage usage) -> Resource::self
+auto gdm::vk::Resource<gdm::vk::Buffer>::AddUsage(gfx::BufferUsage usage) -> Resource::self
 {
-  res_->buffer_info_.usage = static_cast<VkBufferUsageFlagBits>(usage);
+  ptr_->buffer_info_.usage = static_cast<VkBufferUsageFlagBits>(usage);
   return *this;
 }
 
-auto gdm::gfx::Resource<gdm::api::Buffer>::AddMemoryType(gfx::MemoryType memory_type) -> Resource::self
+auto gdm::vk::Resource<gdm::vk::Buffer>::AddMemoryType(gfx::MemoryType memory_type) -> Resource::self
 {
-  res_->memory_type_ = static_cast<VkMemoryPropertyFlagBits>(memory_type);
+  ptr_->memory_type_ = static_cast<VkMemoryPropertyFlagBits>(memory_type);
   return *this;
 }
 

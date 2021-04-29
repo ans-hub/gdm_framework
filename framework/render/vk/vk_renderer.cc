@@ -247,29 +247,6 @@ void gdm::vk::Renderer::WaitForGpuIdle()
   ASSERTF(res == VK_SUCCESS, "vkDeviceWaitIdle %d\n", res);
 }
 
-void gdm::vk::Renderer::BeginDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color)
-{
-  VkDebugUtilsLabelEXT markerInfo = {};
-  markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-  memcpy(markerInfo.color, &color.data[0], sizeof(Vec4f));
-  markerInfo.pLabelName = name;
-  vkCmdBeginDebugUtilsLabel(cmd, &markerInfo);
-}
-
-void gdm::vk::Renderer::InsertDebugLabel(VkCommandBuffer cmd, const char* name, const Vec4f& color)
-{
-  VkDebugUtilsLabelEXT markerInfo = {};
-  markerInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT;
-  memcpy(markerInfo.color, &color.data[0], sizeof(Vec4f));
-  markerInfo.pLabelName = name;
-  vkCmdInsertDebugUtilsLabel(cmd, &markerInfo);
-}
-
-void gdm::vk::Renderer::EndDebugLabel(VkCommandBuffer cmd)
-{
-  vkCmdEndDebugUtilsLabel(cmd);
-}
-
 // --private
 
 void gdm::vk::Renderer::ValidateSetup()
@@ -410,7 +387,7 @@ void gdm::vk::Renderer::InitializePresentImages()
 
     if (!transition_done[frame_num])
     {
-      ImageBarrier* barrier = gfx::Resource<ImageBarrier>()
+      ImageBarrier* barrier = vk::Resource<vk::ImageBarrier>(device_)
         .AddImage(present_images_[frame_num])
         .AddOldLayout(gfx::EImageLayout::UNDEFINED)
         .AddNewLayout(gfx::EImageLayout::PRESENT_SRC);
@@ -438,7 +415,7 @@ auto gdm::vk::Renderer::CreatePresentImagesView() -> std::vector<ImageView*>
 
   for (size_t i = 0; i < present_images_.size(); ++i)
   {
-    views[i] = gfx::Resource<api::ImageView>(*device_)
+    views[i] = vk::Resource<vk::ImageView>(device_)
       .AddImage(present_images_[i])
       .AddFormatType(GetSurfaceFormat());
   }

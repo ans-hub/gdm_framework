@@ -26,9 +26,9 @@ namespace gdm {
 
 struct VertexShader
 {
-  VertexShader(const char* fname, const InputLayout& layout, Renderer& rdr)
+  VertexShader(const char* fname, const InputLayout& layout, Renderer& ctx)
     : input_layout_{layout}
-    , impl_{fname, layout, rdr.GetDevice(), rdr.GetCompiler()}
+    , impl_{fname, layout, ctx.GetDevice(), ctx.GetCompiler()}
   { }
   auto GetImpl() -> api::VertexShader& { return impl_; }
 

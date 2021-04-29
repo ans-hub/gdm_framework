@@ -10,22 +10,24 @@
 #include <memory>
 
 #include "render/defines.h"
+#include "render/vk/vk_resource.h"
 #include "render/vk/vk_deleter.h"
 
 namespace gdm::vk {
-  struct ImageView;
+  struct Image;
   struct Device;
-}
-namespace gdm::gfx {
-  template<>
-  struct Resource<vk::ImageView>;
+} // namespace gdm::vk
+
+namespace gdm::vk {
+  template<class T> struct Resource;
+  template<> struct Resource<Image>;
 }
 
 namespace gdm::vk {
 
 struct Image
 {
-  friend struct gfx::Resource<Image>;
+  friend struct Resource<Image>;
 
   Image() =default;
   Image(const Image&) =delete;
@@ -53,33 +55,19 @@ private:
 
 }; // struct Image
 
-using Image2D = Image;
-using Image3D = Image;
-
-} // namespace gdm::vk
-
-namespace gdm::gfx {
-
 template <>
-struct Resource<api::Image>
+struct Resource<Image> : public BaseResourceBuilder<Image>
 {
-  using self = Resource<api::Image>&;
+  Resource(vk::Device* device);
+  ~Resource() override;
 
-  Resource(api::Device* device, uint width, uint height);
-  ~Resource();
-
+  self AddExtent(uint width, uint height, uint depth);
   self AddFormatType(gfx::FormatType format);
   self AddImageUsage(gfx::ImageUsage usage);
 
-  operator api::Image*() { return res_; }
-  operator std::unique_ptr<api::Image>() { return std::unique_ptr<api::Image>(res_); }
+}; // struct Resource<Image>
 
-private:
-  api::Image* res_;
-
-}; // struct Resource<api::Image>
-
-} // namespace gdm::gfx
+} // namespace gdm::vk
 
 namespace gdm::vk::helpers
 {

@@ -56,7 +56,7 @@ struct AppRenderer
     Max
   }; // enum class EStage
 
-  AppRenderer(api::Renderer& gfx, GpuStreamer& gpu_streamer, const DebugDraw& debug_draw);
+  AppRenderer(api::Renderer& ctx, GpuStreamer& gpu_streamer, const DebugDraw& debug_draw);
   ~AppRenderer() { }
 
   void Render(float dt,
@@ -75,7 +75,7 @@ private:
   void ProcessGpuEvents(std::vector<api::Renderer::Event>& gpu_events);
 
 private:
-  api::Renderer& gfx_;
+  api::Renderer& ctx_;
   api::Device& device_;
   api::Fence submit_fence_;
   api::CommandList setup_list_;

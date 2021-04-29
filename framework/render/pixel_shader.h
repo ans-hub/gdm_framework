@@ -28,9 +28,9 @@ namespace gdm {
 
 struct PixelShader
 {
-  PixelShader(const char* fname, const SamplerDesc& sampler, Renderer& rdr)
+  PixelShader(const char* fname, const SamplerDesc& sampler, Renderer& ctx)
     : sampler_state_{sampler}
-    , impl_{fname, sampler, rdr.GetDevice(), rdr.GetCompiler()}
+    , impl_{fname, sampler, ctx.GetDevice(), ctx.GetCompiler()}
   { }
   auto GetImpl() -> api::PixelShader& { return impl_; }
 
